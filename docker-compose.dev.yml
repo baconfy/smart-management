@@ -1,0 +1,81 @@
+services:
+  # ── App: mount code + disable production optimizations ────────────
+  app:
+    image: serversideup/php:8.5-fpm-nginx
+    environment:
+      AUTORUN_ENABLED: false
+      PHP_OPCACHE_ENABLE: "0"
+      PHP_DISPLAY_ERRORS: "On"
+      PHP_EXTENSIONS: "intl"
+    volumes:
+      - .:/var/www/html
+
+  # ── Horizon: mount code for live changes ──────────────────────────
+  horizon:
+    image: serversideup/php:8.5-fpm-nginx
+    environment:
+      PHP_EXTENSIONS: "intl"
+    volumes:
+      - .:/var/www/html
+
+  # ── Scheduler: mount code for live changes ────────────────────────
+  scheduler:
+    image: serversideup/php:8.5-fpm-nginx
+    environment:
+      PHP_EXTENSIONS: "intl"
+    volumes:
+      - .:/var/www/html
+
+  # ── Reverb: mount code for live changes ───────────────────────────
+  reverb:
+    image: serversideup/php:8.5-fpm-nginx
+    environment:
+      PHP_EXTENSIONS: "intl"
+    volumes:
+      - .:/var/www/html
+
+  # ── PostgreSQL: expose port to host for GUI tools (TablePlus, etc.)
+  postgres:
+    ports:
+      - "${FORWARD_DB_PORT:-5432}:5432"
+
+  # ── Redis: expose port to host for GUI tools (Redis Insight, etc.)
+  redis:
+    ports:
+      - "${FORWARD_REDIS_PORT:-6379}:6379"
+
+  # ── MinIO: expose API + Console to host
+  minio:
+    ports:
+      - "${FORWARD_MINIO_PORT:-9000}:9000"
+      - "${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900"
+
+  # ── MinIO bucket auto-creation (one-shot, runs via "composer dev") ─
+  minio-create-bucket:
+    profiles: [ "setup" ]
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set local http://minio:$${FORWARD_MINIO_PORT:-9000} $${AWS_ACCESS_KEY_ID:-smart-management} $${AWS_SECRET_ACCESS_KEY:-secret123};
+      /usr/bin/mc mb local/$${AWS_BUCKET:-smart-management} --ignore-existing;
+      /usr/bin/mc anonymous set download local/$${AWS_BUCKET:-smart-management}/public;
+      "
+    environment:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-smart-management}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-secret123}"
+      AWS_BUCKET: "${AWS_BUCKET:-smart-management}"
+    networks:
+      - smart-management
+
+  # ── Mailpit (dev only - email testing) ────────────────────────────
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "${FORWARD_MAILPIT_PORT:-8025}:8025"
+      - "${FORWARD_MAILPIT_SMTP_PORT:-1025}:1025"
+    networks:
+      - smart-management
+    restart: unless-stopped

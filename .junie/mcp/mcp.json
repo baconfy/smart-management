@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "/Users/rawnato/Library/Application",
+            "args": ["Support/Herd/bin/php85", "/Users/rawnato/Developer/jarvis/artisan", "boost:mcp"]
+        },
+        "herd": {
+            "command": "/Users/rawnato/Library/Application",
+            "args": ["Support/Herd/bin/php85", "/Applications/Herd.app/Contents/Resources/herd-mcp.phar"],
+            "env": {
+                "SITE_PATH": "/Users/rawnato/Developer/jarvis"
+            }
+        }
+    }
+}
