@@ -56,4 +56,20 @@ class Project extends Model
     {
         return $this->hasMany(ProjectAgent::class);
     }
+
+    /**
+     * Establishes a one-to-many relationship with the Decision model.
+     */
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(Decision::class);
+    }
+
+    /**
+     * Defines a one-to-many relationship with the BusinessRule model.
+     */
+    public function businessRules(): HasMany
+    {
+        return $this->hasMany(BusinessRule::class);
+    }
 }
