@@ -72,4 +72,12 @@ class Project extends Model
     {
         return $this->hasMany(BusinessRule::class);
     }
+
+    /**
+     * Defines a one-to-many relationship with the Task model.
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
 }

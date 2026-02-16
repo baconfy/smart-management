@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-16
+> **Last updated:** 2026-02-17
 
 ---
 
@@ -18,11 +18,12 @@ These decisions were made during ideation and refined during implementation:
 7. **Separate artifact tables:** Each artifact type has its own table (not polymorphic).
 8. **Multi-provider:** User provides their own API keys. Supports Anthropic, OpenAI, Gemini, etc. via Laravel AI SDK.
 9. **Project membership with roles:** `project_members` pivot table with roles (owner, admin, member, viewer). No `user_id` on projects table.
-10. **Custom ConversationStore:** SDK's `RemembersConversations` trait resolves `ConversationStore` via container. We bind our own implementation that handles `project_id` and `project_agent_id`. SDK migrations modified to add our columns.
-11. **String columns + PHP Enums:** All enum-like values stored as strings in DB. Validation via PHP Enums. No DB enums.
+10. **Custom ConversationStore:** SDK's `RemembersConversations` trait resolves `ConversationStore` via container. We extend `DatabaseConversationStore` adding `project_id` and `project_agent_id`. Bound in `AppServiceProvider::boot()` to override SDK's default.
+11. **String columns + PHP Enums:** All enum-like values stored as strings in DB. Validation via PHP Enums (`AgentType`, `DecisionStatus`, `BusinessRuleStatus`, `TaskStatus`, `TaskPriority`). No DB enums.
 12. **Desktop-first:** No mobile. Complex PM tool with AI chat, agents, kanban, artifacts not suitable for mobile.
-13. **Open Source:** Self-hosted, community-driven.
-14. **Stack:** Laravel 12 + Inertia.js + React 19 + Tailwind v4 + Laravel AI SDK.
+13. **Atomic Actions + Services:** Actions for single responsibilities, Services for orchestrating multiple actions.
+14. **Open Source:** Self-hosted, community-driven.
+15. **Stack:** Laravel 12 + Inertia.js + React 19 + Tailwind v4 + Laravel AI SDK.
 
 ---
 
@@ -31,33 +32,27 @@ These decisions were made during ideation and refined during implementation:
 > Goal: A working project with a single agent (Architect) and one artifact type (Decisions). Prove the core loop works: user talks → agent responds → artifact is created.
 
 ### 1.1 Project Setup ✅
-
 - [x] Initialize Laravel 12 project with Inertia.js + React (via docker-starter-kit)
 - [x] Install and configure Laravel AI SDK (`laravel/ai`)
 - [x] Docker environment with PostgreSQL, Redis, Horizon, Reverb
 - [x] Auth via Fortify with 2FA
 - [x] Pest 4 testing configured
 
-### 1.2 Data Model — Core (IN PROGRESS)
+### 1.2 Data Model — Core ✅
+- [x] Migration + Model: `projects` table (12 tests)
+- [x] Migration + Model: `project_members` table — pivot with roles (12 tests)
+- [x] Migration + Model + Enum: `project_agents` table — `AgentType` enum, `visible()`/`defaults()` scopes (10 tests)
+- [x] Modified SDK migration: added `project_id` to `agent_conversations`, `project_agent_id` to `agent_conversation_messages`
+- [x] Custom `ProjectConversationStore` extending SDK's `DatabaseConversationStore` — `forProject()`, `withAgent()`, `reset()` (6 tests)
+- [x] Bound in `AppServiceProvider::boot()` to override SDK default
 
-- [x] Migration + Model: `projects` table
-- [x] Migration + Model: `project_members` table (pivot with roles)
-- [x] Tests: Project creation, members, ownership, uniqueness (12 tests)
-- [ ] Migration + Model: `project_agents` table
-- [ ] Modify SDK migration: add `project_id` to `agent_conversations`
-- [ ] Modify SDK migration: add `project_agent_id` to `agent_conversation_messages`
-- [ ] Custom `ConversationStore` implementation
-- [ ] Add `projects()` relationship to User model
-
-### 1.3 Data Model — Artifacts
-
-- [ ] Migration + Model: `decisions` table
-- [ ] Migration + Model: `business_rules` table
-- [ ] Migration + Model: `tasks` table (with `parent_task_id`, `sort_order`)
-- [ ] Migration + Model: `implementation_notes` table
+### 1.3 Data Model — Artifacts ✅
+- [x] Migration + Model + Enum: `decisions` table — `DecisionStatus` enum, `active()` scope (17 tests)
+- [x] Migration + Model + Enum: `business_rules` table — `BusinessRuleStatus` enum, `active()` scope (17 tests)
+- [x] Migration + Model + Enums: `tasks` table — `TaskStatus`/`TaskPriority` enums, `withStatus()` scope, subtasks via `parent_task_id` (19 tests)
+- [x] Migration + Model: `implementation_notes` table — `code_snippets` JSON (19 tests)
 
 ### 1.4 Project CRUD
-
 - [ ] `CreateProject` action (with agent seeding from `.md` files + owner member)
 - [ ] Instruction `.md` files in `resources/instructions/`
 - [ ] List projects
@@ -95,7 +90,6 @@ These decisions were made during ideation and refined during implementation:
 - [ ] `TechnicalAgent` — reads all, writes Implementation Notes
 
 ### 2.2 Remaining Artifact Tools
-
 - [ ] Tools for Business Rules: Create, List, Update
 - [ ] Tools for Tasks: Create, List, Update
 - [ ] Tools for Implementation Notes: Create, List
@@ -179,18 +173,30 @@ Ordered by perceived value:
 
 ---
 
-## Implementation Steps (Current)
+## Implementation Steps
 
-Detailed step-by-step execution for the current phase:
+### Data Layer (Complete) ✅
 
-| Step | What                                                                         | Status  |
-|------|------------------------------------------------------------------------------|---------|
-| 1    | `projects` + `project_members` (migrations, models, tests)                   | ✅ Done  |
-| 2    | `project_agents` (migration, model, test)                                    | ⏳ Next  |
-| 3    | Modify SDK migration (`agent_conversations` + `agent_conversation_messages`) | Pending |
-| 4    | Custom `ConversationStore` (implementation + test)                           | Pending |
-| 5    | Artifact tables: `decisions`, `business_rules` (migrations, models, tests)   | Pending |
-| 6    | Artifact tables: `tasks`, `implementation_notes` (migrations, models, tests) | Pending |
+| Step | What | Tests | Status |
+|------|------|-------|--------|
+| 1 | `projects` + `project_members` | 12 | ✅ |
+| 2 | `project_agents` + `AgentType` enum | 10 | ✅ |
+| 3 | Modified SDK migration (agent_conversations + messages) | — | ✅ |
+| 4 | `ProjectConversationStore` | 6 | ✅ |
+| 5 | `decisions` + `business_rules` + enums | 17 | ✅ |
+| 6 | `tasks` + `implementation_notes` + enums | 19 | ✅ |
+
+**Total: 64 tests, all passing.**
+
+### Next: Project CRUD (Step 7+)
+
+| Step | What | Status |
+|------|------|--------|
+| 7 | `CreateProject` action + agent seeding + instruction `.md` files | ⏳ Next |
+| 8 | Project routes + controllers + Inertia pages | Pending |
+| 9 | First Agent: `ArchitectAgent` class | Pending |
+| 10 | First Tools: `CreateDecision`, `ListDecisions` | Pending |
+| 11 | Chat UI + streaming | Pending |
 
 ---
 
@@ -207,8 +213,9 @@ Key architectural patterns:
 - Tools as dedicated PHP classes implementing `Tool` interface
 - Instructions stored in DB, defaults from `resources/instructions/*.md`
 - Per-project agents with editable instructions (single source: database)
-- Custom `ConversationStore` bound via service container
+- `ProjectConversationStore` extends SDK's `DatabaseConversationStore`, bound in `boot()`
 - Invisible Moderator with confidence-based routing
 - Artifacts as structured data in separate tables (not conversation history)
 - String columns in DB + PHP Enums for validation
 - Project membership via `project_members` pivot with roles
+- Atomic Actions + Services for business logic
