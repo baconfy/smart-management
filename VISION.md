@@ -1,10 +1,11 @@
 # Project Vision: AI-Powered Project Manager
 
-> **Status:** Early planning / Ideation
+> **Status:** Phase 1 — In Progress (Step 1 complete)
 > **Type:** Open Source — Serious side project
 > **Target Audience:** Freelancers & Solopreneurs
-> **Stack:** Laravel 12 + Inertia.js + React | Laravel AI SDK
+> **Stack:** Laravel 12 + Inertia.js + React 19 | Laravel AI SDK
 > **AI Providers:** Multi-provider (Anthropic, OpenAI, Gemini, etc.)
+> **Infrastructure:** Docker (baconfy/docker-starter-kit)
 
 ---
 
@@ -50,7 +51,6 @@ Instead of dashboards, kanbans, and forms, the primary interface is a **chat**. 
 The user opens a conversation within a project (like a meeting room) and talks naturally. They don't need to pick an agent — a **Moderator** agent receives the message, classifies it, and delegates to the appropriate specialized agent. The response comes back seamlessly.
 
 Example flow:
-
 ```
 User: "Should the split happen on-chain or off-chain?"
 
@@ -72,7 +72,6 @@ User sees: A coherent answer covering both the business rationale
 The app ships with well-crafted agents that cover the most common needs:
 
 #### 1. Architect
-
 - **Purpose:** Technical decisions, stack choices, patterns, tradeoffs
 - **Reads:** Business Rules, previous Decisions
 - **Writes:** Decisions/ADRs
@@ -80,7 +79,6 @@ The app ships with well-crafted agents that cover the most common needs:
 - **Example:** *"Should I use AdonisJS or NestJS? Monorepo or separate projects?"*
 
 #### 2. Project Manager (PM)
-
 - **Purpose:** Organize execution, create tasks, estimate effort, track progress
 - **Reads:** Decisions, Business Rules, Tasks/Roadmap
 - **Writes:** Tasks/Roadmap, updates status and estimates
@@ -88,7 +86,6 @@ The app ships with well-crafted agents that cover the most common needs:
 - **Example:** *"Create the roadmap for Alfred"*, *"The client added scope, recalculate impact"*
 
 #### 3. Business Analyst
-
 - **Purpose:** Define domain rules, requirements, acceptance criteria
 - **Reads:** Decisions, Business Rules
 - **Writes:** Business Rules, suggests adjustments to Decisions
@@ -96,7 +93,6 @@ The app ships with well-crafted agents that cover the most common needs:
 - **Example:** *"The gateway is non-custodial, what does that mean for refunds?"*
 
 #### 4. Technical (Code Buddy)
-
 - **Purpose:** Lives in the task chat. Helps with implementation, code review, debugging.
 - **Reads:** Decisions, Business Rules, specific Task, Implementation Notes
 - **Writes:** Implementation Notes, updates task status
@@ -107,12 +103,30 @@ The app ships with well-crafted agents that cover the most common needs:
 
 The Moderator is the orchestrator — the "brain" of the meeting room. It is **invisible to the user**: it never appears in the agent list, cannot be edited or deleted, and the user doesn't need to know it exists. It is pure infrastructure.
 
+**Cost optimization:** The Moderator uses a **cheap/fast model** (e.g. Claude Haiku, GPT-4o-mini) since its job is classification, not generation. This keeps routing cost negligible.
+
+**Confidence-based fallback:** The Moderator returns a confidence score with each routing decision. When confidence is high (>= 0.8), it routes directly. When uncertain, it **asks the user** who should respond — presenting the candidate agents as a selection. This eliminates silent misrouting.
+
+```
+High confidence (>= 0.8):
+  User: "Should I use PostgreSQL or MySQL?"
+  Moderator → routes to Architect (confidence: 0.95)
+  User sees: Architect's response directly
+
+Low confidence (< 0.8):
+  User: "We need to handle refunds faster"
+  Moderator → uncertain (Analyst? PM? Architect?)
+  User sees: "This could be answered from different perspectives:"
+             [ Analyst ] [ PM ] [ Architect ]
+```
+
 It is **not** a single agent that role-plays all personas. Instead, it:
 
 1. Receives the user's message
-2. Classifies which agent(s) are relevant
-3. Delegates to the appropriate agent(s)
-4. Returns the response to the user
+2. Classifies which agent(s) are relevant + confidence score
+3. If confident: delegates directly to the chosen agent
+4. If uncertain: asks the user to choose
+5. Returns the response to the user
 
 This means each specialized agent is a **separate agent class** with its own instructions, tools, and context. The Moderator routes, not role-plays.
 
@@ -121,17 +135,34 @@ This means each specialized agent is a **separate agent class** with its own ins
 When a project is created, the system automatically instantiates the pre-defined agents **for that project**. Each project has its own set of agents with their own instructions, which can be customized per project.
 
 This means:
-
 - The Architect of a crypto project can emphasize security and gas optimization
 - The Architect of an e-commerce project can emphasize scalability and UX
 - The PM of a tight-deadline project can be more aggressive about time estimates
 - Each agent's instructions are **editable by the user** per project
 
+**Instruction model:**
+
+- **Default instructions** live in `resources/instructions/*.md` as Markdown files (versioned in git)
+- On project creation, the content of each `.md` is copied into `project_agents.instructions` in the database
+- **Runtime always reads from the database** — single source of truth
+- **"Reset to default" button** re-copies the `.md` content into the database
+- Dynamic context (artifacts, project info) is injected at runtime by the Agent class, concatenated with the stored instructions
+
+```
+resources/instructions/
+├── architect.md
+├── analyst.md
+├── pm.md
+├── technical.md
+└── moderator.md
+```
+
 Benefits:
 
-- Agents are more intelligent with fewer tokens (context is baked into instructions, not loaded every message)
+- Agents are more intelligent with fewer tokens (context is baked into instructions)
 - Users can fine-tune agent behavior for specific project needs
-- Custom agents live naturally alongside pre-defined ones
+- Default instructions are versioned in git and easy to improve
+- Reset always available — users can't permanently break an agent
 
 ### Custom Agents
 
@@ -157,7 +188,6 @@ Each agent reads artifacts for context and writes artifacts as output. Conversat
 ### Artifact Types (separate tables)
 
 #### 1. Decisions (ADRs - Architecture Decision Records)
-
 - **What:** The "why" behind choices
 - **Written by:** Architect (primarily), Business Analyst
 - **Schema:**
@@ -170,7 +200,6 @@ Each agent reads artifacts for context and writes artifacts as output. Conversat
 - **Example:** *"Use AdonisJS 6 because better DX for APIs, native TypeScript, good ORM. Alternatives: NestJS, Fastify, Python/FastAPI"*
 
 #### 2. Business Rules
-
 - **What:** Domain truths that rarely change
 - **Written by:** Business Analyst (primarily), Architect
 - **Schema:**
@@ -181,7 +210,6 @@ Each agent reads artifacts for context and writes artifacts as output. Conversat
 - **Example:** *"Non-custodial gateway: never holds funds. Split is immediate after payment confirmation."*
 
 #### 3. Tasks / Roadmap
-
 - **What:** The "when" and "how much"
 - **Written by:** PM (primarily)
 - **Schema:**
@@ -195,7 +223,6 @@ Each agent reads artifacts for context and writes artifacts as output. Conversat
 - **Example:** *"Implement HD Wallet Derivation — Phase 1, High priority, ~8h estimate"*
 
 #### 4. Implementation Notes
-
 - **What:** The "how it was done"
 - **Written by:** Technical (Code Buddy) from task chats
 - **Schema:**
@@ -233,14 +260,12 @@ Moderator     → All (read-only)             → Delegates to appropriate agent
 ## UX Flow
 
 ### First-time Experience
-
 1. User creates a project (simple form: name, description, optional tags)
 2. Lands on the project page — centered chat interface
 3. Starts talking: *"This is a crypto payment gateway, I need to decide on the stack..."*
 4. Moderator routes to Architect, conversation begins naturally
 
 ### Day-to-day
-
 1. User opens project
 2. Sees: chat area (primary) + side panel with artifacts/tasks (secondary)
 3. Can start a new conversation or continue an existing one
@@ -248,52 +273,85 @@ Moderator     → All (read-only)             → Delegates to appropriate agent
 5. Can browse artifacts (decisions, rules) as reference
 
 ### Task Detail View
-
 - Task metadata: title, status, priority, estimate, phase
 - Implementation Notes (accumulated from past chats)
 - Dedicated chat (Technical agent, scoped to this task)
 - The chat here is **on-demand** — not every task needs a conversation
 
+### Layout Strategy
+
+- Desktop-first (no mobile — complex PM tool with AI chat, agents, kanban, artifacts)
+- Hybrid 2-column / 3-column: some screens benefit from 3 columns (Chat, Task Detail), others need 2 (Kanban, Knowledge, Home)
+- Dark theme, Linear/Notion aesthetic — clean, minimalist
+- Agent color coding: Architect (purple), Analyst (orange), PM (blue), Technical (green)
+
 ---
 
 ## Data Model
+
+### Convention: String columns + PHP Enums
+
+All enum-like values are stored as **strings** in the database (not DB enums). Validation and type safety happen in PHP via Enums. This avoids painful DB migrations when adding new values.
 
 ### Core Tables
 
 ```
 projects
-├── id
-├── name
-├── description
-├── settings (json — default provider, etc.)
+├── id (bigint, autoincrement)
+├── name (string, required)
+├── description (text, nullable)
+├── settings (json, nullable — default provider, etc.)
 ├── timestamps
+
+project_members
+├── id (bigint, autoincrement)
+├── project_id (FK → projects, cascade delete)
+├── user_id (FK → users, cascade delete)
+├── role (string, default 'member' — owner | admin | member | viewer)
+├── timestamps
+├── UNIQUE(project_id, user_id)
 
 project_agents
-├── id
-├── project_id (FK → projects)
-├── type (enum: architect | pm | technical | custom)
-├── name ("Architect", "PM", or custom name)
-├── instructions (text — editable per project)
-├── is_system (bool — true = Moderator, invisible to user)
-├── is_default (bool — true = came pre-defined, can't be deleted)
-├── settings (json — provider preference, temperature, model, etc.)
-├── timestamps
-
-conversations
-├── id
-├── project_id (FK → projects)
-├── title (nullable — auto-generated or user-defined)
-├── status (enum: active | archived)
-├── timestamps
-
-conversation_messages
-├── id
-├── conversation_id (FK → conversations)
-├── project_agent_id (FK → project_agents, nullable for user messages)
-├── role (enum: user | assistant)
-├── content (text)
+├── id (bigint, autoincrement)
+├── project_id (FK → projects, cascade delete)
+├── type (string — moderator | architect | analyst | pm | technical | custom)
+├── name (string — "Architect", "Analyst", "PM", or custom name)
+├── instructions (text — copied from .md on creation, editable by user, resettable)
+├── is_system (bool, default false — true = Moderator, invisible to user)
+├── is_default (bool, default false — true = pre-defined, can't be deleted)
+├── settings (json, nullable — provider preference, temperature, model, etc.)
 ├── timestamps
 ```
+
+### Conversations (SDK tables, extended)
+
+The Laravel AI SDK publishes `agent_conversations` and `agent_conversation_messages` migrations. We modify them to add our fields:
+
+```
+agent_conversations (SDK table, modified)
+├── id (string(36), primary — SDK uses UUID)
+├── user_id (FK)
+├── project_id (FK → projects — ADDED)
+├── title (string)
+├── timestamps
+
+agent_conversation_messages (SDK table, modified)
+├── id (string(36), primary — SDK uses UUID)
+├── conversation_id (string(36), FK)
+├── user_id (FK)
+├── project_agent_id (FK → project_agents, nullable — ADDED)
+├── agent (string — SDK field)
+├── role (string)
+├── content (text)
+├── attachments (text — SDK field)
+├── tool_calls (text — SDK field)
+├── tool_results (text — SDK field)
+├── usage (text — SDK field)
+├── meta (text — SDK field)
+├── timestamps
+```
+
+**Integration strategy:** Custom `ConversationStore` implementation bound in `AppServiceProvider`. The SDK's `RemembersConversations` trait resolves `ConversationStore` via the container (`resolve(ConversationStore::class)`), so our custom store handles the extra fields transparently. The trait's `forUser()`, `continue()`, `messages()` all keep working.
 
 **Key detail:** `project_agent_id` is on the **message**, not the conversation. In a single conversation (meeting room), different agents can respond to different messages — the Moderator delegates to whoever is relevant.
 
@@ -301,42 +359,42 @@ conversation_messages
 
 ```
 decisions
-├── id
+├── id (bigint, autoincrement)
 ├── project_id (FK → projects)
-├── conversation_message_id (FK — which message generated this, nullable)
-├── title, choice, reasoning
+├── conversation_message_id (string(36), FK, nullable — which message generated this)
+├── title, choice, reasoning (text)
 ├── alternatives_considered (json)
 ├── context (text)
-├── status (enum: active | superseded | deprecated)
+├── status (string — active | superseded | deprecated)
 ├── timestamps
 
 business_rules
-├── id
+├── id (bigint, autoincrement)
 ├── project_id (FK → projects)
-├── conversation_message_id (FK, nullable)
-├── title, description
+├── conversation_message_id (string(36), FK, nullable)
+├── title (string), description (text)
 ├── category (string — Payments, Security, etc.)
-├── status (enum: active | deprecated)
+├── status (string — active | deprecated)
 ├── timestamps
 
 tasks
-├── id
+├── id (bigint, autoincrement)
 ├── project_id (FK → projects)
-├── conversation_message_id (FK, nullable)
-├── title, description
-├── phase, milestone (nullable)
-├── status (enum: backlog | in_progress | done | blocked)
-├── priority (enum: high | medium | low)
-├── estimate (nullable — hours or story points)
+├── conversation_message_id (string(36), FK, nullable)
+├── title (string), description (text)
+├── phase (string, nullable), milestone (string, nullable)
+├── status (string — backlog | in_progress | done | blocked)
+├── priority (string — high | medium | low)
+├── estimate (string, nullable — hours or story points)
 ├── sort_order (int)
-├── parent_task_id (FK, nullable — for subtasks)
+├── parent_task_id (FK → tasks, nullable — for subtasks)
 ├── timestamps
 
 implementation_notes
-├── id
+├── id (bigint, autoincrement)
 ├── task_id (FK → tasks)
-├── conversation_message_id (FK, nullable)
-├── title, content (text)
+├── conversation_message_id (string(36), FK, nullable)
+├── title (string), content (text)
 ├── code_snippets (json, nullable)
 ├── timestamps
 ```
@@ -347,7 +405,7 @@ implementation_notes
 
 ### Agents as Classes (Per-Project)
 
-Pre-defined agents use a base class pattern. The instructions come from the database (editable) combined with dynamic artifact context:
+Pre-defined agents use a base class pattern. Instructions come from the database (copied from `.md` on creation) combined with dynamic artifact context:
 
 ```php
 // App\Ai\Agents\ArchitectAgent
@@ -365,9 +423,9 @@ class ArchitectAgent implements Agent, Conversational, HasTools
         $decisions = $this->project->decisions()->active()->get();
         $rules = $this->project->businessRules()->active()->get();
 
-        // Combines user-editable instructions with dynamic context
-        return view('ai.instructions.architect', [
-            'customInstructions' => $this->agentConfig->instructions,
+        // Instructions from DB (editable) + dynamic artifact context
+        return view('ai.prompts.architect', [
+            'instructions' => $this->agentConfig->instructions,
             'project' => $this->project,
             'decisions' => $decisions,
             'rules' => $rules,
@@ -390,6 +448,7 @@ class ArchitectAgent implements Agent, Conversational, HasTools
 
 ```php
 // App\Ai\Agents\ModeratorAgent
+#[UseCheapestModel]
 class ModeratorAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
@@ -398,12 +457,11 @@ class ModeratorAgent implements Agent, HasStructuredOutput
 
     public function instructions(): string
     {
-        // Loads all visible agents for this project
         $agents = $this->project->agents()
             ->where('is_system', false)
             ->get();
 
-        return view('ai.instructions.moderator', [
+        return view('ai.prompts.moderator', [
             'project' => $this->project,
             'agents' => $agents,
         ])->render();
@@ -413,58 +471,80 @@ class ModeratorAgent implements Agent, HasStructuredOutput
     {
         return [
             'target_agent' => $schema->string()->required(),
+            'confidence' => $schema->number()->min(0)->max(1)->required(),
             'reasoning' => $schema->string()->required(),
+            'alternatives' => $schema->array()->items($schema->string()),
         ];
     }
 }
 ```
 
-### Custom Agents (Dynamic, Per-Project)
+### Custom ConversationStore
 
 ```php
-use function Laravel\Ai\{agent};
+// App\Ai\Stores\ProjectConversationStore
+class ProjectConversationStore implements ConversationStore
+{
+    // Implements all 5 methods from the interface:
+    // - latestConversationId(int $userId): ?string
+    // - storeConversation(int $userId, string $title): string
+    // - storeUserMessage(...): string
+    // - storeAssistantMessage(...): string
+    // - getLatestConversationMessages(...): Collection
+    //
+    // Our implementation adds project_id and project_agent_id
+    // when storing conversations and messages.
+}
 
-$agentConfig = ProjectAgent::find($agentId); // From database
-
-$response = agent(
-    instructions: $agentConfig->instructions,
-    tools: $agentConfig->resolveTools($project),
-)->prompt($userMessage);
+// AppServiceProvider:
+$this->app->bind(ConversationStore::class, ProjectConversationStore::class);
 ```
 
 ### Project Creation Flow
-
-When a project is created, the system seeds the default agents:
 
 ```php
 // App\Actions\CreateProject
 class CreateProject
 {
-    public function handle(array $data): Project
+    public function handle(User $owner, array $data): Project
     {
         $project = Project::create($data);
 
+        // Add owner as first member
+        $project->members()->create([
+            'user_id' => $owner->id,
+            'role' => 'owner',
+        ]);
+
+        // Seed agents from .md instruction files
+        $this->seedAgents($project);
+
+        return $project;
+    }
+
+    private function seedAgents(Project $project): void
+    {
         // Invisible system agent
         $project->agents()->create([
             'type' => 'moderator',
             'name' => 'Moderator',
-            'instructions' => '', // Uses system-level instructions
+            'instructions' => file_get_contents(resource_path('instructions/moderator.md')),
             'is_system' => true,
             'is_default' => true,
         ]);
 
         // Visible pre-defined agents
-        collect(['architect', 'pm', 'technical'])->each(
-            fn (string $type) => $project->agents()->create([
+        $agents = ['architect', 'analyst', 'pm', 'technical'];
+
+        foreach ($agents as $type) {
+            $project->agents()->create([
                 'type' => $type,
-                'name' => config("ai.default_agents.{$type}.name"),
-                'instructions' => config("ai.default_agents.{$type}.instructions"),
+                'name' => ucfirst($type),
+                'instructions' => file_get_contents(resource_path("instructions/{$type}.md")),
                 'is_system' => false,
                 'is_default' => true,
-            ])
-        );
-
-        return $project;
+            ]);
+        }
     }
 }
 ```
@@ -513,23 +593,39 @@ class CreateDecision implements Tool
 
 ### In Scope
 
-- Project CRUD with automatic agent seeding (Moderator + Architect + PM + Technical)
-- Meeting room chat with invisible Moderator routing to specialized agents
-- Per-project agents with editable instructions
+- Project CRUD with automatic agent seeding (Moderator + Architect + Analyst + PM + Technical)
+- Meeting room chat with invisible Moderator (cheap model) routing to specialized agents
+- Moderator confidence-based fallback (asks user when uncertain)
+- Per-project agents with editable instructions + "reset to default" button
 - Artifact system: Decisions, Business Rules, Tasks, Implementation Notes
 - Task list/board view (read from artifacts)
 - Task detail view with dedicated technical chat
 - Multi-provider AI support (user provides their own API key)
-- Conversation persistence (RemembersConversations)
+- Conversation persistence (RemembersConversations + custom ConversationStore)
+- Project membership with roles (owner, admin, member, viewer)
 
 ### Out of Scope (Future Phases)
-
 - Time tracking
 - Financial management (invoicing, payments)
 - Custom agent creation (user-defined roles)
-- Business Analyst agent (can be added after MVP)
-- Team/collaboration features
 - Integrations (GitHub, Slack, etc.)
+- Mobile app
+
+---
+
+## Infrastructure (Installed)
+
+Docker starter kit (baconfy/docker-starter-kit) provides:
+
+- Laravel 12 + React 19 + Inertia v2 + Tailwind v4
+- Laravel Fortify (auth with 2FA)
+- Laravel Horizon (queue management — needed for agent processing)
+- Laravel Reverb (WebSockets — needed for streaming responses)
+- Laravel AI SDK (multi-provider AI)
+- Laravel MCP (Model Context Protocol)
+- PostgreSQL 18, Redis, MinIO (S3), Mailpit
+- Pest 4 testing, Pint code style
+- `composer dev` starts everything with hot-reload
 
 ---
 
@@ -540,4 +636,5 @@ class CreateDecision implements Tool
 3. **Context window management:** How much artifact context to load into each agent's instructions? Need a strategy to avoid token limit issues.
 4. **Chat in task vs. conversation in project:** Should the technical chat in a task be accessible from the project conversation list, or completely separate?
 5. **Default instructions versioning:** When the app updates default agent instructions (e.g. better prompts), should existing projects get the update or keep their customized version?
-6. **Project name:** The app needs a name!
+6. **Moderator confidence threshold:** 0.8 is the initial value — needs real-world testing to calibrate.
+7. **Project name:** The app needs a name!

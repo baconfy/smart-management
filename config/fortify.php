@@ -14,7 +14,6 @@ return [
     | guards that is already present in your "auth" configuration file.
     |
     */
-
     'guard' => 'web',
 
     /*
@@ -27,7 +26,6 @@ return [
     | of your password brokers setup in your "auth" configuration file.
     |
     */
-
     'passwords' => 'users',
 
     /*
@@ -44,9 +42,7 @@ return [
     | another name for the field you may define it below as needed.
     |
     */
-
     'username' => 'email',
-
     'email' => 'email',
 
     /*
@@ -59,7 +55,6 @@ return [
     | sensitive. You may disable this for your application if necessary.
     |
     */
-
     'lowercase_usernames' => true,
 
     /*
@@ -72,8 +67,7 @@ return [
     | and the user is authenticated. You are free to change this value.
     |
     */
-
-    'home' => '/dashboard',
+    'home' => '/',
 
     /*
     |--------------------------------------------------------------------------
@@ -82,12 +76,10 @@ return [
     |
     | Here you may specify which prefix Fortify will assign to all the routes
     | that it registers with the application. If necessary, you may change
-    | subdomain under which all of the Fortify routes will be available.
+    | subdomain under which all the Fortify routes will be available.
     |
     */
-
     'prefix' => '',
-
     'domain' => null,
 
     /*
@@ -97,10 +89,9 @@ return [
     |
     | Here you may specify which middleware Fortify will assign to the routes
     | that it registers with the application. If necessary, you may change
-    | these middleware but typically this provided default is preferred.
+    | this middleware but typically this provided default is preferred.
     |
     */
-
     'middleware' => ['web'],
 
     /*
@@ -113,7 +104,6 @@ return [
     | specify a custom rate limiter to call then you may specify it here.
     |
     */
-
     'limiters' => [
         'login' => 'login',
         'two-factor' => 'two-factor',
@@ -129,7 +119,6 @@ return [
     | especially true if you're writing a custom single-page application.
     |
     */
-
     'views' => true,
 
     /*

@@ -13,10 +13,7 @@ test('login screen can be rendered', function () {
 test('users can authenticate using the login screen', function () {
     $user = User::factory()->create();
 
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
+    $response = $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
@@ -27,10 +24,7 @@ test('users with two factor enabled are redirected to two factor challenge', fun
         $this->markTestSkipped('Two-factor authentication is not enabled.');
     }
 
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
-    ]);
+    Features::twoFactorAuthentication(['confirm' => true, 'confirmPassword' => true]);
 
     $user = User::factory()->create();
 
@@ -40,10 +34,7 @@ test('users with two factor enabled are redirected to two factor challenge', fun
         'two_factor_confirmed_at' => now(),
     ])->save();
 
-    $response = $this->post(route('login'), [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
+    $response = $this->post(route('login'), ['email' => $user->email, 'password' => 'password']);
 
     $response->assertRedirect(route('two-factor.login'));
     $response->assertSessionHas('login.id', $user->id);
@@ -67,7 +58,7 @@ test('users can logout', function () {
     $response = $this->actingAs($user)->post(route('logout'));
 
     $this->assertGuest();
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('dashboard', absolute: false));
 });
 
 test('users are rate limited', function () {
