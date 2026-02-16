@@ -67,7 +67,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
     }
 
     /**
-     * Store a new conversation with project context.
+     * Store a new conversation with the project context.
      */
     public function storeConversation(string|int|null $userId, string $title): string
     {
