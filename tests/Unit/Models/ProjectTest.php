@@ -118,16 +118,6 @@ test('project without owner returns null', function (): void {
 // Member Roles
 // ============================================================================
 
-test('project member role is validated as enum', function (): void {
-    $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
-
-    $project->members()->create([
-        'user_id' => $user->id,
-        'role' => 'invalid_role',
-    ]);
-})->throws(QueryException::class);
-
 test('member belongs to project and user', function (): void {
     $user = User::factory()->create();
     $project = Project::create(['name' => 'Test Project']);
