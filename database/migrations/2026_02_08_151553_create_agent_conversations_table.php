@@ -14,16 +14,19 @@ return new class extends AiMigration
         Schema::create('agent_conversations', function (Blueprint $table) {
             $table->string('id', 36)->primary();
             $table->foreignId('user_id');
+            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->timestamps();
 
             $table->index(['user_id', 'updated_at']);
+            $table->index(['project_id']);
         });
 
         Schema::create('agent_conversation_messages', function (Blueprint $table) {
             $table->string('id', 36)->primary();
             $table->string('conversation_id', 36)->index();
             $table->foreignId('user_id');
+            $table->foreignId('project_agent_id')->nullable()->constrained()->nullOnDelete();
             $table->string('agent');
             $table->string('role', 25);
             $table->text('content');
