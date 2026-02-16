@@ -38,7 +38,7 @@ class Project extends Model
      */
     protected function owner(): Attribute
     {
-        return Attribute::get(fn(): ?User => $this->members()->where('role', 'owner')->first()?->user);
+        return Attribute::get(fn (): ?User => $this->members()->where('role', 'owner')->first()?->user);
     }
 
     /**
@@ -47,5 +47,13 @@ class Project extends Model
     public function members(): HasMany
     {
         return $this->hasMany(ProjectMember::class);
+    }
+
+    /**
+     * Defines a has-many relationship with the ProjectAgent model.
+     */
+    public function agents(): HasMany
+    {
+        return $this->hasMany(ProjectAgent::class);
     }
 }

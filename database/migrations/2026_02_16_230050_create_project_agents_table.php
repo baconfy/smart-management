@@ -11,10 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('projects', function (Blueprint $table) {
+        Schema::create('project_agents', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->string('type');
             $table->string('name');
-            $table->text('description')->nullable();
+            $table->text('instructions');
+            $table->boolean('is_system')->default(false);
+            $table->boolean('is_default')->default(false);
             $table->json('settings')->nullable();
             $table->timestamps();
         });
