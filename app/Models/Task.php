@@ -17,14 +17,6 @@ class Task extends Model
     use HasUlids;
 
     /**
-     * Get the columns that should receive a unique identifier.
-     */
-    public function uniqueIds(): array
-    {
-        return ['ulid'];
-    }
-
-    /**
      * Define the castable attributes for the model.
      */
     protected function casts(): array
@@ -74,5 +66,21 @@ class Task extends Model
     public function scopeWithStatus(Builder $query, TaskStatus $status): Builder
     {
         return $query->where('status', $status);
+    }
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     */
+    public function uniqueIds(): array
+    {
+        return ['ulid'];
+    }
+
+    /**
+     * Get the route key name for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'ulid';
     }
 }

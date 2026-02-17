@@ -54,11 +54,14 @@ These decisions were made during ideation and refined during implementation:
 - [x] Migration + Model + Enums: `tasks` table — `TaskStatus`/`TaskPriority` enums, `withStatus()` scope, subtasks via `parent_task_id` (19 tests)
 - [x] Migration + Model: `implementation_notes` table — `code_snippets` JSON (19 tests)
 
-### 1.4 Project CRUD
+### 1.4 Project CRUD ✅
 - [x] `CreateProjectService` + atomic actions (`CreateProject`, `AddProjectMember`, `SeedProjectAgents`)
 - [x] Instruction `.md` files in `resources/instructions/`
-- [ ] List projects
-- [ ] Project detail page (basic layout with chat area)
+- [x] List projects (`GET /projects` with membership scoping)
+- [x] Project detail page (`GET /projects/{ulid}` with `ProjectPolicy` authorization)
+- [x] `StoreProjectRequest` form validation
+- [x] ULID route model binding (`getRouteKeyName`)
+- [x] Placeholder Inertia pages (`projects/index`, `projects/show`)
 
 ### 1.5 First Agent: Architect
 - [ ] `ArchitectAgent` class implementing `Agent, Conversational, HasTools`
@@ -189,14 +192,14 @@ Ordered by perceived value:
 | 6 | `tasks` + `implementation_notes` + enums | 19 | ✅ |
 | 7 | `CreateProjectService` + atomic actions + instruction `.md` files | 9 | ✅ |
 
-**Total: 73 project tests, all passing.**
+**Total: 86 project tests, all passing.**
 
-### Next: Project CRUD + First Agent (Step 8+)
+### Next: First Agent (Step 9+)
 
 | Step | What | Status |
 |------|------|--------|
-| 8 | Project routes + controllers + Inertia pages | ⏳ Next |
-| 9 | First Agent: `ArchitectAgent` class | Pending |
+| 8 | Project routes + controller + policy + form request + Inertia pages | ✅ |
+| 9 | First Agent: `ArchitectAgent` class | ⏳ Next |
 | 10 | First Tools: `CreateDecision`, `ListDecisions` | Pending |
 | 11 | Chat UI + streaming | Pending |
 

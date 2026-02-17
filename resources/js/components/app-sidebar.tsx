@@ -5,7 +5,6 @@ import * as React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { edit } from '@/routes/profile';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { user } = usePage().props.auth;
@@ -34,17 +33,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg">
-                            <Link href={edit()} className="flex items-center gap-2">
-                                <Avatar className="size-10">
-                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback className="rounded-lg font-black">CN</AvatarFallback>
-                                </Avatar>
+                            <Avatar className="size-10">
+                                <AvatarImage src={user.avatar} alt={user.name} />
+                                <AvatarFallback className="rounded-lg font-black">CN</AvatarFallback>
+                            </Avatar>
 
-                                <div className="grid flex-1 text-left text-sm leading-none">
-                                    <span className="truncate font-bold">{user.name}</span>
-                                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-                                </div>
-                            </Link>
+                            <div className="grid flex-1 text-left text-sm leading-none">
+                                <span className="truncate font-bold">{user.name}</span>
+                                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                            </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

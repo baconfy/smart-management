@@ -15,22 +15,6 @@ class Project extends Model
     use HasUlids;
 
     /**
-     * Get the columns that should receive a unique identifier.
-     */
-    public function uniqueIds(): array
-    {
-        return ['ulid'];
-    }
-
-    /**
-     * Establishes a has-many-through relationship to the User model via the ProjectMember model.
-     */
-    public function users(): HasManyThrough
-    {
-        return $this->hasManyThrough(User::class, ProjectMember::class, 'project_id', 'id', 'id', 'user_id');
-    }
-
-    /**
      * Define the attributes that should be cast to native types.
      *
      * @return array<string, string>
@@ -90,5 +74,29 @@ class Project extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     */
+    public function uniqueIds(): array
+    {
+        return ['ulid'];
+    }
+
+    /**
+     * Establishes a has-many-through relationship to the User model via the ProjectMember model.
+     */
+    public function users(): HasManyThrough
+    {
+        return $this->hasManyThrough(User::class, ProjectMember::class, 'project_id', 'id', 'id', 'user_id');
+    }
+
+    /**
+     * Specifies the model's route key name for implicit route model binding.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'ulid';
     }
 }
