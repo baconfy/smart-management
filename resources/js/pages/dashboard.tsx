@@ -1,6 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Link } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { index } from '@/routes/projects';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: dashboard().url }];
 
@@ -8,7 +11,11 @@ export default function Dashboard() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                <div className="aspect-video rounded-xl bg-muted" />
+                <div className="flex aspect-video items-center justify-center rounded-xl bg-muted">
+                    <Button render={<Link href={index()} />}>
+                        Projects
+                    </Button>
+                </div>
                 <div className="aspect-video rounded-xl bg-muted" />
                 <div className="aspect-video rounded-xl bg-muted" />
             </div>

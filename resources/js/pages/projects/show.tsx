@@ -1,10 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
+import { dashboard } from '@/routes';
 import { index, show } from '@/routes/projects';
 import type { BreadcrumbItem } from '@/types';
 import type { Project } from '@/types/models';
 
 export default function ProjectShow({ project }: { project: Project }) {
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Dashboard', href: dashboard().url },
         { title: 'Projects', href: index().url },
         { title: project.name, href: show(project.ulid).url },
     ];
