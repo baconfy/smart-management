@@ -21,9 +21,11 @@ These decisions were made during ideation and refined during implementation:
 10. **Custom ConversationStore:** SDK's `RemembersConversations` trait resolves `ConversationStore` via container. We extend `DatabaseConversationStore` adding `project_id` and `project_agent_id`. Bound in `AppServiceProvider::boot()` to override SDK's default.
 11. **String columns + PHP Enums:** All enum-like values stored as strings in DB. Validation via PHP Enums (`AgentType`, `DecisionStatus`, `BusinessRuleStatus`, `TaskStatus`, `TaskPriority`). No DB enums.
 12. **Desktop-first:** No mobile. Complex PM tool with AI chat, agents, kanban, artifacts not suitable for mobile.
-13. **Atomic Actions + Services:** Actions for single responsibilities, Services for orchestrating multiple actions.
+13. **Atomic invokable Actions + Services:** Actions are single-responsibility invokable classes (`__invoke`). Services orchestrate multiple actions in a transaction.
 14. **Open Source:** Self-hosted, community-driven.
 15. **Stack:** Laravel 12 + Inertia.js + React 19 + Tailwind v4 + Laravel AI SDK.
+16. **Wayfinder:** Frontend route helpers auto-generated from Laravel routes. No Ziggy, no manual route files. Import from `@/routes`.
+17. **Essentials:** `nunomaduro/essentials` with `Unguard` (no `$fillable`), `ShouldBeStrict` (no lazy loading), `ImmutableDates`, `PreventStrayRequests` in tests.
 
 ---
 
@@ -53,8 +55,8 @@ These decisions were made during ideation and refined during implementation:
 - [x] Migration + Model: `implementation_notes` table — `code_snippets` JSON (19 tests)
 
 ### 1.4 Project CRUD
-- [ ] `CreateProject` action (with agent seeding from `.md` files + owner member)
-- [ ] Instruction `.md` files in `resources/instructions/`
+- [x] `CreateProjectService` + atomic actions (`CreateProject`, `AddProjectMember`, `SeedProjectAgents`)
+- [x] Instruction `.md` files in `resources/instructions/`
 - [ ] List projects
 - [ ] Project detail page (basic layout with chat area)
 
@@ -185,18 +187,23 @@ Ordered by perceived value:
 | 4 | `ProjectConversationStore` | 6 | ✅ |
 | 5 | `decisions` + `business_rules` + enums | 17 | ✅ |
 | 6 | `tasks` + `implementation_notes` + enums | 19 | ✅ |
+| 7 | `CreateProjectService` + atomic actions + instruction `.md` files | 9 | ✅ |
 
-**Total: 64 tests, all passing.**
+**Total: 73 project tests, all passing.**
 
-### Next: Project CRUD (Step 7+)
+### Next: Project CRUD + First Agent (Step 8+)
 
 | Step | What | Status |
 |------|------|--------|
-| 7 | `CreateProject` action + agent seeding + instruction `.md` files | ⏳ Next |
-| 8 | Project routes + controllers + Inertia pages | Pending |
+| 8 | Project routes + controllers + Inertia pages | ⏳ Next |
 | 9 | First Agent: `ArchitectAgent` class | Pending |
 | 10 | First Tools: `CreateDecision`, `ListDecisions` | Pending |
 | 11 | Chat UI + streaming | Pending |
+
+### Test Organization
+
+- `tests/Unit/` — Models, Actions, Services, Stores (no HTTP)
+- `tests/Feature/` — HTTP tests (controllers, routes, middleware)
 
 ---
 
@@ -218,4 +225,7 @@ Key architectural patterns:
 - Artifacts as structured data in separate tables (not conversation history)
 - String columns in DB + PHP Enums for validation
 - Project membership via `project_members` pivot with roles
-- Atomic Actions + Services for business logic
+- Atomic invokable Actions + Services for orchestration
+- `nunomaduro/essentials` with `Unguard` enabled (no `$fillable` needed)
+- **Wayfinder** (`@laravel/vite-plugin-wayfinder`) generates typed frontend route helpers from Laravel routes — no Ziggy, no manual route files
+- `ShouldBeStrict` enabled (no lazy loading, no silently discarding attributes)

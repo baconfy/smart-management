@@ -13,7 +13,6 @@ metadata:
 **CRITICAL**: Always use `search-docs` BEFORE writing MCP code. The documentation is version-specific, comprehensive, and always up-to-date.
 
 <!-- Search MCP Documentation -->
-
 ```bash
 
 # Example searches
@@ -26,7 +25,6 @@ search-docs(['mcp tools', 'mcp resources', 'mcp validation'])
 ### Artisan Commands
 
 <!-- Create MCP Primitives -->
-
 ```bash
 {{ $assist->artisanCommand('make:mcp-tool ToolName') }}
 {{ $assist->artisanCommand('make:mcp-resource ResourceName') }}
@@ -37,7 +35,6 @@ search-docs(['mcp tools', 'mcp resources', 'mcp validation'])
 ### Basic Tool Implementation
 
 <!-- Tool Example -->
-
 ```php
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -65,7 +62,6 @@ class MyTool extends Tool
 ### Basic Resource Implementation
 
 <!-- Resource Example -->
-
 ```php
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Resource;
@@ -86,7 +82,6 @@ class MyResource extends Resource
 ### Response Methods
 
 <!-- Available Responses -->
-
 ```php
 Response::text('Text content');
 Response::error('Error message');
@@ -98,7 +93,6 @@ Response::structured(['key' => 'value']);
 Test tools, resources, and prompts directly on their server:
 
 <!-- Test MCP Primitives -->
-
 ```php
 // Test a tool
 $response = MyServer::tool(MyTool::class, ['param' => 'value']);
@@ -121,7 +115,6 @@ $response->assertSentNotification('event/type', ['data' => 'value']);
 Test interactively using the inspector:
 
 <!-- Launch MCP Inspector -->
-
 ```bash
 {{ $assist->artisanCommand('mcp:inspector mcp/my-server') }}  # Web server
 
@@ -143,7 +136,6 @@ The following features exist—**use `search-docs` for implementation details**:
 ## Critical Imports
 
 <!-- Correct Imports -->
-
 ```php
 use Laravel\Mcp\Request;           // NOT Laravel\Mcp\Server\Request
 use Laravel\Mcp\Response;          // NOT Laravel\Mcp\Server\Response
