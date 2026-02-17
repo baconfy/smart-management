@@ -7,12 +7,23 @@ namespace App\Models;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
+    use HasUlids;
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     */
+    public function uniqueIds(): array
+    {
+        return ['ulid'];
+    }
+
     /**
      * Define the castable attributes for the model.
      */
