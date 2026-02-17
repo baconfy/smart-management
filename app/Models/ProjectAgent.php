@@ -18,7 +18,6 @@ class ProjectAgent extends Model
     {
         return [
             'type' => AgentType::class,
-            'is_system' => 'boolean',
             'is_default' => 'boolean',
             'settings' => 'array',
         ];
@@ -30,14 +29,6 @@ class ProjectAgent extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
-    }
-
-    /**
-     * Exclude system agents (Moderator).
-     */
-    public function scopeVisible(Builder $query): Builder
-    {
-        return $query->where('is_system', false);
     }
 
     /**

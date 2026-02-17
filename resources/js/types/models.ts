@@ -1,7 +1,38 @@
+export type AgentType = 'architect' | 'developer' | 'reviewer' | 'designer' | 'manager';
+
 export type Project = {
     id: number;
     ulid: string;
     name: string;
+    color: string;
     description: string | null;
+    created_at: string;
+};
+
+export type ProjectAgent = {
+    id: number;
+    project_id: number;
+    name: string;
+    type: AgentType;
+    provider: string;
+    model: string;
+    is_active: boolean;
+};
+
+export type Conversation = {
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string;
+};
+
+export type ConversationMessage = {
+    id: string;
+    conversation_id: string;
+    user_id: number | null;
+    project_agent_id: number | null;
+    agent: string;
+    role: 'user' | 'assistant';
+    content: string;
     created_at: string;
 };

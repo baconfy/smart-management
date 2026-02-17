@@ -11,7 +11,6 @@ class SeedProjectAgents
 {
     /** @var list<array{type: AgentType, name: string, is_system: bool}> */
     private const array DEFAULTS = [
-        ['type' => AgentType::Moderator, 'name' => 'Moderator', 'is_system' => true],
         ['type' => AgentType::Architect, 'name' => 'Architect', 'is_system' => false],
         ['type' => AgentType::Analyst, 'name' => 'Analyst', 'is_system' => false],
         ['type' => AgentType::Pm, 'name' => 'PM', 'is_system' => false],
@@ -28,7 +27,6 @@ class SeedProjectAgents
                 'type' => $config['type']->value,
                 'name' => $config['name'],
                 'instructions' => $this->loadInstructions($config['type']),
-                'is_system' => $config['is_system'],
                 'is_default' => true,
             ]);
         }

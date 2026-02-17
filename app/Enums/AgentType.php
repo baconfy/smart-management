@@ -6,7 +6,6 @@ namespace App\Enums;
 
 enum AgentType: string
 {
-    case Moderator = 'moderator';
     case Architect = 'architect';
     case Analyst = 'analyst';
     case Pm = 'pm';

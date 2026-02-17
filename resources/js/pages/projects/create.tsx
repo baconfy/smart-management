@@ -30,6 +30,11 @@ export default function ProjectCreate() {
                                     {errors.name && <FieldError>{errors.name}</FieldError>}
                                 </Field>
                                 <Field>
+                                    <Label htmlFor="color">Color</Label>
+                                    <Input id="color" type="color" name="color" placeholder="Type the project color here" autoComplete="current-color" />
+                                    {errors.color && <FieldError>{errors.color}</FieldError>}
+                                </Field>
+                                <Field>
                                     <Label htmlFor="description">Description</Label>
                                     <Textarea id="description" name="description" placeholder="Type the project description here" autoComplete="current-description" />
                                     {errors.description && <FieldError>{errors.description}</FieldError>}

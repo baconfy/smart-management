@@ -69,7 +69,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function storeConversation(string|int|null $userId, string $title): string
     {
-        $conversationId = (string) Str::uuid7();
+        $conversationId = (string) Str::ulid();
 
         DB::table('agent_conversations')->insert([
             'id' => $conversationId,
@@ -88,7 +88,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function storeUserMessage(string $conversationId, string|int|null $userId, AgentPrompt $prompt): string
     {
-        $messageId = (string) Str::uuid7();
+        $messageId = (string) Str::ulid();
 
         DB::table('agent_conversation_messages')->insert([
             'id' => $messageId,
@@ -115,7 +115,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function storeAssistantMessage(string $conversationId, string|int|null $userId, AgentPrompt $prompt, AgentResponse $response): string
     {
-        $messageId = (string) Str::uuid7();
+        $messageId = (string) Str::ulid();
 
         DB::table('agent_conversation_messages')->insert([
             'id' => $messageId,
@@ -142,7 +142,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function storeRawUserMessage(string $conversationId, string|int $userId, string $content): string
     {
-        $messageId = (string) Str::uuid7();
+        $messageId = (string) Str::ulid();
 
         DB::table('agent_conversation_messages')->insert([
             'id' => $messageId,
@@ -169,7 +169,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function storeRawAssistantMessage(string $conversationId, string|int $userId, int $projectAgentId, string $agentClass, string $content): string
     {
-        $messageId = (string) Str::uuid7();
+        $messageId = (string) Str::ulid();
 
         DB::table('agent_conversation_messages')->insert([
             'id' => $messageId,

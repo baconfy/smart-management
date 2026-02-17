@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'projects' => fn () => $request->user() ? $request->user()->projects()->latest('projects.created_at')->get() : [],
             'auth' => [
                 'user' => $request->user(),
             ],

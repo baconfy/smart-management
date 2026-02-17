@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('type');
             $table->string('name');
             $table->text('instructions');
-            $table->boolean('is_system')->default(false);
             $table->boolean('is_default')->default(false);
             $table->json('settings')->nullable();
             $table->timestamps();

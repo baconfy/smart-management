@@ -85,7 +85,7 @@ test('store seeds default agents', function (): void {
 
     $project = Project::first();
 
-    expect($project->agents)->toHaveCount(5);
+    expect($project->agents)->toHaveCount(4);
 });
 
 test('store requires a name', function (): void {

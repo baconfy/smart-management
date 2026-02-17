@@ -16,6 +16,7 @@ return new class extends Migration
             $table->ulid();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->string('color')->nullable();
             $table->json('settings')->nullable();
             $table->timestamps();
         });

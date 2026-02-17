@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\AgentType;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\CreateProjectService;
@@ -14,10 +13,7 @@ use App\Services\CreateProjectService;
 test('creates a project with name and description', function (): void {
     $user = User::factory()->create();
 
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Arkham District',
-        'description' => 'Cryptocurrency payment gateway',
-    ]);
+    $project = app(CreateProjectService::class)($user, ['name' => 'Arkham District', 'description' => 'Cryptocurrency payment gateway']);
 
     expect($project)
         ->toBeInstanceOf(Project::class)
@@ -28,9 +24,7 @@ test('creates a project with name and description', function (): void {
 test('creates a project with minimal data', function (): void {
     $user = User::factory()->create();
 
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Minimal Project',
-    ]);
+    $project = app(CreateProjectService::class)($user, ['name' => 'Minimal Project']);
 
     expect($project)
         ->name->toBe('Minimal Project')
@@ -44,9 +38,7 @@ test('creates a project with minimal data', function (): void {
 test('adds the creator as owner member', function (): void {
     $user = User::factory()->create();
 
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Test Project',
-    ]);
+    $project = app(CreateProjectService::class)($user, ['name' => 'Test Project']);
 
     expect($project->members)->toHaveCount(1);
 
@@ -62,44 +54,11 @@ test('adds the creator as owner member', function (): void {
 test('seeds all default agents on creation', function (): void {
     $user = User::factory()->create();
 
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Test Project',
-    ]);
+    $project = app(CreateProjectService::class)($user, ['name' => 'Test Project']);
 
-    expect($project->agents)->toHaveCount(5);
+    expect($project->agents)->toHaveCount(4);
 
     $types = $project->agents->pluck('type')->map->value->all();
-
-    expect($types)->toEqualCanonicalizing(['moderator', 'architect', 'analyst', 'pm', 'technical']);
-});
-
-test('moderator is system and default agent', function (): void {
-    $user = User::factory()->create();
-
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Test Project',
-    ]);
-
-    $moderator = $project->agents->firstWhere('type', AgentType::Moderator);
-
-    expect($moderator)
-        ->is_system->toBeTrue()
-        ->is_default->toBeTrue()
-        ->name->toBe('Moderator');
-});
-
-test('visible agents are architect, analyst, pm, and technical', function (): void {
-    $user = User::factory()->create();
-
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Test Project',
-    ]);
-
-    $visible = $project->agents()->visible()->get();
-
-    expect($visible)->toHaveCount(4);
-
-    $types = $visible->pluck('type')->map->value->all();
 
     expect($types)->toEqualCanonicalizing(['architect', 'analyst', 'pm', 'technical']);
 });
@@ -107,9 +66,7 @@ test('visible agents are architect, analyst, pm, and technical', function (): vo
 test('all default agents are marked as is_default', function (): void {
     $user = User::factory()->create();
 
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Test Project',
-    ]);
+    $project = app(CreateProjectService::class)($user, ['name' => 'Test Project']);
 
     expect($project->agents->every(fn ($a) => $a->is_default))->toBeTrue();
 });
@@ -121,9 +78,7 @@ test('all default agents are marked as is_default', function (): void {
 test('agents have instructions loaded from md files', function (): void {
     $user = User::factory()->create();
 
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Test Project',
-    ]);
+    $project = app(CreateProjectService::class)($user, ['name' => 'Test Project']);
 
     $project->agents->each(function ($agent) {
         expect($agent->instructions)
@@ -135,11 +90,9 @@ test('agents have instructions loaded from md files', function (): void {
 test('each agent type has distinct instructions', function (): void {
     $user = User::factory()->create();
 
-    $project = app(CreateProjectService::class)($user, [
-        'name' => 'Test Project',
-    ]);
+    $project = app(CreateProjectService::class)($user, ['name' => 'Test Project']);
 
     $instructions = $project->agents->pluck('instructions')->unique();
 
-    expect($instructions)->toHaveCount(5);
+    expect($instructions)->toHaveCount(4);
 });

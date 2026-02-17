@@ -6,9 +6,9 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import type { AppLayoutProps } from '@/types';
 
-export default ({ children, breadcrumbs }: AppLayoutProps) => (
+export default ({ children, breadcrumbs, sidebar }: AppLayoutProps) => (
     <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar panel={sidebar} />
         <SidebarInset>
             <header className="flex h-16 shrink-0 items-center gap-2">
                 <div className="flex items-center px-4">

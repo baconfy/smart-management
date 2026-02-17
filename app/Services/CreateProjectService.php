@@ -10,11 +10,28 @@ use App\Actions\Projects\SeedProjectAgents;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
-class CreateProjectService
+readonly class CreateProjectService
 {
+    /**
+     * Handles the initialization of dependencies required for project creation, member addition, and agent seeding.
+     */
     public function __construct(private CreateProject $createProject, private AddProjectMember $addProjectMember, private SeedProjectAgents $seedProjectAgents) {}
 
+    /**
+     * Handles the invocation of the class, creating a project, and associating the provided user as the owner.
+     *
+     * This method performs the operation within a database transaction to ensure
+     * consistency. It creates a new project, assigns the specified user as the project
+     * owner, and seeds the project with default agents.
+     *
+     * @param  User  $owner  The user to be assigned as the owner of the project.
+     * @param  array  $data  The data to be used for creating the project.
+     * @return Project The newly created project instance.
+     *
+     * @throws Throwable
+     */
     public function __invoke(User $owner, array $data): Project
     {
         return DB::transaction(function () use ($owner, $data) {

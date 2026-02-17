@@ -7,7 +7,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProjectRequest;
 use App\Models\Project;
 use App\Services\CreateProjectService;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,8 +14,6 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    use AuthorizesRequests;
-
     /**
      * Display a listing of the user's projects.
      */

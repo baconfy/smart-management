@@ -11,15 +11,12 @@ use App\Enums\AgentType;
 use App\Http\Requests\StoreChatMessageRequest;
 use App\Models\Project;
 use App\Models\ProjectAgent;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use Laravel\Ai\Contracts\Agent;
 
 class ChatController extends Controller
 {
-    use AuthorizesRequests;
-
     /**
      * Send a message to one or more agents.
      *
