@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
@@ -17,16 +17,12 @@ function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   )
 }
 
-function FieldLegend({
-  className,
-  variant = "legend",
-  ...props
-}: React.ComponentProps<"legend"> & { variant?: "legend" | "label" }) {
+function FieldLegend({ className, variant = "legend", ...props }: React.ComponentProps<"legend"> & { variant?: "legend" | "label" }) {
   return (
     <legend
       data-slot="field-legend"
       data-variant={variant}
-      className={cn("mb-3 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base", className)}
+      className={cn("mb-2 font-bold data-[variant=label]:text-sm data-[variant=legend]:text-lg data-[variant=legend]:tracking-tight", className)}
       {...props}
     />
   )
@@ -37,7 +33,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="field-group"
       className={cn(
-        "gap-7 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4 group/field-group @container/field-group flex w-full flex-col",
+        "gap-6 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4 group/field-group @container/field-group flex w-full flex-col",
         className
       )}
       {...props}
@@ -135,26 +131,12 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
-function FieldSeparator({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<"div"> & {
-  children?: React.ReactNode
-}) {
+function FieldSeparator({ children, className, ...props }: React.ComponentProps<"div"> & { children?: React.ReactNode }) {
   return (
-    <div
-      data-slot="field-separator"
-      data-content={!!children}
-      className={cn("-my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2 relative", className)}
-      {...props}
-    >
+    <div data-slot="field-separator" data-content={!!children} className={cn("my-0.5 h-0.5 text-sm group-data-[variant=outline]/field-group:-mb-2 relative", className)} {...props}>
       <Separator className="absolute inset-0 top-1/2" />
       {children && (
-        <span
-          className="text-muted-foreground px-2 bg-background relative mx-auto block w-fit"
-          data-slot="field-separator-content"
-        >
+        <span className="text-muted-foreground px-2 bg-background relative mx-auto block w-fit" data-slot="field-separator-content">
           {children}
         </span>
       )}
