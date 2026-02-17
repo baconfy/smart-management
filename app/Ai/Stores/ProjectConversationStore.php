@@ -55,9 +55,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function latestConversationId(string|int $userId): ?string
     {
-        $query = DB::table('agent_conversations')
-            ->where('user_id', $userId)
-            ->orderBy('updated_at', 'desc');
+        $query = DB::table('agent_conversations')->where('user_id', $userId)->orderBy('updated_at', 'desc');
 
         if ($this->projectId !== null) {
             $query->where('project_id', $this->projectId);
@@ -86,7 +84,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
     }
 
     /**
-     * Store a user message (no agent context).
+     * Store a user message (SDK-compatible, requires AgentPrompt).
      */
     public function storeUserMessage(string $conversationId, string|int|null $userId, AgentPrompt $prompt): string
     {
@@ -113,7 +111,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
     }
 
     /**
-     * Store an assistant message with agent context.
+     * Store an assistant message (SDK-compatible, requires AgentResponse).
      */
     public function storeAssistantMessage(string $conversationId, string|int|null $userId, AgentPrompt $prompt, AgentResponse $response): string
     {
@@ -132,6 +130,60 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
             'tool_results' => json_encode($response->toolResults),
             'usage' => json_encode($response->usage),
             'meta' => json_encode($response->meta),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $messageId;
+    }
+
+    /**
+     * Store a user message without needing an AgentPrompt.
+     */
+    public function storeRawUserMessage(string $conversationId, string|int $userId, string $content): string
+    {
+        $messageId = (string) Str::uuid7();
+
+        DB::table('agent_conversation_messages')->insert([
+            'id' => $messageId,
+            'conversation_id' => $conversationId,
+            'user_id' => $userId,
+            'project_agent_id' => null,
+            'agent' => '',
+            'role' => 'user',
+            'content' => $content,
+            'attachments' => '[]',
+            'tool_calls' => '[]',
+            'tool_results' => '[]',
+            'usage' => '[]',
+            'meta' => '[]',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $messageId;
+    }
+
+    /**
+     * Store an assistant message without needing an AgentResponse.
+     */
+    public function storeRawAssistantMessage(string $conversationId, string|int $userId, int $projectAgentId, string $agentClass, string $content): string
+    {
+        $messageId = (string) Str::uuid7();
+
+        DB::table('agent_conversation_messages')->insert([
+            'id' => $messageId,
+            'conversation_id' => $conversationId,
+            'user_id' => $userId,
+            'project_agent_id' => $projectAgentId,
+            'agent' => $agentClass,
+            'role' => 'assistant',
+            'content' => $content,
+            'attachments' => '[]',
+            'tool_calls' => '[]',
+            'tool_results' => '[]',
+            'usage' => '[]',
+            'meta' => '[]',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

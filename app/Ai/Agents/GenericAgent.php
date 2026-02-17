@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Ai\Agents;
 
-use App\Ai\Tools\CreateDecision;
-use App\Ai\Tools\ListDecisions;
 use App\Concerns\ReadsConversationHistory;
 use App\Models\Project;
 use App\Models\ProjectAgent;
@@ -17,13 +15,10 @@ use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 use Stringable;
 
-class ArchitectAgent implements Agent, Conversational, HasTools
+class GenericAgent implements Agent, Conversational, HasTools
 {
     use Promptable, ReadsConversationHistory, RemembersConversations;
 
-    /**
-     * Initialize the constructor with the provided ProjectAgent instance.
-     */
     public function __construct(public readonly ProjectAgent $projectAgent) {}
 
     /**
@@ -49,12 +44,7 @@ class ArchitectAgent implements Agent, Conversational, HasTools
      */
     public function tools(): iterable
     {
-        $project = $this->project();
-
-        return [
-            new CreateDecision($project),
-            new ListDecisions($project),
-        ];
+        return [];
     }
 
     /**
