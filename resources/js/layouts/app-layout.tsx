@@ -33,7 +33,7 @@ export default ({ children, breadcrumbs, sidebar }: AppLayoutProps) => (
                 </div>
             </header>
 
-            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
+            <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 pt-0">{children}</main>
         </SidebarInset>
     </SidebarProvider>
 );

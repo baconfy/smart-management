@@ -1,4 +1,4 @@
-import { ArrowUp, Paperclip, X } from 'lucide-react';
+import { ArrowUp, Loader2, Paperclip, Send, X } from 'lucide-react';
 import React, { useRef, useState, type KeyboardEvent } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -7,29 +7,20 @@ import type { ProjectAgent } from '@/types/models';
 
 type ChatInputProps = {
     agents: ProjectAgent[];
-    onSend: (message: string, agentIds: number[], files: File[]) => void;
-    disabled?: boolean;
+    processing?: boolean;
+    dirty?: boolean;
+    conversationId?: string;
 };
 
-export function ChatInput({ agents, onSend, disabled = false }: ChatInputProps) {
-    const [message, setMessage] = useState('');
+export function ChatInput({ agents, dirty = false, processing = false, conversationId }: ChatInputProps) {
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
-    const [files, setFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const canSend = message.trim().length > 0 && !disabled;
-
-    function handleSend() {
-        if (!canSend) return;
-        onSend(message.trim(), selectedAgentIds, files);
-        setMessage('');
-        setFiles([]);
-    }
+    const [files, setFiles] = useState<File[]>([]);
 
     function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            e.currentTarget.form?.requestSubmit();
         }
     }
 
@@ -49,41 +40,49 @@ export function ChatInput({ agents, onSend, disabled = false }: ChatInputProps) 
     }
 
     return (
-        <InputGroup className="h-auto flex-col rounded-xl">
-            {files.length > 0 && (
-                <InputGroupAddon align="block-start" className="flex-wrap gap-1.5">
-                    {files.map((file, index) => (
-                        <Badge key={index} variant="secondary" className="gap-1 pr-1">
-                            {file.name}
-                            <button type="button" onClick={() => removeFile(index)} className="rounded-full text-muted-foreground hover:text-foreground">
-                                <X className="size-3" />
-                            </button>
-                        </Badge>
-                    ))}
-                </InputGroupAddon>
-            )}
+        <>
+            {conversationId && <input type="hidden" name="conversation_id" value={conversationId} />}
 
-            <InputGroupTextarea placeholder="Send a message..." value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown} disabled={disabled} rows={1} className="max-h-52 min-h-14" />
+            {selectedAgentIds.map((id) => (
+                <input key={id} type="hidden" name="agent_ids[]" value={id} />
+            ))}
 
-            <InputGroupAddon align="block-end" className="flex items-center justify-between">
-                <InputGroupButton size="icon-sm" onClick={() => fileInputRef.current?.click()} aria-label="Attach file">
-                    <Paperclip className="size-4" />
-                </InputGroupButton>
+            <InputGroup className="h-auto flex-col rounded-xl p-0.5">
+                {files.length > 0 && (
+                    <InputGroupAddon align="block-start" className="flex-wrap gap-1.5">
+                        {files.map((file, index) => (
+                            <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                                {file.name}
+                                <button type="button" onClick={() => removeFile(index)} className="rounded-full text-muted-foreground hover:text-foreground">
+                                    <X className="size-3" />
+                                </button>
+                            </Badge>
+                        ))}
+                    </InputGroupAddon>
+                )}
 
-                <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+                <InputGroupTextarea name="message" placeholder="Send a message..." onKeyDown={handleKeyDown} disabled={processing} rows={1} className="max-h-56 min-h-16" />
 
-                <div className="flex items-center gap-1.5">
-                    {agents.map((agent) => (
-                        <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className="cursor-pointer select-none px-2.5" onClick={() => toggleAgent(agent.id)}>
-                            {agent.name}
-                        </Badge>
-                    ))}
-
-                    <InputGroupButton size="icon-sm" variant={canSend ? 'default' : 'ghost'} onClick={handleSend} disabled={!canSend} aria-label="Send message">
-                        <ArrowUp className="size-4 stroke-3" />
+                <InputGroupAddon align="block-end" className="flex items-center justify-between">
+                    <InputGroupButton size="icon-sm" onClick={() => fileInputRef.current?.click()} aria-label="Attach file">
+                        <Paperclip className="size-4" />
                     </InputGroupButton>
-                </div>
-            </InputGroupAddon>
-        </InputGroup>
+
+                    <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+
+                    <div className="flex items-center gap-2">
+                        {agents.map((agent) => (
+                            <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className="clickable select-none" onClick={() => toggleAgent(agent.id)}>
+                                {agent.name}
+                            </Badge>
+                        ))}
+
+                        <InputGroupButton type="submit" size="icon-sm" variant={dirty ? 'default' : 'ghost'} disabled={processing} aria-label="Send message">
+                            {processing ? <Loader2 className="stroke-3 animate-spin" /> : <ArrowUp className="stroke-3" />}
+                        </InputGroupButton>
+                    </div>
+                </InputGroupAddon>
+            </InputGroup>
+        </>
     );
 }

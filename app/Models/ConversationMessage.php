@@ -20,6 +20,20 @@ class ConversationMessage extends Model
     protected $keyType = 'string';
 
     /**
+     * Defines the casting of specific attributes to their respective data types.
+     */
+    protected function casts(): array
+    {
+        return [
+            'attachments' => 'array',
+            'tool_calls' => 'array',
+            'tool_results' => 'array',
+            'usage' => 'array',
+            'meta' => 'array',
+        ];
+    }
+
+    /**
      * Indicates if the IDs are auto-incrementing.
      */
     public $incrementing = false;

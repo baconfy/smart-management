@@ -17,8 +17,8 @@ class StoreChatMessageRequest extends FormRequest
 
         return [
             'message' => ['required', 'string', 'max:10000'],
-            'agent_ids' => ['required', 'array', 'min:1'],
-            'agent_ids.*' => ['integer', "exists:project_agents,id,project_id,{$project->id}"],
+            'agent_ids' => ['sometimes', 'array'],
+            'agent_ids.*' => ['sometimes', "exists:project_agents,id,project_id,{$project->id}"],
             'conversation_id' => ['nullable', 'string', 'exists:agent_conversations,id'],
         ];
     }

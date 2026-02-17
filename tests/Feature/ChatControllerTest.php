@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Ai\Agents\ArchitectAgent;
 use App\Ai\Agents\GenericAgent;
 use App\Enums\AgentType;
+use App\Models\Conversation;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -41,21 +42,7 @@ test('message is required', function (): void {
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
-    $this->actingAs($user)
-        ->postJson("/projects/{$project->ulid}/chat", [
-            'agent_ids' => [1],
-        ])->assertJsonValidationErrors('message');
-});
-
-test('agent_ids is required', function (): void {
-    $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
-    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-
-    $this->actingAs($user)
-        ->postJson("/projects/{$project->ulid}/chat", [
-            'message' => 'Hello',
-        ])->assertJsonValidationErrors('agent_ids');
+    $this->actingAs($user)->postJson("/projects/{$project->ulid}/chat", ['agent_ids' => [1]])->assertJsonValidationErrors('message');
 });
 
 test('agent_ids must be an array', function (): void {
@@ -82,30 +69,23 @@ test('agent_ids must belong to the project', function (): void {
         ])->assertJsonValidationErrors('agent_ids.0');
 });
 
-test('conversation_id is optional', function (): void {
+test('agent_ids can be empty for moderator routing', function (): void {
     $user = User::factory()->create();
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-    $agent = $project->agents()->create([
-        'type' => AgentType::Architect->value,
-        'name' => 'Architect',
-        'instructions' => 'You are an architect.',
-    ]);
-
-    ArchitectAgent::fake(['Sure thing.']);
 
     $this->actingAs($user)
         ->postJson("/projects/{$project->ulid}/chat", [
             'message' => 'Hello',
-            'agent_ids' => [$agent->id],
-        ])->assertOk();
+            'agent_ids' => [],
+        ])->assertRedirect();
 });
 
 // ============================================================================
 // Single Agent Flow
 // ============================================================================
 
-test('member can send a message and receives conversation_id', function (): void {
+test('member can send a message and conversation is created', function (): void {
     $user = User::factory()->create();
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
@@ -117,16 +97,15 @@ test('member can send a message and receives conversation_id', function (): void
 
     ArchitectAgent::fake(['I recommend PostgreSQL.']);
 
-    $response = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson("/projects/{$project->ulid}/chat", [
             'message' => 'What database should I use?',
             'agent_ids' => [$agent->id],
-        ]);
+        ])->assertRedirect();
 
-    $response->assertOk()
-        ->assertJsonStructure(['conversation_id']);
+    $conversation = Conversation::where('project_id', $project->id)->first();
 
-    expect($response->json('conversation_id'))->not->toBeNull();
+    expect($conversation)->not->toBeNull();
 });
 
 test('conversation is persisted with one user message', function (): void {
@@ -141,16 +120,16 @@ test('conversation is persisted with one user message', function (): void {
 
     ArchitectAgent::fake(['PostgreSQL is great.']);
 
-    $response = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson("/projects/{$project->ulid}/chat", [
             'message' => 'What database?',
             'agent_ids' => [$agent->id],
-        ]);
+        ])->assertRedirect();
 
-    $conversationId = $response->json('conversation_id');
+    $conversation = Conversation::where('project_id', $project->id)->first();
 
     $this->assertDatabaseHas('agent_conversations', [
-        'id' => $conversationId,
+        'id' => $conversation->id,
         'user_id' => $user->id,
         'project_id' => $project->id,
     ]);
@@ -158,7 +137,7 @@ test('conversation is persisted with one user message', function (): void {
     // Exactly 1 user message
     expect(
         DB::table('agent_conversation_messages')
-            ->where('conversation_id', $conversationId)
+            ->where('conversation_id', $conversation->id)
             ->where('role', 'user')
             ->count()
     )->toBe(1);
@@ -166,7 +145,7 @@ test('conversation is persisted with one user message', function (): void {
     // Exactly 1 assistant message
     expect(
         DB::table('agent_conversation_messages')
-            ->where('conversation_id', $conversationId)
+            ->where('conversation_id', $conversation->id)
             ->where('role', 'assistant')
             ->where('project_agent_id', $agent->id)
             ->count()
@@ -186,28 +165,29 @@ test('can continue an existing conversation', function (): void {
     ArchitectAgent::fake(['First.', 'Second.']);
 
     // First message
-    $first = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson("/projects/{$project->ulid}/chat", [
             'message' => 'First question',
             'agent_ids' => [$agent->id],
-        ]);
+        ])->assertRedirect();
 
-    $conversationId = $first->json('conversation_id');
+    $conversation = Conversation::where('project_id', $project->id)->first();
 
     // Second message — continues
-    $second = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson("/projects/{$project->ulid}/chat", [
             'message' => 'Follow up',
             'agent_ids' => [$agent->id],
-            'conversation_id' => $conversationId,
-        ]);
+            'conversation_id' => $conversation->id,
+        ])->assertRedirect();
 
-    expect($second->json('conversation_id'))->toBe($conversationId);
+    // Still only 1 conversation
+    expect(Conversation::where('project_id', $project->id)->count())->toBe(1);
 
     // 2 user + 2 assistant = 4 messages
     expect(
         DB::table('agent_conversation_messages')
-            ->where('conversation_id', $conversationId)
+            ->where('conversation_id', $conversation->id)
             ->count()
     )->toBe(4);
 });
@@ -236,19 +216,18 @@ test('message is sent to multiple agents', function (): void {
     ArchitectAgent::fake(['Architect says hi.']);
     GenericAgent::fake(['Analyst says hi.']);
 
-    $response = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson("/projects/{$project->ulid}/chat", [
             'message' => 'What do you think?',
             'agent_ids' => [$architect->id, $analyst->id],
-        ]);
+        ])->assertRedirect();
 
-    $response->assertOk();
-    $conversationId = $response->json('conversation_id');
+    $conversation = Conversation::where('project_id', $project->id)->first();
 
     // Only 1 user message (no duplicates!)
     expect(
         DB::table('agent_conversation_messages')
-            ->where('conversation_id', $conversationId)
+            ->where('conversation_id', $conversation->id)
             ->where('role', 'user')
             ->count()
     )->toBe(1);
@@ -274,22 +253,22 @@ test('each agent stores its own response', function (): void {
     ArchitectAgent::fake(['Architect response.']);
     GenericAgent::fake(['Analyst response.']);
 
-    $response = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson("/projects/{$project->ulid}/chat", [
             'message' => 'Analyze this',
             'agent_ids' => [$architect->id, $analyst->id],
-        ]);
+        ])->assertRedirect();
 
-    $conversationId = $response->json('conversation_id');
+    $conversation = Conversation::where('project_id', $project->id)->first();
 
     // 1 user + N assistant messages
     $assistantMessages = DB::table('agent_conversation_messages')
-        ->where('conversation_id', $conversationId)
+        ->where('conversation_id', $conversation->id)
         ->where('role', 'assistant')
         ->pluck('project_agent_id')
         ->toArray();
 
-    // At minimum, architect responded
+    // At minimum, the architect responded
     expect($assistantMessages)->toContain($architect->id);
     expect($assistantMessages)->toContain($analyst->id);
     expect($assistantMessages)->toHaveCount(2);

@@ -11,7 +11,7 @@ use App\Enums\AgentType;
 use App\Http\Requests\StoreChatMessageRequest;
 use App\Models\Project;
 use App\Models\ProjectAgent;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Laravel\Ai\Contracts\Agent;
 
@@ -25,21 +25,22 @@ class ChatController extends Controller
      *
      * TODO: Step 11b — switch from prompt() to broadcastNow() via Reverb.
      */
-    public function store(StoreChatMessageRequest $request, Project $project, ProjectConversationStore $store): JsonResponse
+    public function store(StoreChatMessageRequest $request, Project $project, ProjectConversationStore $store): RedirectResponse
     {
         $this->authorize('view', $project);
 
         $user = $request->user();
         $message = $request->validated('message');
-        $agentIds = $request->validated('agent_ids');
+        $agentIds = $request->validated('agent_ids', []);
         $conversationId = $request->validated('conversation_id');
 
         // Configure store with project context
         $store->forProject($project);
 
-        // Create conversation if new
+        // Create or continue conversation
         if (! $conversationId) {
-            $conversationId = $store->storeConversation($user->id, Str::limit($message, 100, preserveWords: true));
+            $conversation = $store->createConversation($user->id, Str::limit($message, 100, preserveWords: true));
+            $conversationId = $conversation->id;
         }
 
         // Store user message at once (no duplicates)
@@ -60,7 +61,7 @@ class ChatController extends Controller
             $store->storeRawAssistantMessage($conversationId, $user->id, $projectAgent->id, $agent::class, $response->text);
         }
 
-        return response()->json(['conversation_id' => $conversationId]);
+        return to_route('projects.conversations.show', [$project, $conversationId]);
     }
 
     /**

@@ -100,7 +100,7 @@ function InputGroupTextarea({ className, ...props }: React.ComponentProps<"texta
   return (
     <Textarea
       data-slot="input-group-control"
-      className={cn("rounded-none border-0 bg-transparent py-3.5 shadow-none ring-0 focus-visible:ring-0 aria-invalid:ring-0 flex-1 resize-none", className)}
+      className={cn("rounded-none border-0 bg-transparent py-4 shadow-none ring-0 focus-visible:ring-0 aria-invalid:ring-0 flex-1 resize-none", className)}
       {...props}
     />
   )

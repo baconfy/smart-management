@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Ai\Stores;
 
+use App\Models\Conversation;
+use App\Models\ConversationMessage;
 use App\Models\Project;
 use App\Models\ProjectAgent;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Ai\Contracts\ConversationStore;
 use Laravel\Ai\Prompts\AgentPrompt;
@@ -15,8 +16,14 @@ use Laravel\Ai\Storage\DatabaseConversationStore;
 
 class ProjectConversationStore extends DatabaseConversationStore implements ConversationStore
 {
+    /**
+     * The project ID to scope conversations to.
+     */
     protected ?int $projectId = null;
 
+    /**
+     * The project agent ID to scope assistant messages to.
+     */
     protected ?int $projectAgentId = null;
 
     /**
@@ -55,32 +62,28 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function latestConversationId(string|int $userId): ?string
     {
-        $query = DB::table('agent_conversations')->where('user_id', $userId)->orderBy('updated_at', 'desc');
-
-        if ($this->projectId !== null) {
-            $query->where('project_id', $this->projectId);
-        }
-
-        return $query->first()?->id;
+        return Conversation::where('user_id', $userId)->when($this->projectId, fn ($q) => $q->where('project_id', $this->projectId))->latest('updated_at')->value('id');
     }
 
     /**
-     * Store a new conversation with the project context.
+     * Store a new conversation with the project context (SDK contract).
      */
     public function storeConversation(string|int|null $userId, string $title): string
     {
-        $conversationId = (string) Str::ulid();
+        return $this->createConversation($userId, $title)->id;
+    }
 
-        DB::table('agent_conversations')->insert([
-            'id' => $conversationId,
+    /**
+     * Create a new conversation and return the model.
+     */
+    public function createConversation(string|int|null $userId, string $title): Conversation
+    {
+        return Conversation::create([
+            'id' => (string) Str::ulid(),
             'user_id' => $userId,
             'project_id' => $this->projectId,
             'title' => $title,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
-
-        return $conversationId;
     }
 
     /**
@@ -88,26 +91,15 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function storeUserMessage(string $conversationId, string|int|null $userId, AgentPrompt $prompt): string
     {
-        $messageId = (string) Str::ulid();
-
-        DB::table('agent_conversation_messages')->insert([
-            'id' => $messageId,
+        return ConversationMessage::create([
+            'id' => (string) Str::ulid(),
             'conversation_id' => $conversationId,
             'user_id' => $userId,
-            'project_agent_id' => null,
             'agent' => $prompt->agent::class,
             'role' => 'user',
             'content' => $prompt->prompt,
             'attachments' => $prompt->attachments->toJson(),
-            'tool_calls' => '[]',
-            'tool_results' => '[]',
-            'usage' => '[]',
-            'meta' => '[]',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return $messageId;
+        ])->id;
     }
 
     /**
@@ -115,79 +107,48 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
      */
     public function storeAssistantMessage(string $conversationId, string|int|null $userId, AgentPrompt $prompt, AgentResponse $response): string
     {
-        $messageId = (string) Str::ulid();
-
-        DB::table('agent_conversation_messages')->insert([
-            'id' => $messageId,
+        return ConversationMessage::create([
+            'id' => (string) Str::ulid(),
             'conversation_id' => $conversationId,
             'user_id' => $userId,
             'project_agent_id' => $this->projectAgentId,
             'agent' => $prompt->agent::class,
             'role' => 'assistant',
             'content' => $response->text,
-            'attachments' => '[]',
-            'tool_calls' => json_encode($response->toolCalls),
-            'tool_results' => json_encode($response->toolResults),
-            'usage' => json_encode($response->usage),
-            'meta' => json_encode($response->meta),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return $messageId;
+            'tool_calls' => $response->toolCalls,
+            'tool_results' => $response->toolResults,
+            'usage' => $response->usage,
+            'meta' => $response->meta,
+        ])->id;
     }
 
     /**
      * Store a user message without needing an AgentPrompt.
      */
-    public function storeRawUserMessage(string $conversationId, string|int $userId, string $content): string
+    public function storeRawUserMessage(string $conversationId, string|int $userId, string $content): ConversationMessage
     {
-        $messageId = (string) Str::ulid();
-
-        DB::table('agent_conversation_messages')->insert([
-            'id' => $messageId,
+        return ConversationMessage::create([
+            'id' => (string) Str::ulid(),
             'conversation_id' => $conversationId,
             'user_id' => $userId,
-            'project_agent_id' => null,
-            'agent' => '',
             'role' => 'user',
             'content' => $content,
-            'attachments' => '[]',
-            'tool_calls' => '[]',
-            'tool_results' => '[]',
-            'usage' => '[]',
-            'meta' => '[]',
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
-
-        return $messageId;
     }
 
     /**
      * Store an assistant message without needing an AgentResponse.
      */
-    public function storeRawAssistantMessage(string $conversationId, string|int $userId, int $projectAgentId, string $agentClass, string $content): string
+    public function storeRawAssistantMessage(string $conversationId, string|int $userId, int $projectAgentId, string $agentClass, string $content): ConversationMessage
     {
-        $messageId = (string) Str::ulid();
-
-        DB::table('agent_conversation_messages')->insert([
-            'id' => $messageId,
+        return ConversationMessage::create([
+            'id' => (string) Str::ulid(),
             'conversation_id' => $conversationId,
             'user_id' => $userId,
             'project_agent_id' => $projectAgentId,
             'agent' => $agentClass,
             'role' => 'assistant',
             'content' => $content,
-            'attachments' => '[]',
-            'tool_calls' => '[]',
-            'tool_results' => '[]',
-            'usage' => '[]',
-            'meta' => '[]',
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
-
-        return $messageId;
     }
 }

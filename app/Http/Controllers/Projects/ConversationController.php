@@ -32,6 +32,7 @@ class ConversationController extends Controller
         return Inertia::render('projects/conversations/index', [
             'project' => $project->only('id', 'ulid', 'name', 'description', 'created_at'),
             'agents' => $project->agents()->orderBy('name')->get(),
+            'conversations' => $project->conversations()->select('id', 'title', 'updated_at')->latest('updated_at')->limit(20)->get(),
         ]);
     }
 

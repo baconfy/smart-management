@@ -50,7 +50,7 @@ readonly class CreateDecision implements Tool
             'title' => $schema->string()->description('Short title for the decision (e.g. "Use PostgreSQL").')->required(),
             'choice' => $schema->string()->description('The chosen option.')->required(),
             'reasoning' => $schema->string()->description('Why this choice was made.')->required(),
-            'alternatives_considered' => $schema->array()->description('List of alternatives that were considered.'),
+            'alternatives_considered' => $schema->array()->items($schema->string())->description('List of alternatives that were considered.'),
             'context' => $schema->string()->description('Additional context or constraints that influenced the decision.'),
         ];
     }
