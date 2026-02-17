@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-17
+> **Last updated:** 2026-02-17 (Steps 1-11a complete, 130 tests)
 
 ---
 
@@ -26,6 +26,12 @@ These decisions were made during ideation and refined during implementation:
 15. **Stack:** Laravel 12 + Inertia.js + React 19 + Tailwind v4 + Laravel AI SDK.
 16. **Wayfinder:** Frontend route helpers auto-generated from Laravel routes. No Ziggy, no manual route files. Import from `@/routes`.
 17. **Essentials:** `nunomaduro/essentials` with `Unguard` (no `$fillable`), `ShouldBeStrict` (no lazy loading), `ImmutableDates`, `PreventStrayRequests` in tests.
+18. **ULID for URLs:** Projects and Tasks use `ulid` column for route model binding. `getRouteKeyName()` returns `'ulid'`, `booted()` auto-generates on creation.
+19. **SDK Request Array Access:** Tools access parameters via `ArrayAccess` (`$request['key']`), not `get()` or `input()`. SDK `Request` implements `ArrayAccess`. Optional fields use null coalescing: `$request['key'] ?? null`.
+20. **Agent Tools via Constructor DI:** Tools receive `Project` in constructor, `ArchitectAgent` instantiates them in `tools()` method with `$this->project()`.
+21. **Multi-agent chat:** `agent_ids` array, not single `agent_id`. User message stored once, each agent responds independently. Controller manages conversation lifecycle manually (not SDK middleware) to avoid duplicate user messages.
+22. **Agent resolution:** `ArchitectAgent` for architect type, `GenericAgent` for all others. Resolved via `match` in controller. New agent classes added as `AgentType` cases grow.
+23. **Contextual sidebar:** Single sidebar that drill-downs: Projects list → Project nav (Conversations, Tasks, Decisions, etc.) → sub-views. No dual-sidebar. Navigation determined by URL via `useSidebarNavigation` hook.
 
 ---
 
@@ -63,22 +69,30 @@ These decisions were made during ideation and refined during implementation:
 - [x] ULID route model binding (`getRouteKeyName`)
 - [x] Placeholder Inertia pages (`projects/index`, `projects/show`)
 
-### 1.5 First Agent: Architect
-- [ ] `ArchitectAgent` class implementing `Agent, Conversational, HasTools`
-- [ ] Instructions `.md` template
-- [ ] Conversation persistence via `RemembersConversations` + custom store
-- [ ] Streaming support
+### 1.5 First Agent: Architect ✅
+- [x] `ArchitectAgent` class implementing `Agent, Conversational, HasTools` (8 tests)
+- [x] `GenericAgent` fallback class for agent types without dedicated class
+- [x] `ReadsConversationHistory` concern — read history without triggering SDK middleware
+- [x] Instructions loaded from `ProjectAgent` model + project context appended
+- [x] Conversation persistence via `RemembersConversations` + custom store
+- [x] Agent faking and assertion support via SDK `fake()`/`assertPrompted()`
 
-### 1.6 First Artifact: Decisions
-- [ ] `CreateDecision` tool
-- [ ] `ListDecisions` tool
+### 1.6 First Artifact: Decisions (Partial) ✅
+- [x] `CreateDecision` tool — creates decision record with title, choice, reasoning, alternatives, context (10 tests)
+- [x] `ListDecisions` tool — lists project decisions with optional status filter (10 tests)
 - [ ] `UpdateDecision` tool
 - [ ] Decisions list view in project UI
 
-### 1.7 Chat UI
-- [ ] Chat component (send message, display response)
-- [ ] Streaming support (SSE via AI SDK `stream()`)
-- [ ] Conversation list in project sidebar
+### 1.7 Chat System
+- [x] `ChatController` with multi-agent support (`agent_ids` array) (12 tests)
+- [x] `StoreChatMessageRequest` validation (message, agent_ids, conversation_id)
+- [x] Raw store methods (`storeRawUserMessage`, `storeRawAssistantMessage`) — 1 user message, N agent responses
+- [x] Broadcast channel auth (`project.{projectId}.chat`)
+- [ ] Contextual sidebar (projects list → project nav drill-down)
+- [ ] Chat UI component (send message, display timeline)
+- [ ] Agent toggle (multi-select which agents respond)
+- [ ] Streaming via Reverb (`broadcastNow()` — currently using `prompt()`)
+- [ ] Conversation list in sidebar
 - [ ] New conversation / continue conversation
 
 ### Milestone: User can create a project, chat with the Architect, and see architecture decisions being recorded.
@@ -180,7 +194,7 @@ Ordered by perceived value:
 
 ## Implementation Steps
 
-### Data Layer (Complete) ✅
+### Data Layer (Steps 1-7) ✅
 
 | Step | What | Tests | Status |
 |------|------|-------|--------|
@@ -192,16 +206,24 @@ Ordered by perceived value:
 | 6 | `tasks` + `implementation_notes` + enums | 19 | ✅ |
 | 7 | `CreateProjectService` + atomic actions + instruction `.md` files | 9 | ✅ |
 
-**Total: 86 project tests, all passing.**
+### HTTP + Agent Layer (Steps 8-11a) ✅
 
-### Next: First Agent (Step 9+)
+| Step | What | Tests | Status |
+|------|------|-------|--------|
+| 8 | Project routes + controller + policy + Inertia pages | 15 | ✅ |
+| 9 | `ArchitectAgent` class + `Promptable`/`RemembersConversations` | 8 | ✅ |
+| 10 | `CreateDecision` + `ListDecisions` tools | 10 | ✅ |
+| 11a | `ChatController` multi-agent + `GenericAgent` + raw store methods | 12 | ✅ |
+
+**Total: 130 tests, all passing.**
+
+### Frontend (Steps 11b+) — In Progress
 
 | Step | What | Status |
 |------|------|--------|
-| 8 | Project routes + controller + policy + form request + Inertia pages | ✅ |
-| 9 | First Agent: `ArchitectAgent` class | ⏳ Next |
-| 10 | First Tools: `CreateDecision`, `ListDecisions` | Pending |
-| 11 | Chat UI + streaming | Pending |
+| 11b-i | Contextual sidebar + layout restructure | ⏳ Next |
+| 11b-ii | Chat UI components (messages, input, agent toggles) | Pending |
+| 11b-iii | Reverb streaming integration | Pending |
 
 ### Test Organization
 
@@ -220,15 +242,20 @@ The project uses **Laravel AI SDK** (`laravel/ai`) which provides: Agents (class
 
 Key architectural patterns:
 - Agents as dedicated PHP classes with `Promptable` trait
-- Tools as dedicated PHP classes implementing `Tool` interface
+- Tools as dedicated PHP classes implementing `Tool` interface — access params via `$request['key']` (ArrayAccess)
 - Instructions stored in DB, defaults from `resources/instructions/*.md`
 - Per-project agents with editable instructions (single source: database)
 - `ProjectConversationStore` extends SDK's `DatabaseConversationStore`, bound in `boot()`
-- Invisible Moderator with confidence-based routing
+- Multi-agent chat: controller stores user message once, loops agents, stores each response independently
+- `ReadsConversationHistory` concern: reads conversation history without triggering SDK `RememberConversation` middleware
+- `GenericAgent` fallback for agent types without a dedicated class
+- Invisible Moderator with confidence-based routing (Phase 2)
 - Artifacts as structured data in separate tables (not conversation history)
 - String columns in DB + PHP Enums for validation
+- ULID columns for public-facing URLs (`getRouteKeyName()`)
 - Project membership via `project_members` pivot with roles
 - Atomic invokable Actions + Services for orchestration
 - `nunomaduro/essentials` with `Unguard` enabled (no `$fillable` needed)
 - **Wayfinder** (`@laravel/vite-plugin-wayfinder`) generates typed frontend route helpers from Laravel routes — no Ziggy, no manual route files
 - `ShouldBeStrict` enabled (no lazy loading, no silently discarding attributes)
+- Contextual sidebar: single sidebar that drill-downs based on URL (projects → project nav → sub-views)
