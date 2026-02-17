@@ -1,13 +1,12 @@
 import { Link } from '@inertiajs/react';
-import { FolderCodeIcon, PlusCircleIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { FolderCodeIcon } from 'lucide-react';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import AppLayout from '@/layouts/app-layout';
+import ProjectCreate from '@/pages/projects/create';
 import { dashboard } from '@/routes';
 import { index, show } from '@/routes/projects';
 import type { BreadcrumbItem } from '@/types';
 import type { Project } from '@/types/models';
-import ProjectCreate from '@/pages/projects/create';
 
 export default function ProjectsPage({ projects }: { projects: Project[] }) {
     const breadcrumbs: BreadcrumbItem[] = [
