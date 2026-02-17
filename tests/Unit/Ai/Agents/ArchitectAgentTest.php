@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Ai\Agents\ArchitectAgent;
+use App\Ai\Tools\CreateDecision;
+use App\Ai\Tools\ListDecisions;
 use App\Enums\AgentType;
 use App\Models\Project;
 use App\Models\User;
@@ -44,7 +46,7 @@ test('architect agent appends project context to instructions', function (): voi
         ->toContain('Crypto payment gateway');
 });
 
-test('architect agent returns empty tools for now', function (): void {
+test('architect agent returns decision tools', function (): void {
     $project = Project::create(['name' => 'Test Project']);
     $projectAgent = $project->agents()->create([
         'type' => AgentType::Architect->value,
@@ -54,7 +56,11 @@ test('architect agent returns empty tools for now', function (): void {
 
     $agent = ArchitectAgent::make(projectAgent: $projectAgent);
 
-    expect(iterator_to_array($agent->tools()))->toBeEmpty();
+    $tools = iterator_to_array($agent->tools());
+
+    expect($tools)->toHaveCount(2);
+    expect($tools[0])->toBeInstanceOf(CreateDecision::class);
+    expect($tools[1])->toBeInstanceOf(ListDecisions::class);
 });
 
 // ============================================================================
