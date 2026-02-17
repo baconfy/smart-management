@@ -6,9 +6,6 @@ use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 // ============================================================================
 // Project Creation

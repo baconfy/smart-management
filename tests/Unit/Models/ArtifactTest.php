@@ -7,9 +7,6 @@ use App\Enums\DecisionStatus;
 use App\Models\BusinessRule;
 use App\Models\Decision;
 use App\Models\Project;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 // ============================================================================
 // Decision Creation

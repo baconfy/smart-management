@@ -6,9 +6,6 @@ use App\Enums\AgentType;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\CreateProjectService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 // ============================================================================
 // Project Creation

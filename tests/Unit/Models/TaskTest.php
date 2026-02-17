@@ -7,9 +7,6 @@ use App\Enums\TaskStatus;
 use App\Models\ImplementationNote;
 use App\Models\Project;
 use App\Models\Task;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 // ============================================================================
 // Task Creation

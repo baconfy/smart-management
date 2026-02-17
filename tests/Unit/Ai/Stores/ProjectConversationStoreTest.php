@@ -6,7 +6,6 @@ use App\Ai\Stores\ProjectConversationStore;
 use App\Enums\AgentType;
 use App\Models\Project;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\ConversationStore;
@@ -16,8 +15,6 @@ use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\Responses\AgentResponse;
 use Laravel\Ai\Responses\Data\Meta;
 use Laravel\Ai\Responses\Data\Usage;
-
-uses(RefreshDatabase::class);
 
 // ============================================================================
 // Binding
