@@ -9,6 +9,8 @@ import { chat, show } from '@/routes/projects';
 import type { BreadcrumbItem, CursorPaginated } from '@/types';
 import type { Conversation, ConversationMessage, Project, ProjectAgent } from '@/types/models';
 
+type ProcessingAgent = { id: number; name: string };
+
 type Props = {
     project: Project;
     agents: ProjectAgent[];
@@ -19,6 +21,7 @@ type Props = {
 
 export default function ConversationShow({ project, agents, conversation, messages: initialMessages, conversations }: Props) {
     const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages);
+    const [processingAgents, setProcessingAgents] = useState<ProcessingAgent[]>([]);
     const [title, setTitle] = useState(conversation.title);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -33,11 +36,17 @@ export default function ConversationShow({ project, agents, conversation, messag
     useEffect(() => {
         const channel = window.Echo.private(`conversation.${conversation.id}`);
 
+        channel.listen('.agents.processing', (e: { agents: ProcessingAgent[] }) => {
+            setProcessingAgents(e.agents);
+        });
+
         channel.listen('.message.received', (e: { message: ConversationMessage }) => {
             setMessages((prev) => {
                 if (prev.some((m) => m.id === e.message.id)) return prev;
                 return [...prev, e.message];
             });
+
+            setProcessingAgents((prev) => prev.filter((a) => a.id !== e.message.project_agent_id));
             textareaRef.current?.focus();
         });
 
@@ -49,8 +58,6 @@ export default function ConversationShow({ project, agents, conversation, messag
             window.Echo.leave(`conversation.${conversation.id}`);
         };
     }, [conversation.id]);
-
-    const waitingForResponse = messages.length > 0 && messages[messages.length - 1].role === 'user';
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: dashboard().url },
@@ -74,21 +81,24 @@ export default function ConversationShow({ project, agents, conversation, messag
                             </div>
                         ))}
 
-                        {waitingForResponse && (
-                            <div className="flex justify-start">
-                                <div className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2">
-                                    <span className="size-1.5 animate-bounce rounded-full bg-primary/75 [animation-delay:-0.3s]" />
-                                    <span className="size-1.5 animate-bounce rounded-full bg-primary/75 [animation-delay:-0.15s]" />
-                                    <span className="size-1.5 animate-bounce rounded-full bg-primary/75" />
+                        {processingAgents.map((agent) => (
+                            <div key={agent.id} className="flex justify-start">
+                                <div className="flex items-center gap-2 rounded-xl bg-muted px-4 py-3">
+                                    <span className="text-sm font-medium tracking-tighter text-primary">{agent.name}</span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="size-1.5 animate-bounce rounded-full bg-primary/75 [animation-delay:-0.3s]" />
+                                        <span className="size-1.5 animate-bounce rounded-full bg-primary/75 [animation-delay:-0.15s]" />
+                                        <span className="size-1.5 animate-bounce rounded-full bg-primary/75" />
+                                    </span>
                                 </div>
                             </div>
-                        )}
+                        ))}
                     </div>
                 </div>
 
                 <div className="mx-auto w-full shrink-0 px-12 pb-4">
                     <Form {...chat.form(project.ulid)} resetOnSuccess={['message']} options={{ preserveState: true, preserveScroll: true }}>
-                        {({ processing }) => <InputChat textareaRef={textareaRef} agents={agents} conversationId={conversation.id} processing={processing || waitingForResponse} />}
+                        {({ processing }) => <InputChat textareaRef={textareaRef} agents={agents} conversationId={conversation.id} processing={processing || processingAgents.length > 0} />}
                     </Form>
                 </div>
             </div>

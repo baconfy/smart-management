@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Ai\Agents\ModeratorAgent;
 use App\Enums\AgentType;
+use App\Events\AgentsProcessing;
 use App\Jobs\GenerateConversationTitle;
 use App\Jobs\ProcessAgentMessage;
 use App\Models\Conversation;
@@ -59,9 +61,13 @@ test('agent_ids must belong to the project', function (): void {
 });
 
 test('agent_ids can be empty for moderator routing', function (): void {
+    Queue::fake();
+
     $user = User::factory()->create();
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+
+    ModeratorAgent::fake([json_encode(['agents' => [['type' => 'architect', 'confidence' => 0.5]], 'reasoning' => 'Generic.'])]);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Hello', 'agent_ids' => []])->assertRedirect();
 });
@@ -114,6 +120,8 @@ test('new conversation dispatches title generation job', function (): void {
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
+    ModeratorAgent::fake([json_encode(['agents' => [['type' => 'architect', 'confidence' => 0.5]], 'reasoning' => 'Generic.'])]);
+
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Hello world', 'agent_ids' => []])->assertRedirect();
 
     Queue::assertPushed(GenerateConversationTitle::class);
@@ -163,4 +171,75 @@ test('one job is dispatched per selected agent', function (): void {
     $conversation = Conversation::where('project_id', $project->id)->first();
 
     expect(DB::table('agent_conversation_messages')->where('conversation_id', $conversation->id)->where('role', 'user')->count())->toBe(1);
+});
+
+// ============================================================================
+// Moderator Routing
+// ============================================================================
+
+test('empty agent_ids triggers moderator routing', function (): void {
+    Queue::fake();
+    $user = User::factory()->create();
+    $project = Project::create(['name' => 'Test']);
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+    $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
+
+    ModeratorAgent::fake([
+        json_encode([
+            'agents' => [
+                ['type' => 'architect', 'confidence' => 0.95],
+            ],
+            'reasoning' => 'Architecture question.',
+        ]),
+    ]);
+
+    $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Should I use PostgreSQL?', 'agent_ids' => []])->assertRedirect();
+
+    Queue::assertPushed(ProcessAgentMessage::class, 1);
+});
+
+test('moderator routes to multiple agents', function (): void {
+    Queue::fake();
+    $user = User::factory()->create();
+    $project = Project::create(['name' => 'Test']);
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+    $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
+    $project->agents()->create(['type' => AgentType::Analyst->value, 'name' => 'Analyst', 'instructions' => 'You are an analyst.']);
+
+    ModeratorAgent::fake([
+        json_encode([
+            'agents' => [
+                ['type' => 'architect', 'confidence' => 0.9],
+                ['type' => 'analyst', 'confidence' => 0.85],
+            ],
+            'reasoning' => 'Both relevant.',
+        ]),
+    ]);
+
+    $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Analyze the database architecture.', 'agent_ids' => []])->assertRedirect();
+
+    Queue::assertPushed(ProcessAgentMessage::class, 2);
+});
+
+test('moderator broadcasts agents processing event', function (): void {
+    Queue::fake();
+    Event::fake([AgentsProcessing::class]);
+
+    $user = User::factory()->create();
+    $project = Project::create(['name' => 'Test']);
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+    $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
+
+    ModeratorAgent::fake([
+        json_encode([
+            'agents' => [
+                ['type' => 'architect', 'confidence' => 0.95],
+            ],
+            'reasoning' => 'Architecture question.',
+        ]),
+    ]);
+
+    $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Should I use PostgreSQL?', 'agent_ids' => []])->assertRedirect();
+
+    Event::assertDispatched(AgentsProcessing::class);
 });

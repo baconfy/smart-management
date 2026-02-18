@@ -10,7 +10,7 @@ use App\Ai\Tools\UpdateDecision;
 use App\Concerns\ReadsConversationHistory;
 use App\Models\Project;
 use App\Models\ProjectAgent;
-use Laravel\Ai\Attributes\UseSmartestModel;
+use Laravel\Ai\Attributes\UseCheapestModel;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
@@ -19,7 +19,7 @@ use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 use Stringable;
 
-#[UseSmartestModel]
+#[UseCheapestModel]
 class ArchitectAgent implements Agent, Conversational, HasTools
 {
     use Promptable, ReadsConversationHistory, RemembersConversations;
@@ -46,6 +46,14 @@ class ArchitectAgent implements Agent, Conversational, HasTools
     }
 
     /**
+     * Get the project this agent belongs to.
+     */
+    public function project(): Project
+    {
+        return $this->projectAgent->project;
+    }
+
+    /**
      * Get the tools available to the agent.
      *
      * @return array<Tool>
@@ -59,13 +67,5 @@ class ArchitectAgent implements Agent, Conversational, HasTools
             new ListDecisions($project),
             new UpdateDecision($project),
         ];
-    }
-
-    /**
-     * Get the project this agent belongs to.
-     */
-    public function project(): Project
-    {
-        return $this->projectAgent->project;
     }
 }
