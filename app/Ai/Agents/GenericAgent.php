@@ -4,7 +4,18 @@ declare(strict_types=1);
 
 namespace App\Ai\Agents;
 
+use App\Ai\Tools\CreateBusinessRule;
+use App\Ai\Tools\CreateImplementationNote;
+use App\Ai\Tools\CreateTask;
+use App\Ai\Tools\ListBusinessRules;
+use App\Ai\Tools\ListDecisions;
+use App\Ai\Tools\ListImplementationNotes;
+use App\Ai\Tools\ListTasks;
+use App\Ai\Tools\UpdateBusinessRule;
+use App\Ai\Tools\UpdateImplementationNote;
+use App\Ai\Tools\UpdateTask;
 use App\Concerns\ReadsConversationHistory;
+use App\Enums\AgentType;
 use App\Models\Project;
 use App\Models\ProjectAgent;
 use Laravel\Ai\Attributes\UseCheapestModel;
@@ -23,9 +34,6 @@ class GenericAgent implements Agent, Conversational, HasTools
 
     public function __construct(public readonly ProjectAgent $projectAgent) {}
 
-    /**
-     * Get the instructions that the agent should follow.
-     */
     public function instructions(): Stringable|string
     {
         $project = $this->project();
@@ -40,18 +48,39 @@ class GenericAgent implements Agent, Conversational, HasTools
     }
 
     /**
-     * Get the tools available to the agent.
-     *
      * @return array<Tool>
      */
     public function tools(): iterable
     {
-        return [];
+        $project = $this->project();
+
+        return match ($this->projectAgent->type) {
+            AgentType::Analyst => [
+                new ListDecisions($project),
+                new CreateBusinessRule($project),
+                new ListBusinessRules($project),
+                new UpdateBusinessRule($project),
+            ],
+            AgentType::Pm => [
+                new ListDecisions($project),
+                new ListBusinessRules($project),
+                new CreateTask($project),
+                new ListTasks($project),
+                new UpdateTask($project),
+            ],
+            AgentType::Technical => [
+                new ListDecisions($project),
+                new ListBusinessRules($project),
+                new ListTasks($project),
+                new UpdateTask($project),
+                new CreateImplementationNote($project),
+                new ListImplementationNotes($project),
+                new UpdateImplementationNote($project),
+            ],
+            default => [],
+        };
     }
 
-    /**
-     * Get the project this agent belongs to.
-     */
     public function project(): Project
     {
         return $this->projectAgent->project;

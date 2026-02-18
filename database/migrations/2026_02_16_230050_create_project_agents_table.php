@@ -17,8 +17,10 @@ return new class extends Migration
             $table->string('type');
             $table->string('name');
             $table->text('instructions');
+            $table->string('model')->nullable();
             $table->boolean('is_default')->default(false);
             $table->json('settings')->nullable();
+            $table->json('tools')->nullable();
             $table->timestamps();
         });
     }
