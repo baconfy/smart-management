@@ -53,6 +53,14 @@ class Project extends Model
     }
 
     /**
+     * Defines a has-many relationship with the Conversation model.
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    /**
      * Establishes a one-to-many relationship with the Decision model.
      */
     public function decisions(): HasMany

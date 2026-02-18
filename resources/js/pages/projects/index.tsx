@@ -11,7 +11,6 @@ import type { Project } from '@/types/models';
 export default function ProjectsPage({ projects }: { projects: Project[] }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: dashboard().url },
-        { title: 'Projects', href: index().url },
     ];
 
     return (

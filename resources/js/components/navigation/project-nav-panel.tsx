@@ -28,13 +28,13 @@ export function ProjectNavPanel({ project }: { project: Project }) {
         <SidebarGroup>
             <SidebarGroupContent>
                 <SidebarGroupLabel render={<Link href={dashboard()} />}>
-                    <ChevronsLeft /> {project.name}
+                    <ChevronsLeft /> Back
                 </SidebarGroupLabel>
                 <SidebarMenu>
                     {items.map((item) => (
                         <SidebarMenuItem key={item.title} className="font-bold">
                             {item.enabled ? (
-                                <SidebarMenuButton render={<Link className="flex items-center" href={item.href} />} isActive={url === item.href || url.startsWith(item.href + '/')}>
+                                <SidebarMenuButton render={<Link href={item.href} />} isActive={url === item.href || url.startsWith(item.href + '/')}>
                                     <item.icon />
                                     <span>{item.title}</span>
                                 </SidebarMenuButton>
