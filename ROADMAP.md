@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-18 (Steps 1-11b-iii complete, 154 tests)
+> **Last updated:** 2026-02-18 (Steps 1-12 complete, 175 tests)
 
 ---
 
@@ -11,7 +11,7 @@ These decisions were made during ideation and refined during implementation:
 
 1. **Chat-first approach:** The primary interface is a conversation, not a dashboard. Project management happens as a consequence of chatting with AI agents.
 2. **Meeting Room model:** `Project > Conversation > Agent`. The user opens a conversation and the Moderator routes to the right agent. Multiple agents can respond in the same conversation.
-3. **Invisible Moderator:** Uses a cheap model (Haiku/GPT-4o-mini) for classification. Routes directly when confident (>= 0.8), asks the user to choose when uncertain. User never sees or manages the Moderator.
+3. **Subtle Moderator:** Uses a cheap model (via `#[UseCheapestModel]`) for classification. Routes directly when confident (>= 0.8) — per-agent thinking bubbles show who's responding. Low confidence (< 0.8) picks the most probable agent (future: enquete UI for user choice). Supports multi-agent routing. User never sees or manages the Moderator directly.
 4. **Agents are per-project:** Created automatically when a project is created. Pre-defined agents: Architect, Analyst, PM, Technical. Instructions are editable per project with a "reset to default" button.
 5. **Instructions in `.md` → database:** Default instructions live in `resources/instructions/*.md`. On project creation, content is copied to `project_agents.instructions` in the database. Runtime always reads from the database. "Reset to default" re-copies from `.md`.
 6. **Artifacts as knowledge bridge:** Agents don't share conversation histories. They read/write structured artifacts (Decisions, Business Rules, Tasks, Implementation Notes). Conversations are ephemeral; knowledge lives in artifacts.
@@ -41,8 +41,14 @@ These decisions were made during ideation and refined during implementation:
 30. **Async agent responses via Reverb:** ChatController dispatches `ProcessAgentMessage` Jobs (1 per agent, parallel via Redis). Jobs call AI, save response, broadcast `AgentMessageReceived`. Frontend Echo listeners append messages in real-time.
 31. **ChatController invokable:** Single `__invoke` method with private helpers: `resolveConversation()` (create or find), `dispatchAgentJobs()` (loop agents + dispatch). Clean separation of concerns.
 32. **Docker Reverb networking:** Backend uses `REVERB_HOST=reverb` + `REVERB_PORT=9001` (Docker internal). Frontend uses `VITE_REVERB_HOST=localhost` + `VITE_REVERB_PORT=9012` (host-forwarded). Three contexts: container→container, browser→host, config→env.
-33. **Derived loading state:** `waitingForResponse` derived from `messages[last].role === 'user'` instead of manual state. No useState/useEffect needed — auto-resolves when assistant message arrives via Echo or Inertia.
+33. **Per-agent processing state replaces derived loading:** Original `waitingForResponse` (derived from last message role) replaced by `processingAgents` state driven by `AgentsProcessing` event. Each agent gets named thinking bubble, removed individually as responses arrive.
 34. **Message dedup by ID:** Echo listener checks `prev.some(m => m.id === e.message.id)` before appending. Prevents duplicates when Inertia page reload and WebSocket both deliver the same message.
+35. **UpdateDecision tool:** Partial updates — only provided fields are changed. Scoped to project (cannot update other project's decisions). Returns "not found" for cross-project attempts.
+36. **Decisions post-it grid:** Decisions displayed as colored post-it cards in a grid. Color by status (green=active, amber=superseded, red=deprecated). Click opens Dialog with full details. Alternating rotation for visual interest.
+37. **ModeratorAgent with `#[UseCheapestModel]`:** Invisible router. Analyzes message, returns JSON with `agents[]` (type + confidence) and `reasoning`. Multi-agent capable — can route to multiple agents simultaneously.
+38. **Moderator confidence routing:** >= 0.8 routes directly, < 0.8 picks most probable. All agents below threshold still get top pick. Future: enquete UI for low confidence.
+39. **AgentsProcessing event:** Broadcasts which agents are "thinking" before jobs execute. Frontend shows per-agent thinking bubbles with agent name + bouncing dots. Replaces generic `waitingForResponse`.
+40. **Per-agent thinking bubbles:** Each processing agent gets its own bubble. As each responds via `AgentMessageReceived`, its bubble is removed. Parallel agents visible simultaneously.
 
 ---
 
@@ -86,11 +92,12 @@ These decisions were made during ideation and refined during implementation:
 - [x] Instructions loaded from `ProjectAgent` model + project context appended
 - [x] Conversation persistence via `RemembersConversations` + custom store
 
-### 1.6 First Artifact: Decisions (Partial) ✅
+### 1.6 First Artifact: Decisions ✅
 - [x] `CreateDecision` tool — creates decision record (10 tests)
 - [x] `ListDecisions` tool — lists project decisions with optional status filter (10 tests)
-- [ ] `UpdateDecision` tool
-- [ ] Decisions list view in project UI
+- [x] `UpdateDecision` tool — partial updates, project-scoped (5 tests)
+- [x] Decisions list view — post-it grid with Dialog detail, color by status (5 tests)
+- [x] `DecisionController` with `ProjectPolicy` authorization
 
 ### 1.7 Chat System ✅
 - [x] `ChatController` with multi-agent support (`agent_ids` array) (12 tests)
@@ -151,7 +158,7 @@ Frontend show.tsx:
 - [x] E2E tested: multi-agent parallel responses via Horizon + Reverb
 
 ### Pending Polish
-- [ ] Loading indicator per agent (multi-agent aware)
+- [x] Loading indicator per agent (multi-agent aware, via `AgentsProcessing` event)
 - [ ] Token streaming (SSE or WebSocket, show tokens as they arrive)
 - [ ] AI-generated title (replace `Str::limit` with cheap model call)
 
@@ -173,11 +180,17 @@ Frontend show.tsx:
 - [ ] Tools for Tasks: Create, List, Update
 - [ ] Tools for Implementation Notes: Create, List
 
-### 2.3 Moderator
-- [ ] `ModeratorAgent` class with `#[UseCheapestModel]`
-- [ ] Structured output: `target_agent`, `confidence`, `reasoning`, `alternatives`
-- [ ] Routing logic: direct route (>= 0.8) vs. user selection fallback
-- [ ] Frontend: agent selection widget when Moderator is uncertain
+### 2.3 Moderator (Partial ✅)
+- [x] `ModeratorAgent` class with `#[UseCheapestModel]` (5 tests)
+- [x] Structured JSON output: `agents[]` (type + confidence), `reasoning`
+- [x] Multi-agent routing (can route to multiple agents simultaneously)
+- [x] `highConfidenceAgents()` + `resolveAgents()` helpers
+- [x] ChatController integration (empty `agent_ids` triggers Moderator)
+- [x] `AgentsProcessing` event — per-agent thinking bubbles (3 tests)
+- [x] Frontend Echo listener for `.agents.processing`
+- [ ] Low confidence enquete UI (clickable poll for user to choose agent)
+- [ ] `AgentsProcessing` broadcast when user selects agents manually
+- [ ] Prompt tuning (agents too verbose, create artifacts without asking)
 
 ### 2.4 Agent Management UI
 - [ ] View project agents list
@@ -265,7 +278,13 @@ Frontend show.tsx:
 |------|------|-------|
 | 11b-iii | Events (AgentMessageReceived, ConversationTitleUpdated), Jobs (ProcessAgentMessage, GenerateConversationTitle), Channel auth, ChatController refactor (invokable + dispatch), Frontend Echo listeners, thinking bubbles | 16 |
 
-**Total: 154 tests, all passing.**
+### Architect Closure + Moderator (Step 12) ✅ — 13 tests
+
+| Step | What | Tests |
+|------|------|-------|
+| 12 | `UpdateDecision` tool (5), `DecisionController` + decisions list view (5), `ModeratorAgent` (5), `AgentsProcessing` event (3), ChatController Moderator integration, per-agent thinking bubbles | 13 |
+
+**Total: 175 tests, all passing.**
 
 ---
 
@@ -283,7 +302,7 @@ Key architectural patterns:
 - Multi-agent chat: controller dispatches `ProcessAgentMessage` job per agent, stores user message once
 - `ReadsConversationHistory` concern for reading history without SDK middleware
 - `GenericAgent` fallback for agent types without a dedicated class
-- Invisible Moderator with confidence-based routing (Phase 2)
+- ModeratorAgent: invisible router with confidence-based multi-agent routing (partially complete)
 - Artifacts as structured data in separate tables (not conversation history)
 - String columns in DB + PHP Enums for validation
 - ULID for public URLs + `(string)` cast on `Str::ulid()`
@@ -298,6 +317,10 @@ Key architectural patterns:
 - Reverb broadcasting: `AgentMessageReceived` + `ConversationTitleUpdated` events on `PrivateChannel`
 - Docker Reverb: backend `reverb:9001`, frontend `localhost:9012`, separate VITE_ env vars
 - Echo listeners with dedup by message ID to prevent Inertia/WebSocket duplicates
-- Derived `waitingForResponse` from last message role (no extra state)
+- Per-agent `processingAgents` state replaces old derived `waitingForResponse`
 - Agent fake testing: `ArchitectAgent::fake(['response'])` + `assertPrompted(fn () => true)`
-- ChatController invokable with `resolveConversation()` + `dispatchAgentJobs()` private methods
+- ChatController invokable with `resolveConversation()` + `dispatchAgentJobs()` + `routeViaModerator()` private methods
+- ModeratorAgent: `#[UseCheapestModel]`, `route()` returns JSON, `resolveAgents()` + `highConfidenceAgents()` helpers
+- AgentsProcessing event: broadcasts agent list before jobs execute, frontend shows per-agent thinking bubbles
+- Decisions UI: post-it grid (color by status, rotation, hover scale) + Dialog detail view
+- DecisionController: `index` action with `ProjectPolicy` authorization

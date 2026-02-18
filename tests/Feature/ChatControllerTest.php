@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 use App\Ai\Agents\ModeratorAgent;
 use App\Enums\AgentType;
-use App\Events\AgentsProcessing;
 use App\Jobs\GenerateConversationTitle;
-use App\Jobs\ProcessAgentMessage;
+use App\Jobs\ProcessChatMessage;
 use App\Models\Conversation;
 use App\Models\Project;
 use App\Models\User;
@@ -110,7 +109,7 @@ test('user message is stored and agent job is dispatched', function (): void {
     expect(DB::table('agent_conversation_messages')->where('conversation_id', $conversation->id)->where('role', 'assistant')->count())->toBe(0);
 
     // Job dispatched
-    Queue::assertPushed(ProcessAgentMessage::class);
+    Queue::assertPushed(ProcessChatMessage::class);
 });
 
 test('new conversation dispatches title generation job', function (): void {
@@ -145,7 +144,7 @@ test('continuing conversation does not dispatch title generation', function (): 
     // The second message continues
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Follow up', 'agent_ids' => [$agent->id], 'conversation_id' => $conversation->id])->assertRedirect();
 
-    Queue::assertPushed(ProcessAgentMessage::class);
+    Queue::assertPushed(ProcessChatMessage::class);
     Queue::assertNotPushed(GenerateConversationTitle::class);
 });
 
@@ -160,16 +159,16 @@ test('one job is dispatched per selected agent', function (): void {
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $architect = $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
-
     $analyst = $project->agents()->create(['type' => AgentType::Analyst->value, 'name' => 'Analyst', 'instructions' => 'You are an analyst.']);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'What do you think?', 'agent_ids' => [$architect->id, $analyst->id]])->assertRedirect();
 
-    Queue::assertPushed(ProcessAgentMessage::class, 2);
+    Queue::assertPushed(ProcessChatMessage::class, function ($job) use ($architect, $analyst) {
+        return $job->agentIds === [$architect->id, $analyst->id];
+    });
 
     // Only 1 user message (no duplicates)
     $conversation = Conversation::where('project_id', $project->id)->first();
-
     expect(DB::table('agent_conversation_messages')->where('conversation_id', $conversation->id)->where('role', 'user')->count())->toBe(1);
 });
 
@@ -179,67 +178,40 @@ test('one job is dispatched per selected agent', function (): void {
 
 test('empty agent_ids triggers moderator routing', function (): void {
     Queue::fake();
+
     $user = User::factory()->create();
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-    $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
-
-    ModeratorAgent::fake([
-        json_encode([
-            'agents' => [
-                ['type' => 'architect', 'confidence' => 0.95],
-            ],
-            'reasoning' => 'Architecture question.',
-        ]),
-    ]);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Should I use PostgreSQL?', 'agent_ids' => []])->assertRedirect();
 
-    Queue::assertPushed(ProcessAgentMessage::class, 1);
+    Queue::assertPushed(ProcessChatMessage::class, function ($job) {
+        return empty($job->agentIds);
+    });
 });
 
 test('moderator routes to multiple agents', function (): void {
     Queue::fake();
+
     $user = User::factory()->create();
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-    $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
-    $project->agents()->create(['type' => AgentType::Analyst->value, 'name' => 'Analyst', 'instructions' => 'You are an analyst.']);
-
-    ModeratorAgent::fake([
-        json_encode([
-            'agents' => [
-                ['type' => 'architect', 'confidence' => 0.9],
-                ['type' => 'analyst', 'confidence' => 0.85],
-            ],
-            'reasoning' => 'Both relevant.',
-        ]),
-    ]);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Analyze the database architecture.', 'agent_ids' => []])->assertRedirect();
 
-    Queue::assertPushed(ProcessAgentMessage::class, 2);
+    Queue::assertPushed(ProcessChatMessage::class, function ($job) {
+        return empty($job->agentIds);
+    });
 });
 
 test('moderator broadcasts agents processing event', function (): void {
     Queue::fake();
-    Event::fake([AgentsProcessing::class]);
 
     $user = User::factory()->create();
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-    $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
-
-    ModeratorAgent::fake([
-        json_encode([
-            'agents' => [
-                ['type' => 'architect', 'confidence' => 0.95],
-            ],
-            'reasoning' => 'Architecture question.',
-        ]),
-    ]);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Should I use PostgreSQL?', 'agent_ids' => []])->assertRedirect();
 
-    Event::assertDispatched(AgentsProcessing::class);
+    Queue::assertPushed(ProcessChatMessage::class);
 });

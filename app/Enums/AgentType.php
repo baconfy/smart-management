@@ -9,6 +9,7 @@ enum AgentType: string
     case Architect = 'architect';
     case Analyst = 'analyst';
     case Pm = 'pm';
+    case Dba = 'dba';
     case Technical = 'technical';
     case Custom = 'custom';
 }

@@ -1,0 +1,126 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Ai\Agents\ModeratorAgent;
+use App\Enums\AgentType;
+use App\Events\AgentsProcessing;
+use App\Jobs\ProcessAgentMessage;
+use App\Jobs\ProcessChatMessage;
+use App\Models\Conversation;
+use App\Models\Project;
+use App\Models\User;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
+
+beforeEach(function () {
+    $this->project = Project::create(['name' => 'Test']);
+    $this->user = User::factory()->create();
+
+    $this->conversation = Conversation::create([
+        'id' => (string) Str::ulid(),
+        'project_id' => $this->project->id,
+        'user_id' => $this->user->id,
+        'title' => 'Test',
+    ]);
+
+    $this->architect = $this->project->agents()->create([
+        'type' => AgentType::Architect->value,
+        'name' => 'Architect',
+        'instructions' => 'You are an architect.',
+    ]);
+
+    $this->analyst = $this->project->agents()->create([
+        'type' => AgentType::Analyst->value,
+        'name' => 'Analyst',
+        'instructions' => 'You are an analyst.',
+    ]);
+});
+
+test('it routes via moderator when no agent ids provided', function () {
+    Queue::fake([ProcessAgentMessage::class]);
+    Event::fake([AgentsProcessing::class]);
+
+    ModeratorAgent::fake([
+        json_encode([
+            'agents' => [['type' => 'architect', 'confidence' => 0.95]],
+            'reasoning' => 'Architecture question.',
+        ]),
+    ]);
+
+    $job = new ProcessChatMessage($this->conversation, $this->project, 'Should I use PostgreSQL?', []);
+
+    app()->call([$job, 'handle']);
+
+    Event::assertDispatched(AgentsProcessing::class, function ($event) {
+        return count($event->agents) === 1 && $event->agents[0]['name'] === 'Architect';
+    });
+
+    Queue::assertPushed(ProcessAgentMessage::class, 1);
+});
+
+test('it dispatches directly when agent ids provided', function () {
+    Queue::fake([ProcessAgentMessage::class]);
+    Event::fake([AgentsProcessing::class]);
+
+    $job = new ProcessChatMessage($this->conversation, $this->project, 'Hello', [$this->architect->id]);
+
+    app()->call([$job, 'handle']);
+
+    Event::assertDispatched(AgentsProcessing::class, function ($event) {
+        return count($event->agents) === 1 && $event->agents[0]['name'] === 'Architect';
+    });
+
+    Queue::assertPushed(ProcessAgentMessage::class, 1);
+});
+
+test('it routes to multiple agents via moderator', function () {
+    Queue::fake([ProcessAgentMessage::class]);
+    Event::fake([AgentsProcessing::class]);
+
+    ModeratorAgent::fake([
+        json_encode([
+            'agents' => [
+                ['type' => 'architect', 'confidence' => 0.9],
+                ['type' => 'analyst', 'confidence' => 0.85],
+            ],
+            'reasoning' => 'Both relevant.',
+        ]),
+    ]);
+
+    $job = new ProcessChatMessage($this->conversation, $this->project, 'Analyze the architecture.', []);
+
+    app()->call([$job, 'handle']);
+
+    Event::assertDispatched(AgentsProcessing::class, function ($event) {
+        return count($event->agents) === 2;
+    });
+
+    Queue::assertPushed(ProcessAgentMessage::class, 2);
+});
+
+test('it picks most probable when no agent has high confidence', function () {
+    Queue::fake([ProcessAgentMessage::class]);
+    Event::fake([AgentsProcessing::class]);
+
+    ModeratorAgent::fake([
+        json_encode([
+            'agents' => [
+                ['type' => 'analyst', 'confidence' => 0.6],
+                ['type' => 'architect', 'confidence' => 0.5],
+            ],
+            'reasoning' => 'Uncertain.',
+        ]),
+    ]);
+
+    $job = new ProcessChatMessage($this->conversation, $this->project, 'Tell me more.', []);
+
+    app()->call([$job, 'handle']);
+
+    Queue::assertPushed(ProcessAgentMessage::class, 1);
+
+    Queue::assertPushed(ProcessAgentMessage::class, function ($job) {
+        return $job->projectAgent->type === AgentType::Analyst;
+    });
+});

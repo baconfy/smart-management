@@ -14,6 +14,7 @@ class SeedProjectAgents
         ['type' => AgentType::Architect, 'name' => 'Architect', 'is_system' => false],
         ['type' => AgentType::Analyst, 'name' => 'Analyst', 'is_system' => false],
         ['type' => AgentType::Pm, 'name' => 'PM', 'is_system' => false],
+        ['type' => AgentType::Dba, 'name' => 'DBA', 'is_system' => false],
         ['type' => AgentType::Technical, 'name' => 'Technical', 'is_system' => false],
     ];
 
