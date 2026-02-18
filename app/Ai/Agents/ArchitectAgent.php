@@ -6,6 +6,7 @@ namespace App\Ai\Agents;
 
 use App\Ai\Tools\CreateDecision;
 use App\Ai\Tools\ListDecisions;
+use App\Ai\Tools\UpdateDecision;
 use App\Concerns\ReadsConversationHistory;
 use App\Models\Project;
 use App\Models\ProjectAgent;
@@ -56,6 +57,7 @@ class ArchitectAgent implements Agent, Conversational, HasTools
         return [
             new CreateDecision($project),
             new ListDecisions($project),
+            new UpdateDecision($project),
         ];
     }
 

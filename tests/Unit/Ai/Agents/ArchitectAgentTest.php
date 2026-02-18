@@ -58,7 +58,7 @@ test('architect agent returns decision tools', function (): void {
 
     $tools = iterator_to_array($agent->tools());
 
-    expect($tools)->toHaveCount(2);
+    expect($tools)->toHaveCount(3);
     expect($tools[0])->toBeInstanceOf(CreateDecision::class);
     expect($tools[1])->toBeInstanceOf(ListDecisions::class);
 });

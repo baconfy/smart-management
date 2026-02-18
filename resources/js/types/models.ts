@@ -26,6 +26,18 @@ export type Conversation = {
     updated_at: string;
 };
 
+export type Decision = {
+    id: string;
+    title: string;
+    choice: string;
+    reasoning: string;
+    alternatives_considered: string;
+    context: string;
+    status: 'active' | 'superseded' | 'deprecated';
+    created_at: string;
+    updated_at: string;
+};
+
 export type ConversationMessage = {
     id: string;
     conversation_id: string;

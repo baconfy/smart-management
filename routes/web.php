@@ -3,6 +3,7 @@
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\Projects\ConversationController;
+use App\Http\Controllers\Projects\DecisionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -23,4 +24,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('p/{project}/c', [ConversationController::class, 'index'])->name('projects.conversations.index');
     Route::get('p/{project}/c/{conversation}', [ConversationController::class, 'show'])->name('projects.conversations.show');
 
+    /**
+     * Decisions
+     */
+    Route::get('p/{project}/d', [DecisionController::class, 'index'])->name('projects.decisions.index');
 });

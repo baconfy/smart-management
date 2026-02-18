@@ -76,10 +76,10 @@ export default function ConversationShow({ project, agents, conversation, messag
 
                         {waitingForResponse && (
                             <div className="flex justify-start">
-                                <div className="flex items-center gap-1 rounded-xl bg-muted px-4 py-3">
-                                    <span className="size-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.3s]" />
-                                    <span className="size-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.15s]" />
-                                    <span className="size-2 animate-bounce rounded-full bg-muted-foreground/50" />
+                                <div className="flex items-center gap-1 rounded-xl bg-muted px-3 py-2">
+                                    <span className="size-1.5 animate-bounce rounded-full bg-primary/75 [animation-delay:-0.3s]" />
+                                    <span className="size-1.5 animate-bounce rounded-full bg-primary/75 [animation-delay:-0.15s]" />
+                                    <span className="size-1.5 animate-bounce rounded-full bg-primary/75" />
                                 </div>
                             </div>
                         )}
