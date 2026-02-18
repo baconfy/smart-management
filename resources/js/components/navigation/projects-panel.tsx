@@ -13,8 +13,7 @@ export function ProjectsPanel() {
     return (
         <SidebarGroup className="h-full justify-between">
             <SidebarGroupContent>
-                <div className="flex items-center justify-between gap-2">
-                    <SidebarGroupLabel>Projects</SidebarGroupLabel>
+                <div className="flex items-center justify-end gap-2">
                     <SidebarGroupLabel render={<Link className="text-primary hover:underline" href={index()} />}>
                         View all <ChevronsRight />
                     </SidebarGroupLabel>

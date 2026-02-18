@@ -1,9 +1,8 @@
-import { useRef } from 'react';
 import { ChatInput } from '@/components/chat/chat-input';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
-import { chat, index as projects, show, show as showProject } from '@/routes/projects';
-import type { BreadcrumbItem } from '@/types';
+import { chat, show } from '@/routes/projects';
+import type { BreadcrumbItem, CursorPaginated } from '@/types';
 import type { Conversation, ConversationMessage, Project, ProjectAgent } from '@/types/models';
 import ReactMarkdown from 'react-markdown';
 import { Form } from '@inertiajs/react';
@@ -14,7 +13,7 @@ type Props = {
     project: Project;
     agents: ProjectAgent[];
     conversation: Conversation;
-    conversations: { data: Conversation[] };
+    conversations: CursorPaginated<Conversation>;
     messages: ConversationMessage[];
 };
 
@@ -22,12 +21,11 @@ export default function ConversationShow({ project, agents, conversation, messag
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: dashboard().url },
         { title: project.name, href: show(project.ulid).url },
-        { title: 'Conversations', href: index(project.ulid).url },
         { title: conversation.title, href: '#' },
     ];
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs} sidebar={<ConversationsNavPanel project={project} conversations={conversations.data} />}>
+        <AppLayout breadcrumbs={breadcrumbs} sidebar={<ConversationsNavPanel project={project} conversations={conversations} />}>
             <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col">
                 <div className="no-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4">
                     <div className="mx-auto w-full space-y-4">
@@ -46,7 +44,7 @@ export default function ConversationShow({ project, agents, conversation, messag
 
                 <div className="mx-auto w-full shrink-0 px-12 pb-4">
                     <Form {...chat.form(project.ulid)} resetOnSuccess={['message']}>
-                        {({ processing, isDirty }) => <ChatInput agents={agents} conversationId={conversation.id} processing={processing} dirty={isDirty} />}
+                        {({ processing }) => <ChatInput agents={agents} conversationId={conversation.id} processing={processing} />}
                     </Form>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import { ArrowUp, Loader2, Paperclip, Send, X } from 'lucide-react';
+import { ArrowUp, Loader2, Paperclip, X } from 'lucide-react';
 import React, { useRef, useState, type KeyboardEvent } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -8,12 +8,12 @@ import type { ProjectAgent } from '@/types/models';
 type ChatInputProps = {
     agents: ProjectAgent[];
     processing?: boolean;
-    dirty?: boolean;
     conversationId?: string;
 };
 
-export function ChatInput({ agents, dirty = false, processing = false, conversationId }: ChatInputProps) {
+export function ChatInput({ agents, processing = false, conversationId }: ChatInputProps) {
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
+    const [hasContent, setHasContent] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [files, setFiles] = useState<File[]>([]);
 
@@ -61,7 +61,7 @@ export function ChatInput({ agents, dirty = false, processing = false, conversat
                     </InputGroupAddon>
                 )}
 
-                <InputGroupTextarea name="message" placeholder="Send a message..." onKeyDown={handleKeyDown} disabled={processing} rows={1} className="max-h-56 min-h-16" />
+                <InputGroupTextarea name="message" placeholder="Send a message..." onKeyDown={handleKeyDown} onChange={(e) => setHasContent(e.target.value.trim().length > 0)} disabled={processing} rows={1} className="max-h-56 min-h-16" />
 
                 <InputGroupAddon align="block-end" className="flex items-center justify-between">
                     <InputGroupButton size="icon-sm" onClick={() => fileInputRef.current?.click()} aria-label="Attach file">
@@ -77,8 +77,8 @@ export function ChatInput({ agents, dirty = false, processing = false, conversat
                             </Badge>
                         ))}
 
-                        <InputGroupButton type="submit" size="icon-sm" variant={dirty ? 'default' : 'ghost'} disabled={processing} aria-label="Send message">
-                            {processing ? <Loader2 className="stroke-3 animate-spin" /> : <ArrowUp className="stroke-3" />}
+                        <InputGroupButton type="submit" size="icon-sm" variant={hasContent ? 'default' : 'ghost'} disabled={processing || !hasContent} aria-label="Send message">
+                            {processing ? <Loader2 className="animate-spin stroke-3" /> : <ArrowUp className="stroke-3" />}
                         </InputGroupButton>
                     </div>
                 </InputGroupAddon>

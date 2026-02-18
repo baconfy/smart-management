@@ -1,26 +1,38 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronsLeft } from 'lucide-react';
-import React from 'react';
+import { ChevronsLeft, Plus } from 'lucide-react';
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import type { Conversation, Project } from '@/types';
-import { show as showProject } from '@/routes/projects';
-import { show as showConversation } from '@/routes/projects/conversations';
-import { cn } from '@/lib/utils';
+import { index as conversationsIndex, show as conversationShow } from '@/routes/projects/conversations';
+import type { Conversation, Project } from '@/types/models';
+import type { CursorPaginated } from '@/types';
 
-export function ConversationsNavPanel({ project, conversations }: { project: Project; conversations: Conversation[] }) {
+type Props = {
+    project: Project;
+    conversations: CursorPaginated<Conversation>;
+};
+
+export function ConversationsNavPanel({ project, conversations }: Props) {
     const { url } = usePage();
 
     return (
-        <SidebarGroup>
-            <SidebarGroupContent>
-                <SidebarGroupLabel render={<Link href={showProject(project)} />}>
+        <SidebarGroup className="h-full flex-col">
+            <SidebarGroupContent className="flex flex-1 flex-col">
+                <SidebarGroupLabel render={<Link href={`/projects/${project.ulid}`} />}>
                     <ChevronsLeft /> {project.name}
                 </SidebarGroupLabel>
+
                 <SidebarMenu>
-                    {conversations.map((conversation) => (
-                        <Link className={cn('rounded-lg px-3 py-4 font-bold text-base', { 'bg-primary': url.endsWith(conversation.id), 'clickable hover:bg-muted': !url.endsWith(conversation.id) })} key={conversation.id} href={showConversation({ project: { ulid: project.ulid }, conversation: { id: conversation.id } })}>
-                            <span className="line-clamp-1 leading-none">{conversation.title}</span>
-                        </Link>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton render={<Link className="flex items-center" href={conversationsIndex(project.ulid).url} />} isActive={url === conversationsIndex(project.ulid).url}>
+                            <Plus /> <span>New Conversation</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+
+                    {conversations.data.map((conversation) => (
+                        <SidebarMenuItem key={conversation.id}>
+                            <SidebarMenuButton render={<Link className="flex items-center" href={conversationShow({ project: project.ulid, conversation: conversation.id }).url} />} isActive={url === conversationShow({ project: project.ulid, conversation: conversation.id }).url}>
+                                <span className="truncate">{conversation.title}</span>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
                     ))}
                 </SidebarMenu>
             </SidebarGroupContent>

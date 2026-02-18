@@ -28,7 +28,7 @@ export function ProjectNavPanel({ project }: { project: Project }) {
         <SidebarGroup>
             <SidebarGroupContent>
                 <SidebarGroupLabel render={<Link href={dashboard()} />}>
-                    <ChevronsLeft /> Back
+                    <ChevronsLeft /> Dashboard
                 </SidebarGroupLabel>
                 <SidebarMenu>
                     {items.map((item) => (
