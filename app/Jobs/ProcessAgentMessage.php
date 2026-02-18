@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Ai\Agents\ArchitectAgent;
 use App\Ai\Agents\GenericAgent;
 use App\Ai\Stores\ProjectConversationStore;
-use App\Enums\AgentType;
 use App\Events\AgentMessageReceived;
 use App\Models\Conversation;
 use App\Models\ProjectAgent;
@@ -38,28 +36,15 @@ class ProcessAgentMessage implements ShouldQueue
      */
     public function handle(ProjectConversationStore $store): void
     {
-        $agent = $this->resolveAgent();
+        $agent = GenericAgent::make(projectAgent: $this->projectAgent);
         $agent->withConversationHistory($this->conversation->id);
 
-        $response = $agent->prompt($this->message);
+        $response = $agent->prompt($this->message, model: $this->projectAgent->model);
 
         $store->forProject($this->conversation->project);
 
         $savedMessage = $store->storeRawAssistantMessage($this->conversation->id, $this->conversation->user_id, $this->projectAgent->id, $agent::class, $response->text);
 
         AgentMessageReceived::dispatch($savedMessage);
-    }
-
-    /**
-     * Resolves and returns an agent instance based on the project agent's type.
-     *
-     * @return Agent The resolved agent instance, either ArchitectAgent or GenericAgent.
-     */
-    private function resolveAgent(): Agent
-    {
-        return match ($this->projectAgent->type) {
-            AgentType::Architect => ArchitectAgent::make(projectAgent: $this->projectAgent),
-            default => GenericAgent::make(projectAgent: $this->projectAgent),
-        };
     }
 }

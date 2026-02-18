@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->ulid();
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
-            $table->string('conversation_message_id', 36)->nullable();
             $table->string('title');
             $table->text('description');
             $table->string('phase')->nullable();

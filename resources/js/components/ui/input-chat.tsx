@@ -4,6 +4,7 @@ import React, { useRef, useState, type KeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group';
 import type { ProjectAgent } from '@/types/models';
+import { cn } from '@/lib/utils';
 
 type InputChatProps = {
     agents: ProjectAgent[];
@@ -27,6 +28,8 @@ export function InputChat({ agents, processing = false, conversationId, textarea
     }
 
     function toggleAgent(agentId: number) {
+        if (processing || !hasContent) return
+
         setSelectedAgentIds((prev) => (prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId]));
     }
 
@@ -49,7 +52,7 @@ export function InputChat({ agents, processing = false, conversationId, textarea
                 <input key={id} type="hidden" name="agent_ids[]" value={id} />
             ))}
 
-            <InputGroup className="h-auto flex-col rounded-xl p-0.5">
+            <InputGroup className={cn('h-auto flex-col rounded-xl p-0.5', { 'opacity-50': processing || !hasContent })}>
                 {files.length > 0 && (
                     <InputGroupAddon align="block-start" className="flex-wrap gap-1.5">
                         {files.map((file, index) => (
@@ -66,7 +69,7 @@ export function InputChat({ agents, processing = false, conversationId, textarea
                 <InputGroupTextarea name="message" ref={textareaRef} placeholder="Send a message..." onKeyDown={handleKeyDown} onChange={(e) => setHasContent(e.target.value.trim().length > 0)} disabled={processing} autoFocus={true} rows={1} className="max-h-56 min-h-16" />
 
                 <InputGroupAddon align="block-end" className="flex items-center justify-between">
-                    <InputGroupButton size="icon-sm" onClick={() => fileInputRef.current?.click()} aria-label="Attach file">
+                    <InputGroupButton size="icon-sm" onClick={() => fileInputRef.current?.click()} aria-label="Attach file" disabled={processing || !hasContent}>
                         <Paperclip className="size-4" />
                     </InputGroupButton>
 
@@ -74,7 +77,7 @@ export function InputChat({ agents, processing = false, conversationId, textarea
 
                     <div className="flex items-center gap-2">
                         {agents.map((agent) => (
-                            <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className="clickable select-none text-shadow-2xs pb-[0.05rem]" onClick={() => toggleAgent(agent.id)}>
+                            <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className={cn('select-none text-shadow-2xs pb-[0.05rem]', {'clickable': !processing})} onClick={() => toggleAgent(agent.id)}>
                                 {agent.name}
                             </Badge>
                         ))}

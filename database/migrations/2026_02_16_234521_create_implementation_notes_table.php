@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('implementation_notes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('task_id')->constrained()->cascadeOnDelete();
-            $table->string('conversation_message_id', 36)->nullable();
             $table->string('title');
             $table->text('content');
             $table->json('code_snippets')->nullable();

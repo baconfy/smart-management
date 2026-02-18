@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Ai\Agents\ArchitectAgent;
+use App\Ai\Agents\GenericAgent;
 use App\Enums\AgentType;
 use App\Events\AgentMessageReceived;
 use App\Jobs\ProcessAgentMessage;
@@ -24,14 +24,14 @@ beforeEach(function () {
 });
 
 test('it calls the agent and stores the response', function () {
-    ArchitectAgent::fake(['Use PostgreSQL for this project.']);
+    GenericAgent::fake(['Use PostgreSQL for this project.']);
 
     Event::fake([AgentMessageReceived::class]);
 
     $job = new ProcessAgentMessage(conversation: $this->conversation, projectAgent: $this->agent, message: 'Which database should I use?');
     app()->call([$job, 'handle']);
 
-    ArchitectAgent::assertPrompted(fn () => true);
+    GenericAgent::assertPrompted(fn () => true);
 
     expect($this->conversation->messages()->where('role', 'assistant')->count())->toBe(1)
         ->and($this->conversation->messages()->where('role', 'assistant')->first()->content)
@@ -39,7 +39,7 @@ test('it calls the agent and stores the response', function () {
 });
 
 test('it broadcasts AgentMessageReceived after saving', function () {
-    ArchitectAgent::fake(['Use PostgreSQL.']);
+    GenericAgent::fake(['Use PostgreSQL.']);
     Event::fake([AgentMessageReceived::class]);
 
     $job = new ProcessAgentMessage(conversation: $this->conversation, projectAgent: $this->agent, message: 'Which database?');

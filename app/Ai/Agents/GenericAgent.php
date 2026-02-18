@@ -4,36 +4,32 @@ declare(strict_types=1);
 
 namespace App\Ai\Agents;
 
-use App\Ai\Tools\CreateBusinessRule;
-use App\Ai\Tools\CreateImplementationNote;
-use App\Ai\Tools\CreateTask;
-use App\Ai\Tools\ListBusinessRules;
-use App\Ai\Tools\ListDecisions;
-use App\Ai\Tools\ListImplementationNotes;
-use App\Ai\Tools\ListTasks;
-use App\Ai\Tools\UpdateBusinessRule;
-use App\Ai\Tools\UpdateImplementationNote;
-use App\Ai\Tools\UpdateTask;
 use App\Concerns\ReadsConversationHistory;
-use App\Enums\AgentType;
 use App\Models\Project;
 use App\Models\ProjectAgent;
-use Laravel\Ai\Attributes\UseCheapestModel;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Contracts\HasTools;
-use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 use Stringable;
 
-#[UseCheapestModel]
 class GenericAgent implements Agent, Conversational, HasTools
 {
     use Promptable, ReadsConversationHistory, RemembersConversations;
 
+    /**
+     * Initialize the Lucius application with the given ProjectAgent instance.
+     *
+     * @param  ProjectAgent  $projectAgent  The project agent instance
+     */
     public function __construct(public readonly ProjectAgent $projectAgent) {}
 
+    /**
+     * Generate the instructions for the current project, including its context.
+     *
+     * @return Stringable|string The project instructions with additional context details
+     */
     public function instructions(): Stringable|string
     {
         $project = $this->project();
@@ -48,39 +44,25 @@ class GenericAgent implements Agent, Conversational, HasTools
     }
 
     /**
-     * @return array<Tool>
+     * Retrieve a list of tool instances for the current project.
+     *
+     * @return iterable The collection of tool instances
      */
     public function tools(): iterable
     {
+        $toolNames = $this->projectAgent->tools ?? [];
         $project = $this->project();
 
-        return match ($this->projectAgent->type) {
-            AgentType::Analyst => [
-                new ListDecisions($project),
-                new CreateBusinessRule($project),
-                new ListBusinessRules($project),
-                new UpdateBusinessRule($project),
-            ],
-            AgentType::Pm => [
-                new ListDecisions($project),
-                new ListBusinessRules($project),
-                new CreateTask($project),
-                new ListTasks($project),
-                new UpdateTask($project),
-            ],
-            AgentType::Technical => [
-                new ListDecisions($project),
-                new ListBusinessRules($project),
-                new ListTasks($project),
-                new UpdateTask($project),
-                new CreateImplementationNote($project),
-                new ListImplementationNotes($project),
-                new UpdateImplementationNote($project),
-            ],
-            default => [],
-        };
+        return collect($toolNames)->map(function (string $name) use ($project) {
+            $class = "App\\Ai\\Tools\\{$name}";
+
+            return new $class($project);
+        })->all();
     }
 
+    /**
+     * Retrieve the associated project from the project agent.
+     */
     public function project(): Project
     {
         return $this->projectAgent->project;

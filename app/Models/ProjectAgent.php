@@ -20,6 +20,7 @@ class ProjectAgent extends Model
             'type' => AgentType::class,
             'is_default' => 'boolean',
             'settings' => 'array',
+            'tools' => 'array',
         ];
     }
 
