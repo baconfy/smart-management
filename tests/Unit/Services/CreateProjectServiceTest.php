@@ -56,11 +56,11 @@ test('seeds all default agents on creation', function (): void {
 
     $project = app(CreateProjectService::class)($user, ['name' => 'Test Project']);
 
-    expect($project->agents)->toHaveCount(4);
+    expect($project->agents)->toHaveCount(5);
 
     $types = $project->agents->pluck('type')->map->value->all();
 
-    expect($types)->toEqualCanonicalizing(['architect', 'analyst', 'pm', 'technical']);
+    expect($types)->toEqualCanonicalizing(['architect', 'analyst', 'pm', 'dba', 'technical']);
 });
 
 test('all default agents are marked as is_default', function (): void {
