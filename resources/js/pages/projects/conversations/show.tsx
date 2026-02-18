@@ -1,13 +1,12 @@
-import { ChatInput } from '@/components/chat/chat-input';
+import { Form } from '@inertiajs/react';
+import ReactMarkdown from 'react-markdown';
+import { ConversationsNavPanel } from '@/components/navigation/conversations-nav-panel';
+import { InputChat } from '@/components/ui/input-chat';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { chat, show } from '@/routes/projects';
 import type { BreadcrumbItem, CursorPaginated } from '@/types';
 import type { Conversation, ConversationMessage, Project, ProjectAgent } from '@/types/models';
-import ReactMarkdown from 'react-markdown';
-import { Form } from '@inertiajs/react';
-import { ConversationsNavPanel } from '@/components/navigation/conversations-nav-panel';
-import { index } from '@/routes/projects/conversations';
 
 type Props = {
     project: Project;
@@ -43,8 +42,8 @@ export default function ConversationShow({ project, agents, conversation, messag
                 </div>
 
                 <div className="mx-auto w-full shrink-0 px-12 pb-4">
-                    <Form {...chat.form(project.ulid)} resetOnSuccess={['message']}>
-                        {({ processing }) => <ChatInput agents={agents} conversationId={conversation.id} processing={processing} />}
+                    <Form {...chat.form(project.ulid)} resetOnSuccess={['message']} options={{ preserveState: true, preserveScroll: true }}>
+                        {({ processing }) => <InputChat agents={agents} conversationId={conversation.id} processing={processing} />}
                     </Form>
                 </div>
             </div>

@@ -5,14 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group';
 import type { ProjectAgent } from '@/types/models';
 
-type ChatInputProps = {
+type InputChatProps = {
     agents: ProjectAgent[];
     processing?: boolean;
     conversationId?: string;
 };
 
-export function ChatInput({ agents, processing = false, conversationId }: ChatInputProps) {
+export function InputChat({ agents, processing = false, conversationId }: InputChatProps) {
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [hasContent, setHasContent] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [files, setFiles] = useState<File[]>([]);
@@ -21,6 +22,7 @@ export function ChatInput({ agents, processing = false, conversationId }: ChatIn
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             e.currentTarget.form?.requestSubmit();
+            setTimeout(() => textareaRef.current?.focus(), 10);
         }
     }
 
@@ -61,7 +63,7 @@ export function ChatInput({ agents, processing = false, conversationId }: ChatIn
                     </InputGroupAddon>
                 )}
 
-                <InputGroupTextarea name="message" placeholder="Send a message..." onKeyDown={handleKeyDown} onChange={(e) => setHasContent(e.target.value.trim().length > 0)} disabled={processing} rows={1} className="max-h-56 min-h-16" />
+                <InputGroupTextarea name="message" ref={textareaRef} placeholder="Send a message..." onKeyDown={handleKeyDown} onChange={(e) => setHasContent(e.target.value.trim().length > 0)} disabled={processing} autoFocus={true} rows={1} className="max-h-56 min-h-16" />
 
                 <InputGroupAddon align="block-end" className="flex items-center justify-between">
                     <InputGroupButton size="icon-sm" onClick={() => fileInputRef.current?.click()} aria-label="Attach file">

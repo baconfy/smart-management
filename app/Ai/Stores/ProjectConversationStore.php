@@ -83,7 +83,7 @@ class ProjectConversationStore extends DatabaseConversationStore implements Conv
             'user_id' => $userId,
             'project_id' => $this->projectId,
             'title' => $title,
-        ]);
+        ])->fresh();
     }
 
     /**

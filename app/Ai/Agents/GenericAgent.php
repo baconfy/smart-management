@@ -7,6 +7,7 @@ namespace App\Ai\Agents;
 use App\Concerns\ReadsConversationHistory;
 use App\Models\Project;
 use App\Models\ProjectAgent;
+use Laravel\Ai\Attributes\UseCheapestModel;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
@@ -15,6 +16,7 @@ use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 use Stringable;
 
+#[UseCheapestModel]
 class GenericAgent implements Agent, Conversational, HasTools
 {
     use Promptable, ReadsConversationHistory, RemembersConversations;
