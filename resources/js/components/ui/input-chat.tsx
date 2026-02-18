@@ -9,11 +9,11 @@ type InputChatProps = {
     agents: ProjectAgent[];
     processing?: boolean;
     conversationId?: string;
+    textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 };
 
-export function InputChat({ agents, processing = false, conversationId }: InputChatProps) {
+export function InputChat({ agents, processing = false, conversationId, textareaRef }: InputChatProps) {
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [hasContent, setHasContent] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [files, setFiles] = useState<File[]>([]);
@@ -22,7 +22,7 @@ export function InputChat({ agents, processing = false, conversationId }: InputC
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             e.currentTarget.form?.requestSubmit();
-            setTimeout(() => textareaRef.current?.focus(), 10);
+            setTimeout(() => textareaRef?.current?.focus(), 10);
         }
     }
 
@@ -74,7 +74,7 @@ export function InputChat({ agents, processing = false, conversationId }: InputC
 
                     <div className="flex items-center gap-2">
                         {agents.map((agent) => (
-                            <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className="clickable select-none" onClick={() => toggleAgent(agent.id)}>
+                            <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className="clickable select-none text-shadow-2xs pb-[0.05rem]" onClick={() => toggleAgent(agent.id)}>
                                 {agent.name}
                             </Badge>
                         ))}

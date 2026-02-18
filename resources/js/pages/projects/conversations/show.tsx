@@ -1,4 +1,5 @@
 import { Form } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationsNavPanel } from '@/components/navigation/conversations-nav-panel';
 import { InputChat } from '@/components/ui/input-chat';
@@ -16,11 +17,45 @@ type Props = {
     messages: ConversationMessage[];
 };
 
-export default function ConversationShow({ project, agents, conversation, messages, conversations }: Props) {
+export default function ConversationShow({ project, agents, conversation, messages: initialMessages, conversations }: Props) {
+    const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages);
+    const [title, setTitle] = useState(conversation.title);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        setMessages(initialMessages);
+    }, [initialMessages]);
+
+    useEffect(() => {
+        setTitle(conversation.title);
+    }, [conversation.title]);
+
+    useEffect(() => {
+        const channel = window.Echo.private(`conversation.${conversation.id}`);
+
+        channel.listen('.message.received', (e: { message: ConversationMessage }) => {
+            setMessages((prev) => {
+                if (prev.some((m) => m.id === e.message.id)) return prev;
+                return [...prev, e.message];
+            });
+            textareaRef.current?.focus();
+        });
+
+        channel.listen('.title.updated', (e: { id: string; title: string }) => {
+            setTitle(e.title);
+        });
+
+        return () => {
+            window.Echo.leave(`conversation.${conversation.id}`);
+        };
+    }, [conversation.id]);
+
+    const waitingForResponse = messages.length > 0 && messages[messages.length - 1].role === 'user';
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: dashboard().url },
         { title: project.name, href: show(project.ulid).url },
-        { title: conversation.title, href: '#' },
+        { title: title, href: '#' },
     ];
 
     return (
@@ -30,7 +65,7 @@ export default function ConversationShow({ project, agents, conversation, messag
                     <div className="mx-auto w-full space-y-4">
                         {messages.map((msg) => (
                             <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-                                <div className={`max-w-[75%] rounded-xl px-4 py-3 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                <div className={`max-w-[75%] rounded-xl px-4 py-3 ${msg.role === 'user' ? 'bg-primary text-primary-foreground text-shadow-2xs' : 'bg-muted text-muted-foreground'}`}>
                                     {msg.role === 'assistant' && msg.project_agent_id && <span className="text-sm font-medium tracking-tighter text-primary">{agents.find((a) => a.id === msg.project_agent_id)?.name}</span>}
                                     <div className="prose prose-base max-w-none prose-invert">
                                         <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -38,12 +73,22 @@ export default function ConversationShow({ project, agents, conversation, messag
                                 </div>
                             </div>
                         ))}
+
+                        {waitingForResponse && (
+                            <div className="flex justify-start">
+                                <div className="flex items-center gap-1 rounded-xl bg-muted px-4 py-3">
+                                    <span className="size-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.3s]" />
+                                    <span className="size-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.15s]" />
+                                    <span className="size-2 animate-bounce rounded-full bg-muted-foreground/50" />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="mx-auto w-full shrink-0 px-12 pb-4">
                     <Form {...chat.form(project.ulid)} resetOnSuccess={['message']} options={{ preserveState: true, preserveScroll: true }}>
-                        {({ processing }) => <InputChat agents={agents} conversationId={conversation.id} processing={processing} />}
+                        {({ processing }) => <InputChat textareaRef={textareaRef} agents={agents} conversationId={conversation.id} processing={processing || waitingForResponse} />}
                     </Form>
                 </div>
             </div>
