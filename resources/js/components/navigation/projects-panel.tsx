@@ -4,7 +4,7 @@ import React from 'react';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarGroupAction, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import ProjectCreate from '@/pages/projects/create';
-import { index } from '@/routes/projects';
+import { index, show } from '@/routes/projects';
 import type { SharedData } from '@/types';
 
 export function ProjectsPanel() {
@@ -32,9 +32,9 @@ export function ProjectsPanel() {
                         <>
                             {projects.map((project) => (
                                 <SidebarMenuItem key={project.id}>
-                                    <SidebarMenuButton render={<Link className="flex items-center gap-2" href={`/projects/${project.ulid}`} />}>
+                                    <SidebarMenuButton render={<Link className="flex items-center gap-2" href={show(project.ulid)} />}>
                                         <p className="size-3 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
-                                        <p className="truncate font-bold line-clamp-1">{project.name}</p>
+                                        <p className="line-clamp-1 truncate font-bold">{project.name}</p>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}

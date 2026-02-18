@@ -10,13 +10,13 @@ use App\Models\User;
 // ============================================================================
 
 test('guest cannot list projects', function (): void {
-    $this->get('/projects')->assertRedirect('/login');
+    $this->get(route('projects.index'))->assertRedirect('/login');
 });
 
 test('authenticated user can list projects', function (): void {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->get('/projects')->assertOk()->assertInertia(fn ($page) => $page->component('projects/index'));
+    $this->actingAs($user)->get(route('projects.index'))->assertOk()->assertInertia(fn ($page) => $page->component('projects/index'));
 });
 
 test('index only shows projects the user belongs to', function (): void {
@@ -31,7 +31,7 @@ test('index only shows projects the user belongs to', function (): void {
     $otherProject = Project::create(['name' => 'Not Mine']);
     $otherProject->members()->create(['user_id' => $other->id, 'role' => 'owner']);
 
-    $this->actingAs($user)->get('/projects')->assertInertia(
+    $this->actingAs($user)->get(route('projects.index'))->assertInertia(
         fn ($page) => $page->component('projects/index')->has('projects', 1)->where('projects.0.name', 'My Project')
     );
 });
@@ -41,13 +41,13 @@ test('index only shows projects the user belongs to', function (): void {
 // ============================================================================
 
 test('guest cannot create a project', function (): void {
-    $this->post('/projects', ['name' => 'Test'])->assertRedirect('/login');
+    $this->post(route('projects.index'), ['name' => 'Test'])->assertRedirect('/login');
 });
 
 test('authenticated user can create a project', function (): void {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->post('/projects', ['name' => 'Arkham District', 'description' => 'Cryptocurrency payment gateway'])->assertRedirect();
+    $this->actingAs($user)->post(route('projects.index'), ['name' => 'Arkham District', 'description' => 'Cryptocurrency payment gateway'])->assertRedirect();
 
     $project = Project::first();
 
@@ -60,17 +60,17 @@ test('authenticated user can create a project', function (): void {
 test('store redirects to project show page', function (): void {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/projects', ['name' => 'Test Project']);
+    $response = $this->actingAs($user)->post(route('projects.index'), ['name' => 'Test Project']);
 
     $project = Project::first();
 
-    $response->assertRedirect("/projects/{$project->ulid}");
+    $response->assertRedirect(route('projects.show', $project));
 });
 
 test('store adds the user as owner', function (): void {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->post('/projects', ['name' => 'Test Project']);
+    $this->actingAs($user)->post(route('projects.index'), ['name' => 'Test Project']);
 
     $project = Project::first();
 
@@ -81,7 +81,7 @@ test('store adds the user as owner', function (): void {
 test('store seeds default agents', function (): void {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->post('/projects', ['name' => 'Test Project']);
+    $this->actingAs($user)->post(route('projects.index'), ['name' => 'Test Project']);
 
     $project = Project::first();
 
@@ -91,19 +91,19 @@ test('store seeds default agents', function (): void {
 test('store requires a name', function (): void {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->post('/projects', ['name' => ''])->assertSessionHasErrors('name');
+    $this->actingAs($user)->post(route('projects.index'), ['name' => ''])->assertSessionHasErrors('name');
 });
 
 test('store name must be at most 255 characters', function (): void {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->post('/projects', ['name' => str_repeat('a', 256)])->assertSessionHasErrors('name');
+    $this->actingAs($user)->post(route('projects.index'), ['name' => str_repeat('a', 256)])->assertSessionHasErrors('name');
 });
 
 test('store description is optional', function (): void {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->post('/projects', ['name' => 'No Description'])->assertRedirect();
+    $this->actingAs($user)->post(route('projects.index'), ['name' => 'No Description'])->assertRedirect();
 
     expect(Project::first()->description)->toBeNull();
 });
@@ -115,7 +115,7 @@ test('store description is optional', function (): void {
 test('guest cannot view a project', function (): void {
     $project = Project::create(['name' => 'Test']);
 
-    $this->get("/projects/{$project->ulid}")->assertRedirect('/login');
+    $this->get(route('projects.show', $project))->assertRedirect('/login');
 });
 
 test('member can view their project', function (): void {
@@ -123,7 +123,7 @@ test('member can view their project', function (): void {
     $project = Project::create(['name' => 'My Project']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
-    $this->actingAs($user)->get("/projects/{$project->ulid}")->assertOk()->assertInertia(
+    $this->actingAs($user)->get(route('projects.show', $project))->assertOk()->assertInertia(
         fn ($page) => $page->component('projects/show')->where('project.name', 'My Project')->where('project.ulid', $project->ulid)
     );
 });
@@ -135,7 +135,7 @@ test('non-member cannot view a project', function (): void {
     $project = Project::create(['name' => 'Not Mine']);
     $project->members()->create(['user_id' => $other->id, 'role' => 'owner']);
 
-    $this->actingAs($user)->get("/projects/{$project->ulid}")->assertForbidden();
+    $this->actingAs($user)->get(route('projects.show', $project))->assertForbidden();
 });
 
 test('show returns 404 for invalid ulid', function (): void {

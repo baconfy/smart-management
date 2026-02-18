@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 test('guest cannot view project conversations', function (): void {
     $project = Project::create(['name' => 'Test']);
 
-    $this->get("/projects/{$project->ulid}/conversations")
+    $this->get(route('projects.conversations.index', $project))
         ->assertRedirect('/login');
 });
 
@@ -23,7 +23,7 @@ test('non-member cannot view project conversations', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get("/projects/{$project->ulid}/conversations")
+        ->get(route('projects.conversations.index', $project))
         ->assertForbidden();
 });
 
@@ -36,14 +36,9 @@ test('member can view conversations index', function (): void {
     $project = Project::create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
-    $this->actingAs($user)
-        ->get("/projects/{$project->ulid}/conversations")
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('projects/conversations/index')
-            ->has('project')
-            ->has('agents')
-        );
+    $this->actingAs($user)->get(route('projects.conversations.index', $project))->assertOk()->assertInertia(
+        fn ($page) => $page->component('projects/conversations/index')->has('project')->has('agents')
+    );
 });
 
 // ============================================================================
@@ -63,7 +58,7 @@ test('member can view a conversation', function (): void {
     ]);
 
     $this->actingAs($user)
-        ->get("/projects/{$project->ulid}/conversations/{$conversation->id}")
+        ->get(route('projects.conversations.show', [$project, $conversation]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('projects/conversations/show')
@@ -88,7 +83,7 @@ test('non-member cannot view a conversation', function (): void {
     ]);
 
     $this->actingAs($user)
-        ->get("/projects/{$project->ulid}/conversations/{$conversation->id}")
+        ->get(route('projects.conversations.show', [$project, $conversation]))
         ->assertForbidden();
 });
 
@@ -107,6 +102,6 @@ test('conversation must belong to the project', function (): void {
     ]);
 
     $this->actingAs($user)
-        ->get("/projects/{$project->ulid}/conversations/{$conversation->id}")
+        ->get(route('projects.conversations.show', [$project, $conversation]))
         ->assertNotFound();
 });
