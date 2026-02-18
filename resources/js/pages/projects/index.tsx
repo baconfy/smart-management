@@ -4,7 +4,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import AppLayout from '@/layouts/app-layout';
 import ProjectCreate from '@/pages/projects/create';
 import { dashboard } from '@/routes';
-import { index, show } from '@/routes/projects';
+import { show } from '@/routes/projects';
 import type { BreadcrumbItem } from '@/types';
 import type { Project } from '@/types/models';
 

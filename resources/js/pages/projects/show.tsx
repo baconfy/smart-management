@@ -1,7 +1,7 @@
 import { ProjectNavPanel } from '@/components/navigation/project-nav-panel';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
-import { index, show } from '@/routes/projects';
+import { show } from '@/routes/projects';
 import type { BreadcrumbItem } from '@/types';
 import type { Project } from '@/types/models';
 

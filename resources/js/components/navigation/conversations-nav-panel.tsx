@@ -2,8 +2,8 @@ import { Link, usePage } from '@inertiajs/react';
 import { ChevronsLeft, Plus } from 'lucide-react';
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { index as conversationsIndex, show as conversationShow } from '@/routes/projects/conversations';
-import type { Conversation, Project } from '@/types/models';
 import type { CursorPaginated } from '@/types';
+import type { Conversation, Project } from '@/types/models';
 
 type Props = {
     project: Project;

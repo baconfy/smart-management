@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronsLeft, ChevronsRight, FolderCodeIcon } from 'lucide-react';
+import { ChevronsRight, FolderCodeIcon } from 'lucide-react';
 import React from 'react';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarGroupAction, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
