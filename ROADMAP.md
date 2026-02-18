@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-18 (Steps 1-11b-ii complete, 138 tests)
+> **Last updated:** 2026-02-18 (Steps 1-11b-iii complete, 154 tests)
 
 ---
 
@@ -38,6 +38,11 @@ These decisions were made during ideation and refined during implementation:
 27. **Agent column nullable:** `agent_conversation_messages.agent` is nullable — user messages don't have an agent class, only assistant messages do.
 28. **ULID string casting:** `Str::ulid()` returns Symfony ULID object, must be cast to `(string)` when storing in DB via Eloquent.
 29. **Conversation title deferred:** Title auto-generation via AI deferred to Reverb streaming step. For now, uses first ~100 chars of user message.
+30. **Async agent responses via Reverb:** ChatController dispatches `ProcessAgentMessage` Jobs (1 per agent, parallel via Redis). Jobs call AI, save response, broadcast `AgentMessageReceived`. Frontend Echo listeners append messages in real-time.
+31. **ChatController invokable:** Single `__invoke` method with private helpers: `resolveConversation()` (create or find), `dispatchAgentJobs()` (loop agents + dispatch). Clean separation of concerns.
+32. **Docker Reverb networking:** Backend uses `REVERB_HOST=reverb` + `REVERB_PORT=9001` (Docker internal). Frontend uses `VITE_REVERB_HOST=localhost` + `VITE_REVERB_PORT=9012` (host-forwarded). Three contexts: container→container, browser→host, config→env.
+33. **Derived loading state:** `waitingForResponse` derived from `messages[last].role === 'user'` instead of manual state. No useState/useEffect needed — auto-resolves when assistant message arrives via Echo or Inertia.
+34. **Message dedup by ID:** Echo listener checks `prev.some(m => m.id === e.message.id)` before appending. Prevents duplicates when Inertia page reload and WebSocket both deliver the same message.
 
 ---
 
@@ -103,7 +108,7 @@ These decisions were made during ideation and refined during implementation:
 
 ---
 
-## Phase 1.5 — Real-time Chat (Step 11b-iii) ⏳ NEXT
+## Phase 1.5 — Real-time Chat (Step 11b-iii) ✅
 
 > Goal: Replace synchronous AI calls with async Jobs + Reverb broadcasting. Instant redirect, parallel agent responses, real-time message streaming.
 
@@ -132,16 +137,25 @@ Frontend show.tsx:
 ```
 
 ### Tasks
-- [ ] `ProcessAgentMessage` Job (per agent, parallel dispatch)
-- [ ] `GenerateConversationTitle` Job (async title from first message)
-- [ ] `AgentMessageReceived` Event (broadcastable)
-- [ ] `ConversationTitleUpdated` Event (broadcastable)
-- [ ] Channel auth: `conversation.{conversationId}` (user ownership check)
-- [ ] ChatController refactor: dispatch jobs + immediate redirect
-- [ ] Frontend Echo listeners: append messages + update title
-- [ ] Typing indicator / loading state per agent
-- [ ] Auto-focus textarea after response arrives
-- [ ] Validate Reverb connection in Docker environment
+- [x] `AgentMessageReceived` Event (broadcastable via PrivateChannel)
+- [x] `ConversationTitleUpdated` Event (broadcastable via PrivateChannel)
+- [x] `ProcessAgentMessage` Job (per agent, parallel dispatch, calls AI + saves + broadcasts)
+- [x] `GenerateConversationTitle` Job (async title, placeholder for AI generation)
+- [x] Channel auth: `conversation.{conversationId}` (user ownership check)
+- [x] ChatController refactor: invokable, dispatch jobs + immediate redirect
+- [x] Frontend Echo listeners: append messages (dedup by ID) + update title
+- [x] Thinking bubbles (3-dot bounce animation while waiting)
+- [x] Derived loading state (`waitingForResponse` from last message role)
+- [x] Auto-disable input while waiting for response
+- [x] Docker Reverb networking validated (backend:9001, frontend:9012)
+- [x] E2E tested: multi-agent parallel responses via Horizon + Reverb
+
+### Pending Polish
+- [ ] Loading indicator per agent (multi-agent aware)
+- [ ] Token streaming (SSE or WebSocket, show tokens as they arrive)
+- [ ] AI-generated title (replace `Str::limit` with cheap model call)
+
+### Milestone: ✅ Instant redirect after sending. Agent responses appear in real-time via WebSocket. Multi-agent parallel processing. Thinking bubbles while waiting.
 
 ---
 
@@ -245,13 +259,13 @@ Frontend show.tsx:
 | 11b-i | Contextual sidebar (ProjectsPanel → ProjectNavPanel → ConversationsNavPanel) |
 | 11b-ii | Chat UI (ChatInput, messages, ReactMarkdown, scroll, conversation CRUD) |
 
-### Real-time (Step 11b-iii) — Next
+### Real-time (Step 11b-iii) ✅ — 16 tests
 
-| Step | What |
-|------|------|
-| 11b-iii | Reverb streaming (Jobs + Events + Echo listeners) |
+| Step | What | Tests |
+|------|------|-------|
+| 11b-iii | Events (AgentMessageReceived, ConversationTitleUpdated), Jobs (ProcessAgentMessage, GenerateConversationTitle), Channel auth, ChatController refactor (invokable + dispatch), Frontend Echo listeners, thinking bubbles | 16 |
 
-**Total: 138 tests, all passing.**
+**Total: 154 tests, all passing.**
 
 ---
 
@@ -266,7 +280,7 @@ Key architectural patterns:
 - Tools as dedicated PHP classes implementing `Tool` interface — access params via `$request['key']` (ArrayAccess)
 - Instructions stored in DB, defaults from `resources/instructions/*.md`
 - `ProjectConversationStore` extends SDK's `DatabaseConversationStore`, bound in `boot()`
-- Multi-agent chat: controller stores user message once, loops agents, stores each response independently
+- Multi-agent chat: controller dispatches `ProcessAgentMessage` job per agent, stores user message once
 - `ReadsConversationHistory` concern for reading history without SDK middleware
 - `GenericAgent` fallback for agent types without a dedicated class
 - Invisible Moderator with confidence-based routing (Phase 2)
@@ -281,3 +295,9 @@ Key architectural patterns:
 - ReactMarkdown + `@tailwindcss/typography` for message rendering
 - `CursorPaginated<T>` generic type for paginated responses
 - `prepareForValidation` on FormRequest to clean empty `agent_ids`
+- Reverb broadcasting: `AgentMessageReceived` + `ConversationTitleUpdated` events on `PrivateChannel`
+- Docker Reverb: backend `reverb:9001`, frontend `localhost:9012`, separate VITE_ env vars
+- Echo listeners with dedup by message ID to prevent Inertia/WebSocket duplicates
+- Derived `waitingForResponse` from last message role (no extra state)
+- Agent fake testing: `ArchitectAgent::fake(['response'])` + `assertPrompted(fn () => true)`
+- ChatController invokable with `resolveConversation()` + `dispatchAgentJobs()` private methods

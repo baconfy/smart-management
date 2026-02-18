@@ -12,15 +12,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Projects
      */
-    Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
-    Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
-    Route::get('projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
-    Route::post('projects/{project}/chat', ChatController::class)->name('projects.chat');
+    Route::get('p', [ProjectController::class, 'index'])->name('projects.index');
+    Route::post('p', [ProjectController::class, 'store'])->name('projects.store');
+    Route::get('p/{project}', [ProjectController::class, 'show'])->name('projects.show');
+    Route::post('p/{project}/n', ChatController::class)->name('projects.chat');
 
     /**
      * Conversations
      */
-    Route::get('projects/{project}/conversations', [ConversationController::class, 'index'])->name('projects.conversations.index');
-    Route::get('projects/{project}/conversations/{conversation}', [ConversationController::class, 'show'])->name('projects.conversations.show');
+    Route::get('p/{project}/c', [ConversationController::class, 'index'])->name('projects.conversations.index');
+    Route::get('p/{project}/c/{conversation}', [ConversationController::class, 'show'])->name('projects.conversations.show');
 
 });

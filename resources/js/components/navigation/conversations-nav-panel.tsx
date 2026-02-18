@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronsLeft, Plus } from 'lucide-react';
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { show } from '@/routes/projects';
 import { index as conversationsIndex, show as conversationShow } from '@/routes/projects/conversations';
 import type { CursorPaginated } from '@/types';
 import type { Conversation, Project } from '@/types/models';
@@ -16,7 +17,7 @@ export function ConversationsNavPanel({ project, conversations }: Props) {
     return (
         <SidebarGroup className="h-full flex-col">
             <SidebarGroupContent className="flex flex-1 flex-col">
-                <SidebarGroupLabel render={<Link href={`/projects/${project.ulid}`} />}>
+                <SidebarGroupLabel render={<Link href={show(project.ulid)} />}>
                     <ChevronsLeft /> {project.name}
                 </SidebarGroupLabel>
 
