@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -47,5 +48,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function projects(): HasManyThrough
     {
         return $this->hasManyThrough(Project::class, ProjectMember::class, 'user_id', 'id', 'id', 'project_id');
+    }
+
+    /**
+     * Define a has-many relationship for projects.
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
     }
 }
