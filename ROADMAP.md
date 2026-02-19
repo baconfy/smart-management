@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-18 (Steps 1-12 complete, 175 tests)
+> **Last updated:** 2026-02-19 (Steps 1-13 complete, 226 tests)
 
 ---
 
@@ -30,7 +30,7 @@ These decisions were made during ideation and refined during implementation:
 19. **SDK Request Array Access:** Tools access parameters via `ArrayAccess` (`$request['key']`), not `get()` or `input()`. SDK `Request` implements `ArrayAccess`. Optional fields use null coalescing: `$request['key'] ?? null`.
 20. **Agent Tools via Constructor DI:** Tools receive `Project` in constructor, `ArchitectAgent` instantiates them in `tools()` method with `$this->project()`.
 21. **Multi-agent chat:** `agent_ids` array, not single `agent_id`. User message stored once, each agent responds independently. Controller manages conversation lifecycle manually (not SDK middleware) to avoid duplicate user messages.
-22. **Agent resolution:** `ArchitectAgent` for architect type, `GenericAgent` for all others. Resolved via `match` in controller. New agent classes added as `AgentType` cases grow.
+22. **Agent resolution (unified):** All agents use `GenericAgent`. No dedicated agent classes. Tools and model resolved from `project_agents` database columns. `SeedProjectAgents` assigns tools per agent type.
 23. **Contextual sidebar:** Three-level drill-down: `ProjectsPanel` (project list) → `ProjectNavPanel` (Conversations, Tasks, etc.) → `ConversationsNavPanel` (conversation list + New Conversation). Sidebar panel determined by page via `sidebar` prop in AppLayout.
 24. **flex-col-reverse for chat scroll:** Chat message container uses `flex-col-reverse` for automatic scroll-to-bottom without useEffect or refs. Browser natively starts scroll at the end.
 25. **SidebarProvider h-svh:** Changed from `min-h-svh` (allows infinite growth) to `h-svh` (fixed viewport height) to enable internal scroll in nested flex containers.
@@ -49,6 +49,15 @@ These decisions were made during ideation and refined during implementation:
 38. **Moderator confidence routing:** >= 0.8 routes directly, < 0.8 picks most probable. All agents below threshold still get top pick. Future: enquete UI for low confidence.
 39. **AgentsProcessing event:** Broadcasts which agents are "thinking" before jobs execute. Frontend shows per-agent thinking bubbles with agent name + bouncing dots. Replaces generic `waitingForResponse`.
 40. **Per-agent thinking bubbles:** Each processing agent gets its own bubble. As each responds via `AgentMessageReceived`, its bubble is removed. Parallel agents visible simultaneously.
+41. **Async ProcessChatMessage job:** HTTP request only saves user message + dispatches `ProcessChatMessage` job → redirect IMMEDIATE. Job handles Moderator call (if no `agent_ids`) → resolves agents → dispatches `ProcessAgentMessage` per agent. Eliminates all AI latency from HTTP cycle.
+42. **isRouting state:** Generic thinking bubble (no agent name) appears immediately on form submit. When `AgentsProcessing` event arrives, `isRouting = false` and per-agent bubbles replace it. Eliminates perceived lag.
+43. **Turn-based message grouping:** Messages grouped into "turns" (user message + all assistant responses). Single response = inline display. Multi-agent response = Base UI Tabs with pill-style agent name triggers.
+44. **GenericAgent unification:** Removed `ArchitectAgent`. ALL agent types use `GenericAgent::make(projectAgent: $projectAgent)`. Behavior driven entirely by database config (instructions, tools, model). One class, infinite agents.
+45. **Dynamic tools from database:** `project_agents.tools` JSON array (e.g. `["CreateDecision", "ListDecisions"]`). `GenericAgent::tools()` resolves class names dynamically: `"App\\Ai\\Tools\\{$name}"`. Tools assigned per agent type in `SeedProjectAgents`.
+46. **Per-agent model override:** `project_agents.model` (string, nullable). Passed to `$agent->prompt(model: ...)` at runtime. Null = SDK default from `config/ai.php`. Enables cheap models for simple agents, smart models for complex.
+47. **No `conversation_message_id` on artifacts:** Dropped from all artifact tables. `project_id` already links artifacts to projects. Traceability via conversation history shows tool calls. Simpler schema, no orphan risk.
+48. **Artifact tools pattern:** All tools follow same structure: constructor receives `Project`, `handle()` creates/lists/updates, returns confirmation string. Create/Update use `array_filter` for partial updates. List supports status/category/priority filters.
+49. **Wayfinder route imports:** Frontend uses auto-generated TypeScript route functions from `@/routes/projects/tasks`, `@/routes/projects/business-rules`, etc. No `route()` helper, no hardcoded URLs.
 
 ---
 
@@ -166,21 +175,27 @@ Frontend show.tsx:
 
 ---
 
-## Phase 2 — Full Agent System
+## Phase 2 — Full Agent System ✅
 
 > Goal: All 4 agents working with the Moderator routing. All artifact types functional.
 
-### 2.1 Remaining Agents
-- [ ] `AnalystAgent` — reads Decisions, writes Business Rules
-- [ ] `PMAgent` — reads Decisions + Business Rules, writes Tasks
-- [ ] `TechnicalAgent` — reads all, writes Implementation Notes
+### 2.1 Agent Unification ✅
+- [x] All agents use `GenericAgent` — no dedicated agent classes (ArchitectAgent removed)
+- [x] Tools resolved dynamically from `project_agents.tools` JSON column
+- [x] Model override via `project_agents.model` column (nullable → SDK default)
+- [x] `SeedProjectAgents` assigns tools per agent type:
+  - Architect: CreateDecision, ListDecisions, UpdateDecision
+  - Analyst: ListDecisions, CreateBusinessRule, ListBusinessRules, UpdateBusinessRule
+  - PM: ListDecisions, ListBusinessRules, CreateTask, ListTasks, UpdateTask
+  - DBA: ListDecisions, ListBusinessRules, ListTasks
+  - Technical: ListDecisions, ListBusinessRules, ListTasks, UpdateTask, CreateImplementationNote, ListImplementationNotes, UpdateImplementationNote
 
-### 2.2 Remaining Artifact Tools
-- [ ] Tools for Business Rules: Create, List, Update
-- [ ] Tools for Tasks: Create, List, Update
-- [ ] Tools for Implementation Notes: Create, List
+### 2.2 All Artifact Tools ✅
+- [x] Tools for Business Rules: CreateBusinessRule, ListBusinessRules, UpdateBusinessRule (15 tests)
+- [x] Tools for Tasks: CreateTask, ListTasks, UpdateTask (15 tests)
+- [x] Tools for Implementation Notes: CreateImplementationNote, ListImplementationNotes, UpdateImplementationNote (13 tests)
 
-### 2.3 Moderator (Partial ✅)
+### 2.3 Moderator ✅
 - [x] `ModeratorAgent` class with `#[UseCheapestModel]` (5 tests)
 - [x] Structured JSON output: `agents[]` (type + confidence), `reasoning`
 - [x] Multi-agent routing (can route to multiple agents simultaneously)
@@ -189,28 +204,40 @@ Frontend show.tsx:
 - [x] `AgentsProcessing` event — per-agent thinking bubbles (3 tests)
 - [x] Frontend Echo listener for `.agents.processing`
 - [ ] Low confidence enquete UI (clickable poll for user to choose agent)
-- [ ] `AgentsProcessing` broadcast when user selects agents manually
 - [ ] Prompt tuning (agents too verbose, create artifacts without asking)
 
-### 2.4 Agent Management UI
+### 2.4 Async Chat Processing ✅
+- [x] `ProcessChatMessage` Job — moves Moderator out of HTTP cycle (4 tests)
+- [x] Instant redirect after POST (no AI latency in request)
+- [x] `isRouting` state — generic thinking bubble immediately, replaced by per-agent bubbles
+- [x] Turn-based message grouping with multi-agent tabs (Base UI Tabs)
+
+### 2.5 Agent Management UI
 - [ ] View project agents list
 - [ ] Edit instructions per agent
 - [ ] "Reset to default" button (re-copies from `.md`)
 - [ ] Agent settings (provider preference, temperature)
 
-### Milestone: Full meeting room experience. User chats naturally, Moderator routes, all artifact types are generated.
+### Milestone: ✅ Full meeting room experience. User chats naturally, Moderator routes, all artifact types are generated. All processing async.
 
 ---
 
-## Phase 3 — Task System
+## Phase 3 — Task System & Artifact Views (Partial ✅)
 
 > Goal: Tasks are first-class citizens with their own views and dedicated technical chat.
 
-- [ ] Task list view (filterable by status, priority, phase)
+### 3.1 Artifact List Views ✅
+- [x] Business Rules list view — Accordion by category, status badges (5 tests)
+- [x] Task list view — clickable cards with status/priority/phase badges (5 tests)
+- [x] Task detail view — metadata header + subtasks + implementation notes accordion (3 tests)
+- [x] `BusinessRuleController` + `TaskController` with `ProjectPolicy` authorization
+
+### 3.2 Task Enhancements
 - [ ] Task board view (kanban-style by status)
+- [ ] Task filtering (by status, priority, phase)
 - [ ] Task detail view with dedicated technical chat
+- [ ] Manual task status update + ordering
 - [ ] Implementation Notes generated from task conversations
-- [ ] Manual task status update + ordering + subtasks
 
 ### Milestone: Complete task lifecycle — created by PM agent, discussed in technical chat, notes accumulated, status tracked.
 
@@ -284,7 +311,13 @@ Frontend show.tsx:
 |------|------|-------|
 | 12 | `UpdateDecision` tool (5), `DecisionController` + decisions list view (5), `ModeratorAgent` (5), `AgentsProcessing` event (3), ChatController Moderator integration, per-agent thinking bubbles | 13 |
 
-**Total: 175 tests, all passing.**
+### Async + Artifact Tools + Dynamic Agents (Step 13) ✅ — 51 tests
+
+| Step | What | Tests |
+|------|------|-------|
+| 13 | `ProcessChatMessage` Job (4), Business Rule tools (15), Task tools (15), Implementation Note tools (13), Dynamic tools/model from DB, GenericAgent unification, isRouting + multi-agent tabs, Business Rules list view (5), Tasks list + detail views (8), Wayfinder route imports | 51 |
+
+**Total: 226 tests, all passing.**
 
 ---
 
@@ -295,14 +328,15 @@ When starting a new chat about this project, provide these files for context:
 - `ROADMAP.md` — This file. Phased execution plan with current status.
 
 Key architectural patterns:
-- Agents as dedicated PHP classes with `Promptable` trait
+- All agents use `GenericAgent` — tools and model resolved from database
 - Tools as dedicated PHP classes implementing `Tool` interface — access params via `$request['key']` (ArrayAccess)
+- Dynamic tool resolution: `project_agents.tools` JSON → `"App\\Ai\\Tools\\{$name}"` instantiation
+- Per-agent model override: `project_agents.model` → `$agent->prompt(model: ...)` at runtime
 - Instructions stored in DB, defaults from `resources/instructions/*.md`
 - `ProjectConversationStore` extends SDK's `DatabaseConversationStore`, bound in `boot()`
-- Multi-agent chat: controller dispatches `ProcessAgentMessage` job per agent, stores user message once
+- Multi-agent chat: controller dispatches `ProcessChatMessage` job → Moderator → `ProcessAgentMessage` per agent
 - `ReadsConversationHistory` concern for reading history without SDK middleware
-- `GenericAgent` fallback for agent types without a dedicated class
-- ModeratorAgent: invisible router with confidence-based multi-agent routing (partially complete)
+- ModeratorAgent: invisible router with confidence-based multi-agent routing
 - Artifacts as structured data in separate tables (not conversation history)
 - String columns in DB + PHP Enums for validation
 - ULID for public URLs + `(string)` cast on `Str::ulid()`
@@ -314,13 +348,12 @@ Key architectural patterns:
 - ReactMarkdown + `@tailwindcss/typography` for message rendering
 - `CursorPaginated<T>` generic type for paginated responses
 - `prepareForValidation` on FormRequest to clean empty `agent_ids`
-- Reverb broadcasting: `AgentMessageReceived` + `ConversationTitleUpdated` events on `PrivateChannel`
+- Reverb broadcasting: `AgentMessageReceived` + `ConversationTitleUpdated` + `AgentsProcessing` events on `PrivateChannel`
 - Docker Reverb: backend `reverb:9001`, frontend `localhost:9012`, separate VITE_ env vars
 - Echo listeners with dedup by message ID to prevent Inertia/WebSocket duplicates
-- Per-agent `processingAgents` state replaces old derived `waitingForResponse`
-- Agent fake testing: `ArchitectAgent::fake(['response'])` + `assertPrompted(fn () => true)`
-- ChatController invokable with `resolveConversation()` + `dispatchAgentJobs()` + `routeViaModerator()` private methods
-- ModeratorAgent: `#[UseCheapestModel]`, `route()` returns JSON, `resolveAgents()` + `highConfidenceAgents()` helpers
-- AgentsProcessing event: broadcasts agent list before jobs execute, frontend shows per-agent thinking bubbles
-- Decisions UI: post-it grid (color by status, rotation, hover scale) + Dialog detail view
-- DecisionController: `index` action with `ProjectPolicy` authorization
+- Per-agent `processingAgents` state + `isRouting` for immediate UX feedback
+- Agent fake testing: `GenericAgent::fake(['response'])` + `assertPrompted(fn () => true)`
+- ChatController invokable: save message → dispatch `ProcessChatMessage` → redirect (zero AI in HTTP)
+- ModeratorAgent: `#[UseCheapestModel]`, `route()` returns JSON, called inside `ProcessChatMessage` job
+- Turn-based message grouping: `groupIntoTurns()` → single agent inline, multi-agent → Base UI Tabs
+- Wayfinder route imports: `@/routes/projects/tasks`, `@/routes/projects/business-rules`, etc.

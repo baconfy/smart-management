@@ -59,3 +59,30 @@ export type ConversationMessage = {
     content: string;
     created_at: string;
 };
+
+export type Task = {
+    id: number;
+    ulid: string;
+    project_id: number;
+    title: string;
+    description: string;
+    phase: string | null;
+    milestone: string | null;
+    status: string;
+    priority: string;
+    estimate: string | null;
+    sort_order: number;
+    parent_task_id: number | null;
+    created_at: string;
+    updated_at: string;
+};
+
+export type ImplementationNote = {
+    id: number;
+    task_id: number;
+    title: string;
+    content: string;
+    code_snippets: { language: string; code: string }[] | null;
+    created_at: string;
+    updated_at: string;
+};

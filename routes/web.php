@@ -33,4 +33,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Business Rules
      */
     Route::get('p/{project}/b', [App\Http\Controllers\Projects\BusinessRuleController::class, 'index'])->name('projects.business-rules.index');
+
+    /**
+     * Tasks
+     */
+    Route::get('p/{project}/t', [App\Http\Controllers\Projects\TaskController::class, 'index'])->name('projects.tasks.index');
+    Route::get('p/{project}/t/{task}', [App\Http\Controllers\Projects\TaskController::class, 'show'])->name('projects.tasks.show');
 });

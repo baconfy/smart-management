@@ -1,6 +1,7 @@
 import { Form } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+
 import { ConversationsNavPanel } from '@/components/navigation/conversations-nav-panel';
 import { InputChat } from '@/components/ui/input-chat';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +10,8 @@ import { dashboard } from '@/routes';
 import { chat, show } from '@/routes/projects';
 import type { BreadcrumbItem, CursorPaginated } from '@/types';
 import type { Conversation, ConversationMessage, Project, ProjectAgent } from '@/types/models';
+
+// --- Types ---
 
 type ProcessingAgent = { id: number; name: string };
 
@@ -25,6 +28,8 @@ type Props = {
     messages: ConversationMessage[];
 };
 
+// --- Helpers ---
+
 function groupIntoTurns(messages: ConversationMessage[]): Turn[] {
     const turns: Turn[] = [];
 
@@ -38,6 +43,8 @@ function groupIntoTurns(messages: ConversationMessage[]): Turn[] {
 
     return turns;
 }
+
+// --- Sub-components ---
 
 function ThinkingDots() {
     return (
@@ -71,7 +78,7 @@ function AgentTabs({ assistantMessages, processingAgents, agents }: { assistantM
 
     return (
         <div className="flex justify-start">
-            <Tabs defaultValue={allTabs[0].id} className="flex-col max-w-[80%]">
+            <Tabs defaultValue={allTabs[0].id} className="max-w-[80%] flex-col">
                 <div className="sticky top-0 z-10 shadow-2xl">
                     <TabsList>
                         {allTabs.map((tab) => (
@@ -101,12 +108,15 @@ function AgentTabs({ assistantMessages, processingAgents, agents }: { assistantM
     );
 }
 
+// --- Page ---
+
 export default function ConversationShow({ project, agents, conversation, messages: initialMessages, conversations }: Props) {
     const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages);
     const [processingAgents, setProcessingAgents] = useState<ProcessingAgent[]>([]);
     const [isRouting, setIsRouting] = useState(initialMessages.length > 0 && initialMessages[initialMessages.length - 1].role === 'user');
     const [title, setTitle] = useState(conversation.title);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const routingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         setMessages(initialMessages);
@@ -120,18 +130,19 @@ export default function ConversationShow({ project, agents, conversation, messag
         const channel = window.Echo.private(`conversation.${conversation.id}`);
 
         channel.listen('.agents.processing', (e: { agents: ProcessingAgent[] }) => {
+            clearRoutingTimeout();
             setIsRouting(false);
             setProcessingAgents(e.agents);
         });
 
         channel.listen('.message.received', (e: { message: ConversationMessage }) => {
+            clearRoutingTimeout();
+            setIsRouting(false);
             setMessages((prev) => {
                 if (prev.some((m) => m.id === e.message.id)) return prev;
                 return [...prev, e.message];
             });
-
-            setProcessingAgents((prev) => prev.filter((a) => a.id !== e.message.project_agent_id));
-            textareaRef.current?.focus();
+            setProcessingAgents((prev) => prev.filter((a) => Number(a.id) !== Number(e.message.project_agent_id)));
         });
 
         channel.listen('.title.updated', (e: { id: string; title: string }) => {
@@ -139,9 +150,22 @@ export default function ConversationShow({ project, agents, conversation, messag
         });
 
         return () => {
+            clearRoutingTimeout();
             window.Echo.leave(`conversation.${conversation.id}`);
         };
     }, [conversation.id]);
+
+    function clearRoutingTimeout() {
+        if (routingTimeoutRef.current) {
+            clearTimeout(routingTimeoutRef.current);
+            routingTimeoutRef.current = null;
+        }
+    }
+
+    function handleSuccess() {
+        setIsRouting(true);
+        routingTimeoutRef.current = setTimeout(() => setIsRouting(false), 30_000);
+    }
 
     const turns = groupIntoTurns(messages);
     const isBusy = isRouting || processingAgents.length > 0;
@@ -214,7 +238,7 @@ export default function ConversationShow({ project, agents, conversation, messag
                 </div>
 
                 <div className="mx-auto w-full shrink-0 px-12 pb-4">
-                    <Form {...chat.form(project.ulid)} resetOnSuccess={['message']} onSuccess={() => setIsRouting(true)} options={{ preserveState: true, preserveScroll: true }}>
+                    <Form {...chat.form(project.ulid)} resetOnSuccess={['message']} onSuccess={handleSuccess} options={{ preserveState: true, preserveScroll: true }}>
                         {({ processing }) => <InputChat textareaRef={textareaRef} agents={agents} conversationId={conversation.id} processing={processing || isBusy} />}
                     </Form>
                 </div>

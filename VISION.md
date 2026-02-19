@@ -1,6 +1,6 @@
 # Project Vision: AI-Powered Project Manager
 
-> **Status:** Phase 1 + 1.5 complete, Phase 2 in progress — Moderator routing done (Steps 1-12 complete, 175 tests)
+> **Status:** Phase 1 + 1.5 + 2 complete, Phase 3 in progress (Steps 1-13 complete, 226 tests)
 > **Type:** Open Source — Serious side project
 > **Target Audience:** Freelancers & Solopreneurs
 > **Stack:** Laravel 12 + Inertia.js + React 19 | Laravel AI SDK
@@ -314,12 +314,14 @@ project_members
 project_agents
 ├── id (bigint, autoincrement)
 ├── project_id (FK → projects, cascade delete)
-├── type (string — moderator | architect | analyst | pm | technical | custom)
+├── type (string — moderator | architect | analyst | pm | technical | dba | custom)
 ├── name (string — "Architect", "Analyst", "PM", or custom name)
 ├── instructions (text — copied from .md on creation, editable by user, resettable)
+├── tools (json, nullable — e.g. ["CreateDecision", "ListDecisions", "UpdateDecision"])
+├── model (string, nullable — runtime model override, null = SDK default)
 ├── is_system (bool, default false — true = Moderator, invisible to user)
 ├── is_default (bool, default false — true = pre-defined, can't be deleted)
-├── settings (json, nullable — provider preference, temperature, model, etc.)
+├── settings (json, nullable — provider preference, temperature, etc.)
 ├── timestamps
 ```
 
@@ -361,7 +363,6 @@ agent_conversation_messages (SDK table, modified)
 decisions
 ├── id (bigint, autoincrement)
 ├── project_id (FK → projects)
-├── conversation_message_id (string(36), FK, nullable — which message generated this)
 ├── title, choice, reasoning (text)
 ├── alternatives_considered (json)
 ├── context (text)
@@ -371,7 +372,6 @@ decisions
 business_rules
 ├── id (bigint, autoincrement)
 ├── project_id (FK → projects)
-├── conversation_message_id (string(36), FK, nullable)
 ├── title (string), description (text)
 ├── category (string — Payments, Security, etc.)
 ├── status (string — active | deprecated)
@@ -380,7 +380,6 @@ business_rules
 tasks
 ├── id (bigint, autoincrement)
 ├── project_id (FK → projects)
-├── conversation_message_id (string(36), FK, nullable)
 ├── title (string), description (text)
 ├── phase (string, nullable), milestone (string, nullable)
 ├── status (string — backlog | in_progress | done | blocked)
@@ -393,7 +392,6 @@ tasks
 implementation_notes
 ├── id (bigint, autoincrement)
 ├── task_id (FK → tasks)
-├── conversation_message_id (string(36), FK, nullable)
 ├── title (string), content (text)
 ├── code_snippets (json, nullable)
 ├── timestamps
@@ -405,43 +403,47 @@ implementation_notes
 
 ### Agents as Classes (Per-Project)
 
-Pre-defined agents use a base class pattern. Instructions come from the database (copied from `.md` on creation) combined with dynamic artifact context:
+All agents use a single `GenericAgent` class. Tools and model are resolved dynamically from the database:
 
 ```php
-// App\Ai\Agents\ArchitectAgent
-class ArchitectAgent implements Agent, Conversational, HasTools
+// App\Ai\Agents\GenericAgent
+class GenericAgent implements Agent, Conversational, HasTools
 {
     use Promptable, RemembersConversations;
 
     public function __construct(
-        public Project $project,
-        public ProjectAgent $agentConfig,
+        public ProjectAgent $projectAgent,
     ) {}
 
     public function instructions(): string
     {
-        $decisions = $this->project->decisions()->active()->get();
-        $rules = $this->project->businessRules()->active()->get();
-
-        // Instructions from DB (editable) + dynamic artifact context
-        return view('ai.prompts.architect', [
-            'instructions' => $this->agentConfig->instructions,
-            'project' => $this->project,
-            'decisions' => $decisions,
-            'rules' => $rules,
-        ])->render();
+        return $this->projectAgent->instructions
+            . "\n\n## Project Context\n"
+            . "Project: {$this->projectAgent->project->name}\n"
+            . "Description: {$this->projectAgent->project->description}";
     }
 
     public function tools(): iterable
     {
-        return [
-            new CreateDecision($this->project),
-            new UpdateDecision($this->project),
-            new ListDecisions($this->project),
-            new ListBusinessRules($this->project),
-        ];
+        $project = $this->projectAgent->project;
+
+        return collect($this->projectAgent->tools ?? [])
+            ->map(function (string $name) use ($project) {
+                $class = "App\\Ai\\Tools\\{$name}";
+                return new $class($project);
+            })
+            ->all();
     }
 }
+```
+
+Tools are assigned per agent type in `SeedProjectAgents`:
+
+```php
+// Architect gets: CreateDecision, ListDecisions, UpdateDecision
+// PM gets: ListDecisions, ListBusinessRules, CreateTask, ListTasks, UpdateTask
+// Technical gets: ListDecisions, ListBusinessRules, ListTasks, UpdateTask,
+//                 CreateImplementationNote, ListImplementationNotes, UpdateImplementationNote
 ```
 
 ### Moderator Agent (System-level, Invisible)

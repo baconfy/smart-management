@@ -38,7 +38,7 @@ export default function DecisionIndex({ project, decisions }: { project: Project
                             <EmptyMedia variant="icon">
                                 <GavelIcon />
                             </EmptyMedia>
-                            <EmptyTitle>No decisions recorded yet.</EmptyTitle>
+                            <EmptyTitle>No decisions yet.</EmptyTitle>
                             <EmptyDescription>Chat with the Architect agent to create decisions.</EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent className="flex-row justify-center gap-2">
