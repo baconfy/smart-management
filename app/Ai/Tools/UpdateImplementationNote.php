@@ -13,8 +13,18 @@ use Stringable;
 
 readonly class UpdateImplementationNote implements Tool
 {
+    /**
+     * Initialize a new instance of the class with the given project.
+     *
+     * @param  Project  $project  The project instance to be used.
+     */
     public function __construct(private Project $project) {}
 
+    /**
+     * Provides the description for the operation of updating an implementation note.
+     *
+     * @return Stringable|string A description of the update process, detailing its purpose for modifying the title, content, or code snippets.
+     */
     public function description(): Stringable|string
     {
         return 'Update an existing implementation note. Use this to change the title, content, or code snippets.';
@@ -35,15 +45,48 @@ readonly class UpdateImplementationNote implements Tool
             return 'Implementation note not found in this project.';
         }
 
+        $codeSnippets = $this->parseCodeSnippets(($request['code_snippets'] ?? null) ?: null);
+
         $fields = array_filter([
-            'title' => $request['title'] ?? null,
-            'content' => $request['content'] ?? null,
-            'code_snippets' => $request['code_snippets'] ?? null,
+            'title' => ($request['title'] ?? null) ?: null,
+            'content' => ($request['content'] ?? null) ?: null,
+            'code_snippets' => $codeSnippets,
         ], fn ($value) => $value !== null);
 
         $note->update($fields);
 
         return "Implementation note updated: \"{$note->title}\" (ID: {$note->id})";
+    }
+
+    /**
+     * Safely parse and validate code snippets from AI input.
+     *
+     * @return array<int, array{language: string, code: string}>|null
+     */
+    private function parseCodeSnippets(?string $raw): ?array
+    {
+        if ($raw === null) {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        return array_values(array_filter(
+            array_map(function ($item) {
+                if (! is_array($item) || ! isset($item['language'], $item['code'])) {
+                    return null;
+                }
+
+                return [
+                    'language' => (string) $item['language'],
+                    'code' => (string) $item['code'],
+                ];
+            }, $decoded),
+        ));
     }
 
     /**
@@ -58,12 +101,7 @@ readonly class UpdateImplementationNote implements Tool
             'implementation_note_id' => $schema->integer()->description('The ID of the note to update.')->required(),
             'title' => $schema->string()->description('New title.'),
             'content' => $schema->string()->description('New content.'),
-            'code_snippets' => $schema->array()->items(
-                $schema->object()->properties([
-                    'language' => $schema->string()->description('Programming language.'),
-                    'code' => $schema->string()->description('The code snippet.'),
-                ])
-            )->description('Updated code snippets.'),
+            'code_snippets' => $schema->string()->description('Updated code snippets as JSON array. Format: [{"language":"php","code":"echo 1;"},{"language":"sql","code":"SELECT 1"}]'),
         ];
     }
 }

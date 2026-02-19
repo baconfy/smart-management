@@ -1,4 +1,5 @@
 import { Form } from '@inertiajs/react';
+import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
@@ -14,6 +15,9 @@ import type { Conversation, ConversationMessage, Project, ProjectAgent } from '@
 // --- Types ---
 
 type ProcessingAgent = { id: number; name: string };
+
+type PollCandidate = { type: string; confidence: number };
+type PollState = { candidates: PollCandidate[]; reasoning: string };
 
 type Turn = {
     userMessage: ConversationMessage;
@@ -113,10 +117,48 @@ function AgentTabs({ assistantMessages, processingAgents, agents }: { assistantM
 export default function ConversationShow({ project, agents, conversation, messages: initialMessages, conversations }: Props) {
     const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages);
     const [processingAgents, setProcessingAgents] = useState<ProcessingAgent[]>([]);
-    const [isRouting, setIsRouting] = useState(initialMessages.length > 0 && initialMessages[initialMessages.length - 1].role === 'user');
+    const [poll, setPoll] = useState<PollState | null>(null);
     const [title, setTitle] = useState(conversation.title);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const routingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [isRouting, setIsRouting] = useState(false);
+    const selectedAgentIdsRef = useRef<number[]>([]);
+
+    const turns = groupIntoTurns(messages);
+    const isBusy = isRouting || processingAgents.length > 0 || poll !== null;
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Dashboard', href: dashboard().url },
+        { title: project.name, href: show(project.ulid).url },
+        { title: title, href: '#' },
+    ];
+
+    function clearRoutingTimeout() {
+        if (routingTimeoutRef.current) {
+            clearTimeout(routingTimeoutRef.current);
+            routingTimeoutRef.current = null;
+        }
+    }
+
+    function handleSuccess() {
+        if (selectedAgentIdsRef.current.length === 0) {
+            setIsRouting(true);
+            routingTimeoutRef.current = setTimeout(() => setIsRouting(false), 30_000);
+        }
+    }
+
+    async function handleSelectAgents(agentIds: number[]) {
+        setPoll(null);
+        setIsRouting(true);
+        routingTimeoutRef.current = setTimeout(() => setIsRouting(false), 30_000);
+
+        const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+
+        await axios.post(`/p/${project.ulid}/c/${conversation.id}/select-agents`, {
+            agent_ids: agentIds,
+            message: lastUserMsg?.content ?? '',
+        });
+    }
 
     useEffect(() => {
         setMessages(initialMessages);
@@ -133,6 +175,12 @@ export default function ConversationShow({ project, agents, conversation, messag
             clearRoutingTimeout();
             setIsRouting(false);
             setProcessingAgents(e.agents);
+        });
+
+        channel.listen('.agent.selection.required', (e: { candidates: PollCandidate[]; reasoning: string }) => {
+            clearRoutingTimeout();
+            setIsRouting(false);
+            setPoll(e);
         });
 
         channel.listen('.message.received', (e: { message: ConversationMessage }) => {
@@ -154,27 +202,6 @@ export default function ConversationShow({ project, agents, conversation, messag
             window.Echo.leave(`conversation.${conversation.id}`);
         };
     }, [conversation.id]);
-
-    function clearRoutingTimeout() {
-        if (routingTimeoutRef.current) {
-            clearTimeout(routingTimeoutRef.current);
-            routingTimeoutRef.current = null;
-        }
-    }
-
-    function handleSuccess() {
-        setIsRouting(true);
-        routingTimeoutRef.current = setTimeout(() => setIsRouting(false), 30_000);
-    }
-
-    const turns = groupIntoTurns(messages);
-    const isBusy = isRouting || processingAgents.length > 0;
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: dashboard().url },
-        { title: project.name, href: show(project.ulid).url },
-        { title: title, href: '#' },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} sidebar={<ConversationsNavPanel project={project} conversations={conversations} />}>
@@ -239,7 +266,7 @@ export default function ConversationShow({ project, agents, conversation, messag
 
                 <div className="mx-auto w-full shrink-0 px-12 pb-4">
                     <Form {...chat.form(project.ulid)} resetOnSuccess={['message']} onSuccess={handleSuccess} options={{ preserveState: true, preserveScroll: true }}>
-                        {({ processing }) => <InputChat textareaRef={textareaRef} agents={agents} conversationId={conversation.id} processing={processing || isBusy} />}
+                        {({ processing }) => <InputChat textareaRef={textareaRef} agents={agents} conversationId={conversation.id} processing={processing || isBusy} poll={poll} onSelectAgents={handleSelectAgents} onAgentsChange={(ids) => (selectedAgentIdsRef.current = ids)} />}
                     </Form>
                 </div>
             </div>

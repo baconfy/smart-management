@@ -29,7 +29,7 @@ class SeedProjectAgents
         [
             'type' => AgentType::Dba,
             'name' => 'DBA',
-            'tools' => ['ListDecisions', 'ListBusinessRules', 'ListTasks'],
+            'tools' => ['ListDecisions', 'ListBusinessRules', 'ListTasks', 'CreateImplementationNote', 'ListImplementationNotes', 'UpdateImplementationNote'],
         ],
         [
             'type' => AgentType::Technical,

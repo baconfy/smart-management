@@ -14,7 +14,6 @@ return [
     | application, allowing you to identify the Horizon you're viewing.
     |
     */
-
     'name' => env('HORIZON_NAME'),
 
     /*
@@ -27,7 +26,6 @@ return [
     | application. Otherwise, this value will serve as the subdomain.
     |
     */
-
     'domain' => env('HORIZON_DOMAIN'),
 
     /*
@@ -40,7 +38,6 @@ return [
     | affect the paths of its internal API that aren't exposed to users.
     |
     */
-
     'path' => env('HORIZON_PATH', 'horizon'),
 
     /*
@@ -53,7 +50,6 @@ return [
     | of supervisors, failed jobs, job metrics, and other information.
     |
     */
-
     'use' => 'default',
 
     /*
@@ -66,7 +62,6 @@ return [
     | of Horizon on the same server so that they don't have problems.
     |
     */
-
     'prefix' => env(
         'HORIZON_PREFIX',
         Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'
@@ -82,7 +77,6 @@ return [
     | the existing middleware. Or, you can simply stick with this list.
     |
     */
-
     'middleware' => ['web'],
 
     /*
@@ -95,7 +89,6 @@ return [
     | own, unique threshold (in seconds) before this event is fired.
     |
     */
-
     'waits' => [
         'redis:default' => 60,
     ],
@@ -110,7 +103,6 @@ return [
     | for one hour while all failed jobs are stored for an entire week.
     |
     */
-
     'trim' => [
         'recent' => 60,
         'pending' => 60,
@@ -130,11 +122,9 @@ return [
     | used to fully remove any noisy jobs from the completed jobs list.
     |
     */
-
     'silenced' => [
         // App\Jobs\ExampleJob::class,
     ],
-
     'silenced_tags' => [
         // 'notifications',
     ],
@@ -149,7 +139,6 @@ return [
     | `horizon:snapshot` schedule to define how long to retain metrics.
     |
     */
-
     'metrics' => [
         'trim_snapshots' => [
             'job' => 24,
@@ -169,7 +158,6 @@ return [
     | instance will continue to terminate each of its workers.
     |
     */
-
     'fast_termination' => false,
 
     /*
@@ -182,8 +170,7 @@ return [
     | configuring these limits on your workers, see the next section.
     |
     */
-
-    'memory_limit' => 64,
+    'memory_limit' => 128,
 
     /*
     |--------------------------------------------------------------------------
@@ -195,14 +182,13 @@ return [
     | queued jobs and will be provisioned by Horizon during deployment.
     |
     */
-
     'defaults' => [
         'supervisor-1' => [
             'connection' => 'redis',
             'queue' => ['default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses' => 1,
+            'maxProcesses' => 4,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
@@ -211,7 +197,6 @@ return [
             'nice' => 0,
         ],
     ],
-
     'environments' => [
         'production' => [
             'supervisor-1' => [
@@ -220,7 +205,6 @@ return [
                 'balanceCooldown' => 3,
             ],
         ],
-
         'local' => [
             'supervisor-1' => [
                 'maxProcesses' => 3,
@@ -238,7 +222,6 @@ return [
     | changed, Horizon will automatically restart to apply all changes.
     |
     */
-
     'watch' => [
         'app',
         'bootstrap',

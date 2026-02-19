@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-19 (Steps 1-13 complete, 226 tests)
+> **Last updated:** 2026-02-19 (Steps 1-14 complete, 232 tests)
 
 ---
 
@@ -11,7 +11,7 @@ These decisions were made during ideation and refined during implementation:
 
 1. **Chat-first approach:** The primary interface is a conversation, not a dashboard. Project management happens as a consequence of chatting with AI agents.
 2. **Meeting Room model:** `Project > Conversation > Agent`. The user opens a conversation and the Moderator routes to the right agent. Multiple agents can respond in the same conversation.
-3. **Subtle Moderator:** Uses a cheap model (via `#[UseCheapestModel]`) for classification. Routes directly when confident (>= 0.8) — per-agent thinking bubbles show who's responding. Low confidence (< 0.8) picks the most probable agent (future: enquete UI for user choice). Supports multi-agent routing. User never sees or manages the Moderator directly.
+3. **Subtle Moderator:** Uses a cheap model (via `#[UseCheapestModel]`) for classification. Routes directly when confident (>= 0.8) — per-agent thinking bubbles show who's responding. Low confidence (< 0.8) broadcasts `AgentSelectionRequired` — user picks agents via poll UI in ChatInput. Supports multi-agent routing. User never sees or manages the Moderator directly.
 4. **Agents are per-project:** Created automatically when a project is created. Pre-defined agents: Architect, Analyst, PM, Technical. Instructions are editable per project with a "reset to default" button.
 5. **Instructions in `.md` → database:** Default instructions live in `resources/instructions/*.md`. On project creation, content is copied to `project_agents.instructions` in the database. Runtime always reads from the database. "Reset to default" re-copies from `.md`.
 6. **Artifacts as knowledge bridge:** Agents don't share conversation histories. They read/write structured artifacts (Decisions, Business Rules, Tasks, Implementation Notes). Conversations are ephemeral; knowledge lives in artifacts.
@@ -46,7 +46,7 @@ These decisions were made during ideation and refined during implementation:
 35. **UpdateDecision tool:** Partial updates — only provided fields are changed. Scoped to project (cannot update other project's decisions). Returns "not found" for cross-project attempts.
 36. **Decisions post-it grid:** Decisions displayed as colored post-it cards in a grid. Color by status (green=active, amber=superseded, red=deprecated). Click opens Dialog with full details. Alternating rotation for visual interest.
 37. **ModeratorAgent with `#[UseCheapestModel]`:** Invisible router. Analyzes message, returns JSON with `agents[]` (type + confidence) and `reasoning`. Multi-agent capable — can route to multiple agents simultaneously.
-38. **Moderator confidence routing:** >= 0.8 routes directly, < 0.8 picks most probable. All agents below threshold still get top pick. Future: enquete UI for low confidence.
+38. **Moderator confidence routing:** >= 0.8 routes directly + dispatches agent jobs. < 0.8 broadcasts `AgentSelectionRequired` with candidates — user selects agents via poll UI in ChatInput, POST to `SelectAgentsController` dispatches jobs.
 39. **AgentsProcessing event:** Broadcasts which agents are "thinking" before jobs execute. Frontend shows per-agent thinking bubbles with agent name + bouncing dots. Replaces generic `waitingForResponse`.
 40. **Per-agent thinking bubbles:** Each processing agent gets its own bubble. As each responds via `AgentMessageReceived`, its bubble is removed. Parallel agents visible simultaneously.
 41. **Async ProcessChatMessage job:** HTTP request only saves user message + dispatches `ProcessChatMessage` job → redirect IMMEDIATE. Job handles Moderator call (if no `agent_ids`) → resolves agents → dispatches `ProcessAgentMessage` per agent. Eliminates all AI latency from HTTP cycle.
@@ -58,6 +58,10 @@ These decisions were made during ideation and refined during implementation:
 47. **No `conversation_message_id` on artifacts:** Dropped from all artifact tables. `project_id` already links artifacts to projects. Traceability via conversation history shows tool calls. Simpler schema, no orphan risk.
 48. **Artifact tools pattern:** All tools follow same structure: constructor receives `Project`, `handle()` creates/lists/updates, returns confirmation string. Create/Update use `array_filter` for partial updates. List supports status/category/priority filters.
 49. **Wayfinder route imports:** Frontend uses auto-generated TypeScript route functions from `@/routes/projects/tasks`, `@/routes/projects/business-rules`, etc. No `route()` helper, no hardcoded URLs.
+50. **Agent selection poll in ChatInput:** Low confidence → `AgentSelectionRequired` event → `InputChatPoll` replaces textarea with reasoning + candidate badges (checkboxes) + "Ask selected" button. POST `/p/{project}/c/{conversation}/select-agents` dispatches jobs. Poll reasoning adapts to conversation language naturally via AI.
+51. **AI falsy value sanitization:** AI models often send `0`, `""`, or `false` for optional fields. All tool `handle()` methods use `($request['field'] ?? null) ?: null` pattern — `??` handles missing keys, `?:` handles falsy values. `array_filter` callbacks use `$value !== null && $value !== ''`.
+52. **JsonSchema SDK limitation:** Laravel AI SDK's `JsonSchema` does not support `$schema->object()->properties()` for nested objects. Complex nested types (e.g. `code_snippets` array of objects) use `$schema->string()` with JSON description + `json_decode` + validation in `handle()`.
+53. **Horizon worker code reload:** After code changes, workers keep old code in memory. Must run `php artisan horizon:terminate` to reload. `queue:flush` clears failed jobs, `horizon:clear` clears pending jobs.
 
 ---
 
@@ -203,8 +207,7 @@ Frontend show.tsx:
 - [x] ChatController integration (empty `agent_ids` triggers Moderator)
 - [x] `AgentsProcessing` event — per-agent thinking bubbles (3 tests)
 - [x] Frontend Echo listener for `.agents.processing`
-- [ ] Low confidence enquete UI (clickable poll for user to choose agent)
-- [ ] Prompt tuning (agents too verbose, create artifacts without asking)
+- [x] Low confidence poll UI — `AgentSelectionRequired` event, `InputChatPoll` in ChatInput, `SelectAgentsController` endpoint (4 tests)
 
 ### 2.4 Async Chat Processing ✅
 - [x] `ProcessChatMessage` Job — moves Moderator out of HTTP cycle (4 tests)
@@ -234,8 +237,8 @@ Frontend show.tsx:
 
 ### 3.2 Task Enhancements
 - [ ] Task board view (kanban-style by status)
-- [ ] Task filtering (by status, priority, phase)
 - [ ] Task detail view with dedicated technical chat
+- [ ] Task filtering (by status, priority, phase)
 - [ ] Manual task status update + ordering
 - [ ] Implementation Notes generated from task conversations
 
@@ -243,15 +246,26 @@ Frontend show.tsx:
 
 ---
 
-## Phase 4 — Polish & Custom Agents
+## Phase 4 — Agent Management & Polish
 
-> Goal: Refined UX and extensibility via user-created agents.
+> Goal: Agent configuration UI, prompt tuning, and UX refinements.
+
+- [ ] Agent Management UI (view/edit instructions, reset to default, settings)
+- [ ] Prompt tuning (agents too verbose, create artifacts without asking)
+- [ ] React Compiler crash investigation (ConversationShow `useMemoCache` error)
+- [ ] Token streaming (SSE or WebSocket, resolves Pusher payload too large)
+- [ ] Tool call optimization (batch inserts, reduce AI round-trips)
+
+---
+
+## Phase 5 — Custom Agents & Extensibility
+
+> Goal: User-created agents and advanced features.
 
 - [ ] Custom agent creation (name + AI-assisted instructions)
 - [ ] Artifact cross-references
 - [ ] Conversation search
 - [ ] Project dashboard / overview
-- [ ] Base UI nativeButton warning fix
 - [ ] Context window management strategy
 
 ### Milestone: Extensible system. Users can create specialized agents tailored to their workflow.
@@ -317,7 +331,24 @@ Frontend show.tsx:
 |------|------|-------|
 | 13 | `ProcessChatMessage` Job (4), Business Rule tools (15), Task tools (15), Implementation Note tools (13), Dynamic tools/model from DB, GenericAgent unification, isRouting + multi-agent tabs, Business Rules list view (5), Tasks list + detail views (8), Wayfinder route imports | 51 |
 
-**Total: 226 tests, all passing.**
+### Agent Selection Poll (Step 14) ✅ — 7 tests
+
+| Step | What | Tests |
+|------|------|-------|
+| 14 | `AgentSelectionRequired` event (3), `SelectAgentsController` + `SelectAgentsRequest` (4), `InputChatPoll` in ChatInput, low confidence flow end-to-end | 7 |
+
+### Bugfixes (Step 14.1) ✅ — 2 tests
+
+| Step | What | Tests |
+|------|------|-------|
+| 14.1 | `parent_task_id` falsy sanitization in CreateTask (2), `priority` empty string guard in UpdateTask, `code_snippets` schema fix in CreateImplementationNote + UpdateImplementationNote (SDK `object()->properties()` → `string()` + `json_decode`) | 2 |
+
+### Known Issues (deferred)
+- **Pusher payload too large:** Long AI responses exceed Pusher's 10KB limit. Fix: token streaming (Phase 4).
+- **React Compiler crash:** `useMemoCache` null error in ConversationShow. Likely React Compiler incompatibility. Fix: investigate in Phase 4.
+- **Tool call round-trips:** PM creating 16 tasks = 16 AI round-trips (~120s). Fix: batch tool optimization or prompt tuning (Phase 4).
+
+**Total: 232 tests, all passing.**
 
 ---
 
@@ -357,3 +388,6 @@ Key architectural patterns:
 - ModeratorAgent: `#[UseCheapestModel]`, `route()` returns JSON, called inside `ProcessChatMessage` job
 - Turn-based message grouping: `groupIntoTurns()` → single agent inline, multi-agent → Base UI Tabs
 - Wayfinder route imports: `@/routes/projects/tasks`, `@/routes/projects/business-rules`, etc.
+- AI input sanitization: `($request['field'] ?? null) ?: null` for optional fields, `array_filter` with `$value !== null && $value !== ''`
+- JsonSchema workaround: nested objects use `$schema->string()` + `json_decode()` + validation in `handle()`
+- Horizon code reload: `php artisan horizon:terminate` after code changes

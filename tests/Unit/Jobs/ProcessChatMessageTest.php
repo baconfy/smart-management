@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Ai\Agents\ModeratorAgent;
 use App\Enums\AgentType;
+use App\Events\AgentSelectionRequired;
 use App\Events\AgentsProcessing;
 use App\Jobs\ProcessAgentMessage;
 use App\Jobs\ProcessChatMessage;
@@ -100,9 +101,9 @@ test('it routes to multiple agents via moderator', function () {
     Queue::assertPushed(ProcessAgentMessage::class, 2);
 });
 
-test('it picks most probable when no agent has high confidence', function () {
+test('it broadcasts enquete when no agent has high confidence', function () {
     Queue::fake([ProcessAgentMessage::class]);
-    Event::fake([AgentsProcessing::class]);
+    Event::fake([AgentsProcessing::class, AgentSelectionRequired::class]);
 
     ModeratorAgent::fake([
         json_encode([
@@ -115,12 +116,11 @@ test('it picks most probable when no agent has high confidence', function () {
     ]);
 
     $job = new ProcessChatMessage($this->conversation, $this->project, 'Tell me more.', []);
-
     app()->call([$job, 'handle']);
 
-    Queue::assertPushed(ProcessAgentMessage::class, 1);
+    Queue::assertNothingPushed();
 
-    Queue::assertPushed(ProcessAgentMessage::class, function ($job) {
-        return $job->projectAgent->type === AgentType::Analyst;
+    Event::assertDispatched(AgentSelectionRequired::class, function ($event) {
+        return count($event->candidates) === 2;
     });
 });

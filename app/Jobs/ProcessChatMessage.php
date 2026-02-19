@@ -5,69 +5,95 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Ai\Agents\ModeratorAgent;
+use App\Events\AgentSelectionRequired;
 use App\Events\AgentsProcessing;
 use App\Models\Conversation;
 use App\Models\Project;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 
 class ProcessChatMessage implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * Constructor for initializing the class with required dependencies.
+     * Initialize a new instance of the class.
      *
-     * @param  Conversation  $conversation  The conversation instance.
-     * @param  Project  $project  The project instance.
+     * @param  Conversation  $conversation  The conversation related to the instance.
+     * @param  Project  $project  The project associated with the instance.
      * @param  string  $message  The message content.
-     * @param  array  $agentIds  The array of agent IDs.
+     * @param  array  $agentIds  A list of agent IDs.
      */
     public function __construct(public readonly Conversation $conversation, public readonly Project $project, public readonly string $message, public readonly array $agentIds = []) {}
 
     /**
-     * Handles the processing of the conversation by routing through moderators or specified agents.
+     * Handle the processing of the instance.
      *
-     * If no agent IDs are provided, the conversation is routed via moderators. Otherwise, it fetches
-     * the agents from the project based on the given agent IDs. The method dispatches jobs to process
-     * agents' data and handle their messages for the conversation.
+     * Executes specific logic based on the presence of agent IDs. If agent IDs are provided,
+     * dispatches the task to the corresponding agents. Otherwise, routes the task through a moderator.
      */
     public function handle(): void
     {
-        $agents = empty($this->agentIds)
-            ? $this->routeViaModerator()
-            : $this->project->agents()->whereIn('id', $this->agentIds)->get();
+        if (! empty($this->agentIds)) {
+            $this->dispatchToAgents(
+                $this->project->agents()->whereIn('id', $this->agentIds)->get()
+            );
 
-        AgentsProcessing::dispatch($this->conversation, $agents->map(fn ($a) => ['id' => $a->id, 'name' => $a->name])->values()->toArray());
+            return;
+        }
 
-        $agents->each(
-            fn ($agent) => ProcessAgentMessage::dispatch($this->conversation, $agent, $this->message),
-        );
+        $this->routeViaModerator();
     }
 
     /**
-     * Routes the message through a moderator to determine the appropriate agent types.
+     * Routes the message through a moderator and dispatches agents for handling.
      *
-     * Uses the ModeratorAgent to process the message, filter agents by confidence levels,
-     * and retrieve agents matching the determined types from the project's agent pool.
-     *
-     * @return Collection|array Returns a collection or an array of agents based on the filtered types.
+     * Evaluates agent confidence levels and determines if high-confidence agents
+     * are available to handle the task. If available, appropriate agents are dispatched.
+     * Otherwise, an event is triggered to request the user to select an agent.
      */
-    private function routeViaModerator(): Collection|array
+    private function routeViaModerator(): void
     {
         $moderator = new ModeratorAgent($this->project);
         $result = $moderator->route($this->message);
 
         $highConfidence = $moderator->highConfidenceAgents($result);
 
-        $types = ! empty($highConfidence)
-            ? collect($highConfidence)->pluck('type')->toArray()
-            : [collect($result['agents'])->sortByDesc('confidence')->first()['type']];
+        if (! empty($highConfidence)) {
+            $types = collect($highConfidence)->pluck('type')->toArray();
+            $agents = $this->project->agents()->whereIn('type', $types)->get();
+            $this->dispatchToAgents($agents);
 
-        return $this->project->agents()->whereIn('type', $types)->get();
+            return;
+        }
+
+        // No high-confidence agents — ask the user to choose
+        AgentSelectionRequired::dispatch(
+            $this->conversation,
+            $result['agents'],
+            $result['reasoning'] ?? _('I need your help deciding who should answer this.'),
+        );
+    }
+
+    /**
+     * Dispatch tasks to the agents for processing.
+     *
+     * @param  mixed  $agents  A collection of agents to which tasks will be dispatched.
+     */
+    private function dispatchToAgents(Collection $agents): void
+    {
+        AgentsProcessing::dispatch($this->conversation, $agents->map(fn ($a) => ['id' => $a->id, 'name' => $a->name])->values()->toArray());
+
+        $agents->each(
+            fn ($agent) => ProcessAgentMessage::dispatch(
+                $this->conversation,
+                $agent,
+                $this->message,
+            ),
+        );
     }
 }

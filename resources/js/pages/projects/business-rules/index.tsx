@@ -44,7 +44,7 @@ export default function BusinessRulesIndex({ project, businessRules }: { project
                                 <div className="font-bold text-base">{rule.title}</div>
                                 <Badge variant="secondary">{rule.category}</Badge>
                             </AccordionTrigger>
-                            <AccordionContent className="p-2 pb-4 font-mono text-muted-foreground">{rule.description}</AccordionContent>
+                            <AccordionContent className="p-2 pb-6 font-mono text-muted-foreground">{rule.description}</AccordionContent>
                         </AccordionItem>
                     ))}
                 </Accordion>

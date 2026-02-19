@@ -17,7 +17,7 @@ use Laravel\Ai\Tools\Request;
 
 test('create task tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    expect((string) (new CreateTask($project))->description())->not->toBeEmpty();
+    expect((string) new CreateTask($project)->description())->not->toBeEmpty();
 });
 
 test('create task tool creates a task with required fields', function (): void {
@@ -70,12 +70,7 @@ test('create task tool can create subtask', function (): void {
     $parent = $project->tasks()->create(['title' => 'Parent', 'description' => 'Parent task.']);
 
     $tool = new CreateTask($project);
-    $tool->handle(new Request([
-        'title' => 'Subtask',
-        'description' => 'Child task.',
-        'parent_task_id' => $parent->id,
-    ]));
-
+    $tool->handle(new Request(['title' => 'Subtask', 'description' => 'Child task.', 'parent_task_id' => $parent->id]));
     $subtask = Task::where('parent_task_id', $parent->id)->first();
 
     expect($subtask)->not->toBeNull()->title->toBe('Subtask');
@@ -86,11 +81,35 @@ test('create task tool scopes to project', function (): void {
     $projectA = Project::create(['name' => 'A']);
     $projectB = Project::create(['name' => 'B']);
 
-    (new CreateTask($projectA))->handle(new Request(['title' => 'Task A', 'description' => 'D']));
-    (new CreateTask($projectB))->handle(new Request(['title' => 'Task B', 'description' => 'D']));
+    new CreateTask($projectA)->handle(new Request(['title' => 'Task A', 'description' => 'D']));
+    new CreateTask($projectB)->handle(new Request(['title' => 'Task B', 'description' => 'D']));
 
     expect($projectA->tasks)->toHaveCount(1);
     expect($projectB->tasks)->toHaveCount(1);
+});
+
+test('create task tool handles parent_task_id as zero', function (): void {
+    $project = Project::create(['name' => 'Test']);
+    $tool = new CreateTask($project);
+
+    $tool->handle(new Request(['title' => 'Task with zero parent', 'description' => 'AI sent parent_task_id as 0.', 'parent_task_id' => 0]));
+    $task = Task::first();
+
+    expect($task)
+        ->parent_task_id->toBeNull()
+        ->title->toBe('Task with zero parent');
+});
+
+test('create task tool handles parent_task_id as empty string', function (): void {
+    $project = Project::create(['name' => 'Test']);
+    $tool = new CreateTask($project);
+
+    $tool->handle(new Request(['title' => 'Task with empty parent', 'description' => 'AI sent parent_task_id as empty string.', 'parent_task_id' => '']));
+    $task = Task::first();
+
+    expect($task)
+        ->parent_task_id->toBeNull()
+        ->title->toBe('Task with empty parent');
 });
 
 // ============================================================================

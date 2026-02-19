@@ -37,15 +37,15 @@ readonly class CreateTask implements Tool
      */
     public function handle(Request $request): Stringable|string
     {
-        $task = $this->project->tasks()->create([
-            'title' => $request['title'],
-            'description' => $request['description'],
+        $task->update(array_filter([
+            'title' => $request['title'] ?? null,
+            'description' => $request['description'] ?? null,
             'phase' => $request['phase'] ?? null,
             'milestone' => $request['milestone'] ?? null,
-            'priority' => $request['priority'] ?? 'medium',
+            'status' => $request['status'] ?? null,
+            'priority' => $request['priority'] ?? null,
             'estimate' => $request['estimate'] ?? null,
-            'parent_task_id' => $request['parent_task_id'] ?? null,
-        ]);
+        ], fn ($value) => $value !== null && $value !== ''));
 
         return "Task created: \"{$task->title}\" (ID: {$task->id})";
     }

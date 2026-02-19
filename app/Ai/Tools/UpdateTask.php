@@ -43,7 +43,7 @@ readonly class UpdateTask implements Tool
             return 'Task not found in this project.';
         }
 
-        $fields = array_filter([
+        $task->update(array_filter([
             'title' => $request['title'] ?? null,
             'description' => $request['description'] ?? null,
             'phase' => $request['phase'] ?? null,
@@ -51,9 +51,7 @@ readonly class UpdateTask implements Tool
             'status' => $request['status'] ?? null,
             'priority' => $request['priority'] ?? null,
             'estimate' => $request['estimate'] ?? null,
-        ], fn ($value) => $value !== null);
-
-        $task->update($fields);
+        ], fn ($value) => $value !== null && $value !== ''));
 
         return "Task updated: \"{$task->title}\" (ID: {$task->id})";
     }
