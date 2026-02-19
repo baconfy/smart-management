@@ -38,6 +38,17 @@ export type Decision = {
     updated_at: string;
 };
 
+export type BusinessRule = {
+    id: number;
+    project_id: number;
+    title: string;
+    description: string;
+    category: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+};
+
 export type ConversationMessage = {
     id: string;
     conversation_id: string;

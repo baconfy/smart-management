@@ -5,6 +5,7 @@ import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, Side
 import { dashboard } from '@/routes';
 import { index as conversations } from '@/routes/projects/conversations';
 import { index as decisions } from '@/routes/projects/decisions';
+import { index as businessRules } from '@/routes/projects/business-rules';
 import type { Project } from '@/types';
 
 type NavItem = {
@@ -21,7 +22,7 @@ export function ProjectNavPanel({ project }: { project: Project }) {
         { title: 'Conversations', icon: MessageSquare, href: conversations(project.ulid).url, enabled: true },
         { title: 'Tasks', icon: ListTodo, href: `/projects/${project.ulid}/tasks`, enabled: false },
         { title: 'Decisions', icon: Gavel, href: decisions(project.ulid).url, enabled: true },
-        { title: 'Business Rules', icon: BookOpen, href: `/projects/${project.ulid}/rules`, enabled: false },
+        { title: 'Business Rules', icon: BookOpen, href: businessRules(project.ulid).url, enabled: true },
         { title: 'Settings', icon: Settings, href: `/projects/${project.ulid}/settings`, enabled: false },
     ];
 

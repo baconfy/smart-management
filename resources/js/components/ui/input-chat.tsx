@@ -28,7 +28,7 @@ export function InputChat({ agents, processing = false, conversationId, textarea
     }
 
     function toggleAgent(agentId: number) {
-        if (processing || !hasContent) return
+        //if (processing || !hasContent) return
 
         setSelectedAgentIds((prev) => (prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId]));
     }

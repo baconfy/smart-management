@@ -14,7 +14,7 @@ class SeedProjectAgents
         [
             'type' => AgentType::Architect,
             'name' => 'Architect',
-            'tools' => ['CreateDecision', 'ListDecisions', 'UpdateDecision'],
+            'tools' => ['CreateDecision', 'ListDecisions', 'UpdateDecision', 'ListBusinessRules'],
         ],
         [
             'type' => AgentType::Analyst,

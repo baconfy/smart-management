@@ -28,4 +28,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Decisions
      */
     Route::get('p/{project}/d', [DecisionController::class, 'index'])->name('projects.decisions.index');
+
+    /**
+     * Business Rules
+     */
+    Route::get('p/{project}/b', [App\Http\Controllers\Projects\BusinessRuleController::class, 'index'])->name('projects.business-rules.index');
 });
