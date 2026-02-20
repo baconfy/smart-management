@@ -64,13 +64,15 @@ readonly class UpdateTask implements Tool
      */
     public function schema(JsonSchema $schema): array
     {
+        $slugs = $this->project->statuses()->ordered()->pluck('slug')->implode(', ');
+
         return [
             'task_id' => $schema->integer()->description('The ID of the task to update.')->required(),
             'title' => $schema->string()->description('New title.'),
             'description' => $schema->string()->description('New description.'),
             'phase' => $schema->string()->description('New phase.'),
             'milestone' => $schema->string()->description('New milestone.'),
-            'status' => $schema->string()->description('New status slug (e.g. todo, in-progress, done).'),
+            'status' => $schema->string()->description("New status slug. Available: {$slugs}."),
             'priority' => $schema->string()->description('New priority: high, medium, or low.'),
             'estimate' => $schema->string()->description('New estimate.'),
         ];

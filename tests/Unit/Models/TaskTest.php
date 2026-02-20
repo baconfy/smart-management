@@ -441,3 +441,41 @@ test('subtasks and notes are force deleted on deep cascade via project', functio
     expect(Task::withTrashed()->count())->toBe(0)
         ->and(ImplementationNote::withTrashed()->count())->toBe(0);
 });
+
+// ============================================================================
+// Task Scopes
+// ============================================================================
+
+test('withStatus scope filters tasks by slug', function (): void {
+    $project = Project::factory()->create();
+    $todo = $project->statuses()->create(['name' => 'To Do', 'slug' => 'todo', 'position' => 0]);
+    $done = $project->statuses()->create(['name' => 'Done', 'slug' => 'done', 'position' => 1, 'is_closed' => true]);
+
+    $project->tasks()->create(['title' => 'Open task', 'description' => 'D', 'task_status_id' => $todo->id]);
+    $project->tasks()->create(['title' => 'Closed task', 'description' => 'D', 'task_status_id' => $done->id]);
+
+    expect($project->tasks()->withStatus('todo')->get())->toHaveCount(1);
+    expect($project->tasks()->withStatus('done')->get())->toHaveCount(1);
+});
+
+test('closed scope returns tasks with closed statuses', function (): void {
+    $project = Project::factory()->create();
+    $todo = $project->statuses()->create(['name' => 'To Do', 'slug' => 'todo', 'position' => 0, 'is_closed' => false]);
+    $done = $project->statuses()->create(['name' => 'Done', 'slug' => 'done', 'position' => 1, 'is_closed' => true]);
+
+    $project->tasks()->create(['title' => 'Open', 'description' => 'D', 'task_status_id' => $todo->id]);
+    $project->tasks()->create(['title' => 'Closed', 'description' => 'D', 'task_status_id' => $done->id]);
+
+    expect($project->tasks()->closed()->get())->toHaveCount(1);
+});
+
+test('open scope returns tasks with open statuses', function (): void {
+    $project = Project::factory()->create();
+    $todo = $project->statuses()->create(['name' => 'To Do', 'slug' => 'todo', 'position' => 0, 'is_closed' => false]);
+    $done = $project->statuses()->create(['name' => 'Done', 'slug' => 'done', 'position' => 1, 'is_closed' => true]);
+
+    $project->tasks()->create(['title' => 'Open', 'description' => 'D', 'task_status_id' => $todo->id]);
+    $project->tasks()->create(['title' => 'Closed', 'description' => 'D', 'task_status_id' => $done->id]);
+
+    expect($project->tasks()->open()->get())->toHaveCount(1);
+});

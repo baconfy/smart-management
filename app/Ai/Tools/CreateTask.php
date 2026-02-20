@@ -32,18 +32,26 @@ readonly class CreateTask implements Tool
     public function handle(Request $request): Stringable|string
     {
         $parentTaskId = $request['parent_task_id'] ?? null;
+        $statusSlug = ($request['status'] ?? null) ?: null;
+
+        $status = $statusSlug
+            ? $this->project->statuses()->where('slug', $statusSlug)->first()
+            : $this->project->statuses()->default()->first();
 
         $task = ($this->createTask)($this->project, array_filter([
             'title' => $request['title'] ?? null,
             'description' => $request['description'] ?? null,
             'phase' => $request['phase'] ?? null,
             'milestone' => $request['milestone'] ?? null,
+            'task_status_id' => $status?->id,
             'priority' => $request['priority'] ?? null,
             'estimate' => $request['estimate'] ?? null,
             'parent_task_id' => $parentTaskId ?: null,
         ], fn ($value) => $value !== null && $value !== ''));
 
-        return "Task created: \"{$task->title}\" (ID: {$task->id})";
+        $statusName = $status?->name ?? 'none';
+
+        return "Task created: \"{$task->title}\" (ID: {$task->id}, Status: {$statusName})";
     }
 
     /**
@@ -54,11 +62,14 @@ readonly class CreateTask implements Tool
      */
     public function schema(JsonSchema $schema): array
     {
+        $slugs = $this->project->statuses()->ordered()->pluck('slug')->implode(', ');
+
         return [
             'title' => $schema->string()->description('Short title for the task.')->required(),
             'description' => $schema->string()->description('Detailed description of what needs to be done.')->required(),
             'phase' => $schema->string()->description('Project phase (e.g. MVP, v2).'),
             'milestone' => $schema->string()->description('Milestone this task belongs to.'),
+            'status' => $schema->string()->description("Task status slug. Available: {$slugs}. Defaults to the project default status."),
             'priority' => $schema->string()->description('Priority: high, medium, or low. Defaults to medium.'),
             'estimate' => $schema->string()->description('Time estimate (e.g. "3 days", "2 hours").'),
             'parent_task_id' => $schema->integer()->description('Parent task ID to create a subtask.'),
