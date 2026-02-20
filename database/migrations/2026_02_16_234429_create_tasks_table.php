@@ -14,20 +14,20 @@ return new class extends Migration
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->ulid();
-            $table->foreignId('project_id')->constrained()->restrictOnDelete();
+            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description');
             $table->string('phase')->nullable();
             $table->string('milestone')->nullable();
-            $table->string('status')->default('backlog');
+            $table->foreignId('project_status_id')->nullable()->constrained('project_statuses')->restrictOnDelete();
             $table->string('priority')->default('medium');
             $table->string('estimate')->nullable();
             $table->integer('sort_order')->default(0);
             $table->foreignId('parent_task_id')->nullable()->constrained('tasks')->nullOnDelete();
-            $table->timestamps();
             $table->softDeletes();
+            $table->timestamps();
 
-            $table->index(['project_id', 'status']);
+            $table->index(['project_id', 'project_status_id']);
             $table->index(['project_id', 'priority']);
             $table->index(['parent_task_id']);
         });
