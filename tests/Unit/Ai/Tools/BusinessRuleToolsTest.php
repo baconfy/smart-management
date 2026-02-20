@@ -16,14 +16,14 @@ use Laravel\Ai\Tools\Request;
 
 test('create business rule tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateBusinessRule($project);
+    $tool = app()->make(CreateBusinessRule::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('create business rule tool creates a record', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateBusinessRule($project);
+    $tool = app()->make(CreateBusinessRule::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
         'title' => 'Payment must be confirmed within 24h',
@@ -49,8 +49,8 @@ test('create business rule tool scopes to the given project', function (): void 
     $projectA = Project::create(['name' => 'A']);
     $projectB = Project::create(['name' => 'B']);
 
-    new CreateBusinessRule($projectA)->handle(new Request(['title' => 'Rule A', 'description' => 'Desc', 'category' => 'general']));
-    new CreateBusinessRule($projectB)->handle(new Request(['title' => 'Rule B', 'description' => 'Desc', 'category' => 'general']));
+    app()->make(CreateBusinessRule::class, ['project' => $projectA])->handle(new Request(['title' => 'Rule A', 'description' => 'Desc', 'category' => 'general']));
+    app()->make(CreateBusinessRule::class, ['project' => $projectB])->handle(new Request(['title' => 'Rule B', 'description' => 'Desc', 'category' => 'general']));
 
     expect($projectA->businessRules)->toHaveCount(1);
     expect($projectB->businessRules)->toHaveCount(1);
@@ -126,7 +126,7 @@ test('list business rules tool only returns rules from its project', function ()
 
 test('update business rule tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new UpdateBusinessRule($project);
+    $tool = app()->make(UpdateBusinessRule::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
@@ -136,7 +136,7 @@ test('update business rule tool updates a record', function (): void {
 
     $rule = $project->businessRules()->create(['title' => 'Old Title', 'description' => 'Old Desc', 'category' => 'general']);
 
-    $result = (string) new UpdateBusinessRule($project)->handle(new Request([
+    $result = (string) app()->make(UpdateBusinessRule::class, ['project' => $project])->handle(new Request([
         'business_rule_id' => $rule->id,
         'title' => 'New Title',
         'description' => 'New Desc',
@@ -153,7 +153,7 @@ test('update business rule tool can change status', function (): void {
 
     $rule = $project->businessRules()->create(['title' => 'Rule', 'description' => 'D', 'category' => 'c']);
 
-    new UpdateBusinessRule($project)->handle(new Request([
+    app()->make(UpdateBusinessRule::class, ['project' => $project])->handle(new Request([
         'business_rule_id' => $rule->id,
         'status' => 'deprecated',
     ]));
@@ -166,7 +166,7 @@ test('update business rule tool only updates provided fields', function (): void
 
     $rule = $project->businessRules()->create(['title' => 'Keep', 'description' => 'Keep Desc', 'category' => 'payments']);
 
-    new UpdateBusinessRule($project)->handle(new Request([
+    app()->make(UpdateBusinessRule::class, ['project' => $project])->handle(new Request([
         'business_rule_id' => $rule->id,
         'category' => 'auth',
     ]));
@@ -182,7 +182,7 @@ test('update business rule tool scopes to the given project', function (): void 
 
     $rule = $projectB->businessRules()->create(['title' => 'Other', 'description' => 'D', 'category' => 'c']);
 
-    $result = (string) new UpdateBusinessRule($projectA)->handle(new Request([
+    $result = (string) app()->make(UpdateBusinessRule::class, ['project' => $projectA])->handle(new Request([
         'business_rule_id' => $rule->id,
         'title' => 'Hacked',
     ]));

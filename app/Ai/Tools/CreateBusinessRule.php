@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\BusinessRules\CreateBusinessRule as CreateBusinessRuleAction;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -14,18 +15,11 @@ readonly class CreateBusinessRule implements Tool
 {
     /**
      * Construct a new instance of the class with the provided Project dependency.
-     *
-     * @param  Project  $project  The project instance to be utilized in this class.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private CreateBusinessRuleAction $createBusinessRule) {}
 
     /**
      * Get the description of the purpose for recording a business rule.
-     *
-     * This description explains when to use the functionality for documenting
-     * domain rules, policies, or constraints within the project.
-     *
-     * @return Stringable|string The description detailing the intended use case.
      */
     public function description(): Stringable|string
     {
@@ -34,13 +28,10 @@ readonly class CreateBusinessRule implements Tool
 
     /**
      * Handle the incoming request to create a new business rule for the project.
-     *
-     * @param  Request  $request  The HTTP request containing data for the new business rule.
-     * @return Stringable|string A message confirming the creation of the business rule.
      */
     public function handle(Request $request): Stringable|string
     {
-        $rule = $this->project->businessRules()->create([
+        $rule = ($this->createBusinessRule)($this->project, [
             'title' => $request['title'],
             'description' => $request['description'],
             'category' => $request['category'],

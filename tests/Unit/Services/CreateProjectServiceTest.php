@@ -94,5 +94,5 @@ test('each agent type has distinct instructions', function (): void {
 
     $instructions = $project->agents->pluck('instructions')->unique();
 
-    expect($instructions)->toHaveCount(4);
+    expect($instructions)->toHaveCount(5);
 });

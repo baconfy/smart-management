@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\Decisions\CreateDecision as CreateDecisionAction;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -15,7 +16,7 @@ readonly class CreateDecision implements Tool
     /**
      * Initialize a new instance of the class.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private CreateDecisionAction $createDecision) {}
 
     /**
      * Get the description of the tool's purpose.
@@ -30,7 +31,7 @@ readonly class CreateDecision implements Tool
      */
     public function handle(Request $request): Stringable|string
     {
-        $decision = $this->project->decisions()->create([
+        $decision = ($this->createDecision)($this->project, [
             'title' => $request['title'],
             'choice' => $request['choice'],
             'reasoning' => $request['reasoning'],

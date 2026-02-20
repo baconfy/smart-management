@@ -15,14 +15,14 @@ use Laravel\Ai\Tools\Request;
 
 test('create implementation note tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    expect((string) (new CreateImplementationNote($project))->description())->not->toBeEmpty();
+    expect((string) (app()->make(CreateImplementationNote::class, ['project' => $project]))->description())->not->toBeEmpty();
 });
 
 test('create implementation note tool creates a record', function (): void {
     $project = Project::create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Setup DB', 'description' => 'D']);
 
-    $tool = new CreateImplementationNote($project);
+    $tool = app()->make(CreateImplementationNote::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
         'task_id' => $task->id,
@@ -46,7 +46,7 @@ test('create implementation note tool accepts code snippets', function (): void 
     $project = Project::create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Setup DB', 'description' => 'D']);
 
-    $tool = new CreateImplementationNote($project);
+    $tool = app()->make(CreateImplementationNote::class, ['project' => $project]);
 
     $tool->handle(new Request([
         'task_id' => $task->id,
@@ -68,7 +68,7 @@ test('create implementation note tool validates task belongs to project', functi
     $projectB = Project::create(['name' => 'B']);
     $task = $projectB->tasks()->create(['title' => 'Other', 'description' => 'D']);
 
-    $tool = new CreateImplementationNote($projectA);
+    $tool = app()->make(CreateImplementationNote::class, ['project' => $projectA]);
 
     $result = (string) $tool->handle(new Request([
         'task_id' => $task->id,
@@ -144,7 +144,7 @@ test('list implementation notes tool only returns own project', function (): voi
 
 test('update implementation note tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    expect((string) (new UpdateImplementationNote($project))->description())->not->toBeEmpty();
+    expect((string) (app()->make(UpdateImplementationNote::class, ['project' => $project]))->description())->not->toBeEmpty();
 });
 
 test('update implementation note tool updates a record', function (): void {
@@ -152,7 +152,7 @@ test('update implementation note tool updates a record', function (): void {
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Old', 'content' => 'Old content']);
 
-    $tool = new UpdateImplementationNote($project);
+    $tool = app()->make(UpdateImplementationNote::class, ['project' => $project]);
     $result = (string) $tool->handle(new Request([
         'implementation_note_id' => $note->id,
         'title' => 'New Title',
@@ -170,7 +170,7 @@ test('update implementation note tool only updates provided fields', function ()
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Keep', 'content' => 'Keep too']);
 
-    (new UpdateImplementationNote($project))->handle(new Request([
+    (app()->make(UpdateImplementationNote::class, ['project' => $project]))->handle(new Request([
         'implementation_note_id' => $note->id,
         'content' => 'Updated only this.',
     ]));
@@ -185,7 +185,7 @@ test('update implementation note tool scopes to project', function (): void {
     $task = $projectB->tasks()->create(['title' => 'T', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Other', 'content' => 'C']);
 
-    $result = (string) (new UpdateImplementationNote($projectA))->handle(new Request([
+    $result = (string) (app()->make(UpdateImplementationNote::class, ['project' => $projectA]))->handle(new Request([
         'implementation_note_id' => $note->id,
         'title' => 'Hacked',
     ]));

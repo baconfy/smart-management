@@ -15,11 +15,10 @@ class BusinessRuleController extends Controller
     /**
      * Handle the display of the business rules index page for a specific project.
      *
-     * @param  Request  $request  The incoming HTTP request instance.
      * @param  Project  $project  The project instance being viewed.
      * @return Response The HTTP response containing the rendered business rules index page.
      */
-    public function index(Request $request, Project $project): Response
+    public function index(Project $project): Response
     {
         $this->authorize('view', $project);
 

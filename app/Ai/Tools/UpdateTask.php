@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\Tasks\UpdateTask as UpdateTaskAction;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -13,16 +14,12 @@ use Stringable;
 readonly class UpdateTask implements Tool
 {
     /**
-     * Constructor method for the Lucius application.
-     *
-     * @param  Project  $project  The project instance to be managed by this application.
+     * Initialize the class with a Project instance.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private UpdateTaskAction $updateTask) {}
 
     /**
      * Provides a description of the functionality for updating an existing task.
-     *
-     * @return Stringable|string A description detailing the task update capabilities, such as modifying the title, description, status, priority, or other fields.
      */
     public function description(): Stringable|string
     {
@@ -31,9 +28,6 @@ readonly class UpdateTask implements Tool
 
     /**
      * Handles the request to update a task within the project.
-     *
-     * @param  Request  $request  The incoming HTTP request containing task update data.
-     * @return Stringable|string A response indicating the result of the operation.
      */
     public function handle(Request $request): Stringable|string
     {
@@ -43,7 +37,7 @@ readonly class UpdateTask implements Tool
             return 'Task not found in this project.';
         }
 
-        $task->update(array_filter([
+        ($this->updateTask)($task, array_filter([
             'title' => $request['title'] ?? null,
             'description' => $request['description'] ?? null,
             'phase' => $request['phase'] ?? null,

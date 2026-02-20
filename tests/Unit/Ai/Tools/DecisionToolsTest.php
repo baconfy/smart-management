@@ -16,14 +16,14 @@ use Laravel\Ai\Tools\Request;
 
 test('create decision tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateDecision($project);
+    $tool = app()->make(CreateDecision::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('create decision tool creates a decision record', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateDecision($project);
+    $tool = app()->make(CreateDecision::class, ['project' => $project]);
 
     $request = new Request([
         'title' => 'Use PostgreSQL',
@@ -49,7 +49,7 @@ test('create decision tool creates a decision record', function (): void {
 
 test('create decision tool accepts optional fields', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateDecision($project);
+    $tool = app()->make(CreateDecision::class, ['project' => $project]);
 
     $request = new Request([
         'title' => 'Use Redis',
@@ -72,8 +72,8 @@ test('create decision tool scopes to the given project', function (): void {
     $projectA = Project::create(['name' => 'Project A']);
     $projectB = Project::create(['name' => 'Project B']);
 
-    $toolA = new CreateDecision($projectA);
-    $toolB = new CreateDecision($projectB);
+    $toolA = app()->make(CreateDecision::class, ['project' => $projectA]);
+    $toolB = app()->make(CreateDecision::class, ['project' => $projectB]);
 
     $toolA->handle(new Request([
         'title' => 'Decision A',
@@ -216,7 +216,7 @@ test('list decisions tool only returns decisions from its project', function ():
 
 test('update decision tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new UpdateDecision($project);
+    $tool = app()->make(UpdateDecision::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
@@ -230,7 +230,7 @@ test('update decision tool updates a decision', function (): void {
         'reasoning' => 'Simple.',
     ]);
 
-    $tool = new UpdateDecision($project);
+    $tool = app()->make(UpdateDecision::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
         'decision_id' => $decision->id,
@@ -258,7 +258,7 @@ test('update decision tool can change status', function (): void {
         'reasoning' => 'Simple.',
     ]);
 
-    $tool = new UpdateDecision($project);
+    $tool = app()->make(UpdateDecision::class, ['project' => $project]);
 
     $tool->handle(new Request([
         'decision_id' => $decision->id,
@@ -277,7 +277,7 @@ test('update decision tool only updates provided fields', function (): void {
         'reasoning' => 'Fast.',
     ]);
 
-    $tool = new UpdateDecision($project);
+    $tool = app()->make(UpdateDecision::class, ['project' => $project]);
 
     $tool->handle(new Request([
         'decision_id' => $decision->id,
@@ -302,7 +302,7 @@ test('update decision tool scopes to the given project', function (): void {
         'reasoning' => 'Y',
     ]);
 
-    $tool = new UpdateDecision($projectA);
+    $tool = app()->make(UpdateDecision::class, ['project' => $projectA]);
 
     $result = (string) $tool->handle(new Request([
         'decision_id' => $decision->id,

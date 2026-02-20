@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\Decisions\UpdateDecision as UpdateDecisionAction;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -14,16 +15,11 @@ readonly class UpdateDecision implements Tool
 {
     /**
      * Initialize the class with a Project instance.
-     *
-     * @param  Project  $project  The project instance.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private UpdateDecisionAction $updateDecision) {}
 
     /**
      * Get the description of the architectural decision update process.
-     *
-     * @return Stringable|string A summary explaining the purpose of updating an existing architectural decision,
-     *                           including details such as the title, choice, reasoning, status, or related fields.
      */
     public function description(): Stringable|string
     {
@@ -32,14 +28,6 @@ readonly class UpdateDecision implements Tool
 
     /**
      * Handle the request to update a decision associated with the project.
-     *
-     * This method retrieves a decision by its ID within the project, updates it with
-     * the provided fields from the request, and returns a success message. If the
-     * decision cannot be found, an appropriate error message is returned.
-     *
-     * @param  Request  $request  The incoming HTTP request containing decision data.
-     * @return Stringable|string A success message with the updated decision details
-     *                           or an error message if the decision is not found.
      */
     public function handle(Request $request): Stringable|string
     {
@@ -58,7 +46,7 @@ readonly class UpdateDecision implements Tool
             'context' => $request['context'] ?? null,
         ], fn ($value) => $value !== null);
 
-        $decision->update($fields);
+        ($this->updateDecision)($decision, $fields);
 
         return "Decision updated: \"{$decision->title}\" (ID: {$decision->id})";
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\ImplementationNotes\UpdateImplementationNote as UpdateImplementationNoteAction;
 use App\Models\ImplementationNote;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -14,16 +15,12 @@ use Stringable;
 readonly class UpdateImplementationNote implements Tool
 {
     /**
-     * Initialize a new instance of the class with the given project.
-     *
-     * @param  Project  $project  The project instance to be used.
+     * Initialize the class with a Project instance.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private UpdateImplementationNoteAction $updateImplementationNote) {}
 
     /**
      * Provides the description for the operation of updating an implementation note.
-     *
-     * @return Stringable|string A description of the update process, detailing its purpose for modifying the title, content, or code snippets.
      */
     public function description(): Stringable|string
     {
@@ -32,9 +29,6 @@ readonly class UpdateImplementationNote implements Tool
 
     /**
      * Handles the update of an implementation note associated with the project.
-     *
-     * @param  Request  $request  The HTTP request containing input data for the update operation.
-     * @return Stringable|string Returns a string or a Stringable object indicating the result of the operation.
      */
     public function handle(Request $request): Stringable|string
     {
@@ -53,7 +47,7 @@ readonly class UpdateImplementationNote implements Tool
             'code_snippets' => $codeSnippets,
         ], fn ($value) => $value !== null);
 
-        $note->update($fields);
+        ($this->updateImplementationNote)($note, $fields);
 
         return "Implementation note updated: \"{$note->title}\" (ID: {$note->id})";
     }
@@ -63,13 +57,13 @@ readonly class UpdateImplementationNote implements Tool
      *
      * @return array<int, array{language: string, code: string}>|null
      */
-    private function parseCodeSnippets(?string $raw): ?array
+    private function parseCodeSnippets(array|string|null $raw): ?array
     {
         if ($raw === null) {
             return null;
         }
 
-        $decoded = json_decode($raw, true);
+        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
 
         if (! is_array($decoded)) {
             return null;

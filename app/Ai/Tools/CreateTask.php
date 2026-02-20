@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\Tasks\CreateTask as CreateTaskAction;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -14,15 +15,11 @@ readonly class CreateTask implements Tool
 {
     /**
      * Initialize a new instance of the class with the given Project dependency.
-     *
-     * @param  Project  $project  The project instance to be used.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private CreateTaskAction $createTask) {}
 
     /**
      * Get the description of the task creation functionality.
-     *
-     * @return Stringable|string Description of task creation, explaining its use for tracking work items, features, bugs, or actionable items.
      */
     public function description(): Stringable|string
     {
@@ -31,20 +28,19 @@ readonly class CreateTask implements Tool
 
     /**
      * Handle the creation of a new task based on the given request data.
-     *
-     * @param  Request  $request  The incoming HTTP request containing task details.
-     * @return Stringable|string The response containing a confirmation message for the created task.
      */
     public function handle(Request $request): Stringable|string
     {
-        $task->update(array_filter([
+        $parentTaskId = $request['parent_task_id'] ?? null;
+
+        $task = ($this->createTask)($this->project, array_filter([
             'title' => $request['title'] ?? null,
             'description' => $request['description'] ?? null,
             'phase' => $request['phase'] ?? null,
             'milestone' => $request['milestone'] ?? null,
-            'status' => $request['status'] ?? null,
             'priority' => $request['priority'] ?? null,
             'estimate' => $request['estimate'] ?? null,
+            'parent_task_id' => $parentTaskId ?: null,
         ], fn ($value) => $value !== null && $value !== ''));
 
         return "Task created: \"{$task->title}\" (ID: {$task->id})";

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\BusinessRules\UpdateBusinessRule as UpdateBusinessRuleAction;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -14,15 +15,11 @@ readonly class UpdateBusinessRule implements Tool
 {
     /**
      * Initializes a new instance of the class with the specified project.
-     *
-     * @param  Project  $project  The project instance to be assigned.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private UpdateBusinessRuleAction $updateBusinessRule) {}
 
     /**
      * Provides a description of the business rule update functionality.
-     *
-     * @return Stringable|string A description detailing the purpose and usage of updating an existing business rule.
      */
     public function description(): Stringable|string
     {
@@ -31,9 +28,6 @@ readonly class UpdateBusinessRule implements Tool
 
     /**
      * Handles the incoming request to update a business rule for the project.
-     *
-     * @param  Request  $request  The HTTP request instance containing business rule data.
-     * @return Stringable|string The result message indicating success or failure.
      */
     public function handle(Request $request): Stringable|string
     {
@@ -50,7 +44,7 @@ readonly class UpdateBusinessRule implements Tool
             'status' => $request['status'] ?? null,
         ], fn ($value) => $value !== null);
 
-        $rule->update($fields);
+        ($this->updateBusinessRule)($rule, $fields);
 
         return "Business rule updated: \"{$rule->title}\" (ID: {$rule->id})";
     }

@@ -17,12 +17,12 @@ use Laravel\Ai\Tools\Request;
 
 test('create task tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    expect((string) new CreateTask($project)->description())->not->toBeEmpty();
+    expect((string) app()->make(CreateTask::class, ['project' => $project])->description())->not->toBeEmpty();
 });
 
 test('create task tool creates a task with required fields', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateTask($project);
+    $tool = app()->make(CreateTask::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
         'title' => 'Setup database',
@@ -45,7 +45,7 @@ test('create task tool creates a task with required fields', function (): void {
 
 test('create task tool accepts optional fields', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateTask($project);
+    $tool = app()->make(CreateTask::class, ['project' => $project]);
 
     $tool->handle(new Request([
         'title' => 'Deploy API',
@@ -69,7 +69,7 @@ test('create task tool can create subtask', function (): void {
     $project = Project::create(['name' => 'Test']);
     $parent = $project->tasks()->create(['title' => 'Parent', 'description' => 'Parent task.']);
 
-    $tool = new CreateTask($project);
+    $tool = app()->make(CreateTask::class, ['project' => $project]);
     $tool->handle(new Request(['title' => 'Subtask', 'description' => 'Child task.', 'parent_task_id' => $parent->id]));
     $subtask = Task::where('parent_task_id', $parent->id)->first();
 
@@ -81,8 +81,8 @@ test('create task tool scopes to project', function (): void {
     $projectA = Project::create(['name' => 'A']);
     $projectB = Project::create(['name' => 'B']);
 
-    new CreateTask($projectA)->handle(new Request(['title' => 'Task A', 'description' => 'D']));
-    new CreateTask($projectB)->handle(new Request(['title' => 'Task B', 'description' => 'D']));
+    app()->make(CreateTask::class, ['project' => $projectA])->handle(new Request(['title' => 'Task A', 'description' => 'D']));
+    app()->make(CreateTask::class, ['project' => $projectB])->handle(new Request(['title' => 'Task B', 'description' => 'D']));
 
     expect($projectA->tasks)->toHaveCount(1);
     expect($projectB->tasks)->toHaveCount(1);
@@ -90,7 +90,7 @@ test('create task tool scopes to project', function (): void {
 
 test('create task tool handles parent_task_id as zero', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateTask($project);
+    $tool = app()->make(CreateTask::class, ['project' => $project]);
 
     $tool->handle(new Request(['title' => 'Task with zero parent', 'description' => 'AI sent parent_task_id as 0.', 'parent_task_id' => 0]));
     $task = Task::first();
@@ -102,7 +102,7 @@ test('create task tool handles parent_task_id as zero', function (): void {
 
 test('create task tool handles parent_task_id as empty string', function (): void {
     $project = Project::create(['name' => 'Test']);
-    $tool = new CreateTask($project);
+    $tool = app()->make(CreateTask::class, ['project' => $project]);
 
     $tool->handle(new Request(['title' => 'Task with empty parent', 'description' => 'AI sent parent_task_id as empty string.', 'parent_task_id' => '']));
     $task = Task::first();
@@ -180,14 +180,14 @@ test('list tasks tool only returns own project', function (): void {
 
 test('update task tool has a description', function (): void {
     $project = Project::create(['name' => 'Test']);
-    expect((string) (new UpdateTask($project))->description())->not->toBeEmpty();
+    expect((string) (app()->make(UpdateTask::class, ['project' => $project]))->description())->not->toBeEmpty();
 });
 
 test('update task tool updates a task', function (): void {
     $project = Project::create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Old', 'description' => 'Old desc']);
 
-    $result = (string) (new UpdateTask($project))->handle(new Request([
+    $result = (string) (app()->make(UpdateTask::class, ['project' => $project]))->handle(new Request([
         'task_id' => $task->id,
         'title' => 'New Title',
         'status' => 'in_progress',
@@ -203,7 +203,7 @@ test('update task tool only updates provided fields', function (): void {
     $project = Project::create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Keep', 'description' => 'Keep too', 'priority' => 'high']);
 
-    (new UpdateTask($project))->handle(new Request([
+    (app()->make(UpdateTask::class, ['project' => $project]))->handle(new Request([
         'task_id' => $task->id,
         'description' => 'Updated desc',
     ]));
@@ -217,7 +217,7 @@ test('update task tool scopes to project', function (): void {
     $projectB = Project::create(['name' => 'B']);
     $task = $projectB->tasks()->create(['title' => 'Other', 'description' => 'D']);
 
-    $result = (string) (new UpdateTask($projectA))->handle(new Request([
+    $result = (string) (app()->make(UpdateTask::class, ['project' => $projectA]))->handle(new Request([
         'task_id' => $task->id,
         'title' => 'Hacked',
     ]));

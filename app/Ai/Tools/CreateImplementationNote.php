@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Tools;
 
+use App\Actions\ImplementationNotes\CreateImplementationNote as CreateImplementationNoteAction;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -13,16 +14,12 @@ use Stringable;
 readonly class CreateImplementationNote implements Tool
 {
     /**
-     * Constructor method for the class.
-     *
-     * @param  Project  $project  The project instance to be used within the class.
+     * Initialize the class with a Project instance.
      */
-    public function __construct(private Project $project) {}
+    public function __construct(private Project $project, private CreateImplementationNoteAction $createImplementationNote) {}
 
     /**
      * Provides a description of the method's purpose.
-     *
-     * @return Stringable|string Returns a description string that explains the purpose of creating an implementation note for a task.
      */
     public function description(): Stringable|string
     {
@@ -31,9 +28,6 @@ readonly class CreateImplementationNote implements Tool
 
     /**
      * Handles the incoming request to create an implementation note for a task.
-     *
-     * @param  Request  $request  The incoming HTTP request containing task and note details.
-     * @return Stringable|string A message indicating success or failure, or a stringable result.
      */
     public function handle(Request $request): Stringable|string
     {
@@ -45,7 +39,7 @@ readonly class CreateImplementationNote implements Tool
 
         $codeSnippets = $this->parseCodeSnippets(($request['code_snippets'] ?? null) ?: null);
 
-        $note = $task->implementationNotes()->create([
+        $note = ($this->createImplementationNote)($task, [
             'title' => $request['title'],
             'content' => $request['content'],
             'code_snippets' => $codeSnippets,
@@ -59,13 +53,13 @@ readonly class CreateImplementationNote implements Tool
      *
      * @return array<int, array{language: string, code: string}>|null
      */
-    private function parseCodeSnippets(?string $raw): ?array
+    private function parseCodeSnippets(array|string|null $raw): ?array
     {
         if ($raw === null) {
             return null;
         }
 
-        $decoded = json_decode($raw, true);
+        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
 
         if (! is_array($decoded)) {
             return null;

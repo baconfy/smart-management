@@ -33,7 +33,6 @@ class GenericAgent implements Agent, Conversational, HasTools
     public function instructions(): Stringable|string
     {
         $project = $this->project();
-
         $context = "\n\n## Project Context\n- Name: {$project->name}";
 
         if ($project->description) {
@@ -50,13 +49,11 @@ class GenericAgent implements Agent, Conversational, HasTools
      */
     public function tools(): iterable
     {
-        $toolNames = $this->projectAgent->tools ?? [];
+        $tools = $this->projectAgent->tools ?? [];
         $project = $this->project();
 
-        return collect($toolNames)->map(function (string $name) use ($project) {
-            $class = "App\\Ai\\Tools\\{$name}";
-
-            return new $class($project);
+        return collect($tools)->map(function (string $name) use ($project) {
+            return app()->make("App\\Ai\\Tools\\{$name}", ['project' => $project]);
         })->all();
     }
 
