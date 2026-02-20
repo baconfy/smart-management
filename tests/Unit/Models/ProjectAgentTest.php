@@ -196,10 +196,10 @@ test('project has many agents', function (): void {
 });
 
 // ============================================================================
-// Cascade Delete
+// Cascade Soft Delete
 // ============================================================================
 
-test('agents are deleted when project is deleted', function (): void {
+test('agents are soft deleted when project is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
 
     $project->agents()->create([
@@ -210,5 +210,43 @@ test('agents are deleted when project is deleted', function (): void {
 
     $project->delete();
 
-    expect(ProjectAgent::count())->toBe(0);
+    expect(ProjectAgent::count())->toBe(0)
+        ->and(ProjectAgent::withTrashed()->count())->toBe(1);
+});
+
+// ============================================================================
+// Cascade Restore
+// ============================================================================
+
+test('agents are restored when project is restored', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+
+    $project->agents()->create([
+        'type' => AgentType::Architect->value,
+        'name' => 'Architect',
+        'instructions' => 'You are a software architect.',
+    ]);
+
+    $project->delete();
+    $project->restore();
+
+    expect(ProjectAgent::count())->toBe(1);
+});
+
+// ============================================================================
+// Cascade Force Delete
+// ============================================================================
+
+test('agents are force deleted when project is force deleted', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+
+    $project->agents()->create([
+        'type' => AgentType::Architect->value,
+        'name' => 'Architect',
+        'instructions' => 'You are a software architect.',
+    ]);
+
+    $project->forceDelete();
+
+    expect(ProjectAgent::withTrashed()->count())->toBe(0);
 });

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->restrictOnDelete();
             $table->string('role')->default('member');
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['project_id', 'user_id']);
         });

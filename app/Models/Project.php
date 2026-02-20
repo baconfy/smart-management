@@ -22,11 +22,34 @@ class Project extends Model
     protected static function booted(): void
     {
         static::deleting(function (Project $project) {
-            $project->members()->delete();
-            $project->agents()->delete();
-            $project->decisions()->delete();
-            $project->businessRules()->delete();
-            $project->tasks->each->delete();
+            if ($project->isForceDeleting()) {
+                $project->members()->forceDelete();
+                $project->agents()->forceDelete();
+                $project->conversations->each->forceDelete();
+                $project->decisions()->forceDelete();
+                $project->businessRules()->forceDelete();
+                $project->tasks->each->forceDelete();
+            } else {
+                $project->members()->delete();
+                $project->agents()->delete();
+                $project->conversations->each->delete();
+                $project->decisions()->delete();
+                $project->businessRules()->delete();
+                $project->tasks->each->delete();
+            }
+        });
+
+        static::restoring(function (Project $project) {
+            $project->members()->onlyTrashed()->restore();
+            $project->agents()->onlyTrashed()->restore();
+            $project->conversations()->onlyTrashed()->each(function (Conversation $conversation) {
+                $conversation->restore();
+            });
+            $project->decisions()->onlyTrashed()->restore();
+            $project->businessRules()->onlyTrashed()->restore();
+            $project->tasks()->onlyTrashed()->each(function (Task $task) {
+                $task->restore();
+            });
         });
     }
 

@@ -8,10 +8,29 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Conversation extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Conversation $conversation) {
+            if ($conversation->isForceDeleting()) {
+                $conversation->messages()->forceDelete();
+            } else {
+                $conversation->messages()->delete();
+            }
+        });
+
+        static::restoring(function (Conversation $conversation) {
+            $conversation->messages()->onlyTrashed()->restore();
+        });
+    }
 
     /**
      * The table associated with the model.

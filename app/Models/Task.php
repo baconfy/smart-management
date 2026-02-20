@@ -24,7 +24,18 @@ class Task extends Model
     protected static function booted(): void
     {
         static::deleting(function (Task $task) {
-            $task->implementationNotes()->delete();
+            if ($task->isForceDeleting()) {
+                $task->subtasks->each->forceDelete();
+                $task->implementationNotes()->forceDelete();
+            } else {
+                $task->subtasks->each->delete();
+                $task->implementationNotes()->delete();
+            }
+        });
+
+        static::restoring(function (Task $task) {
+            $task->subtasks()->onlyTrashed()->get()->each->restore();
+            $task->implementationNotes()->onlyTrashed()->restore();
         });
     }
 

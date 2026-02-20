@@ -259,10 +259,10 @@ test('all business rule statuses are valid', function (): void {
 });
 
 // ============================================================================
-// Cascade Delete
+// Cascade Soft Delete
 // ============================================================================
 
-test('decisions are deleted when project is deleted', function (): void {
+test('decisions are soft deleted when project is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
 
     $project->decisions()->create([
@@ -274,10 +274,11 @@ test('decisions are deleted when project is deleted', function (): void {
 
     $project->delete();
 
-    expect(Decision::count())->toBe(0);
+    expect(Decision::count())->toBe(0)
+        ->and(Decision::withTrashed()->count())->toBe(1);
 });
 
-test('business rules are deleted when project is deleted', function (): void {
+test('business rules are soft deleted when project is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
 
     $project->businessRules()->create([
@@ -289,5 +290,76 @@ test('business rules are deleted when project is deleted', function (): void {
 
     $project->delete();
 
-    expect(BusinessRule::count())->toBe(0);
+    expect(BusinessRule::count())->toBe(0)
+        ->and(BusinessRule::withTrashed()->count())->toBe(1);
+});
+
+// ============================================================================
+// Cascade Restore
+// ============================================================================
+
+test('decisions are restored when project is restored', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+
+    $project->decisions()->create([
+        'title' => 'Use PostgreSQL',
+        'choice' => 'PostgreSQL',
+        'reasoning' => 'Best fit.',
+        'status' => DecisionStatus::Active->value,
+    ]);
+
+    $project->delete();
+    $project->restore();
+
+    expect(Decision::count())->toBe(1);
+});
+
+test('business rules are restored when project is restored', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+
+    $project->businessRules()->create([
+        'title' => 'Non-custodial',
+        'description' => 'Never holds funds.',
+        'category' => 'Payments',
+        'status' => BusinessRuleStatus::Active->value,
+    ]);
+
+    $project->delete();
+    $project->restore();
+
+    expect(BusinessRule::count())->toBe(1);
+});
+
+// ============================================================================
+// Cascade Force Delete
+// ============================================================================
+
+test('decisions are force deleted when project is force deleted', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+
+    $project->decisions()->create([
+        'title' => 'Use PostgreSQL',
+        'choice' => 'PostgreSQL',
+        'reasoning' => 'Best fit.',
+        'status' => DecisionStatus::Active->value,
+    ]);
+
+    $project->forceDelete();
+
+    expect(Decision::withTrashed()->count())->toBe(0);
+});
+
+test('business rules are force deleted when project is force deleted', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+
+    $project->businessRules()->create([
+        'title' => 'Non-custodial',
+        'description' => 'Never holds funds.',
+        'category' => 'Payments',
+        'status' => BusinessRuleStatus::Active->value,
+    ]);
+
+    $project->forceDelete();
+
+    expect(BusinessRule::withTrashed()->count())->toBe(0);
 });

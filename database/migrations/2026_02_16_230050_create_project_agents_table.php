@@ -22,6 +22,7 @@ return new class extends Migration
             $table->json('settings')->nullable();
             $table->json('tools')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 };

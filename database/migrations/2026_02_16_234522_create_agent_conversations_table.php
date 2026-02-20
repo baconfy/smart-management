@@ -17,6 +17,7 @@ return new class extends AiMigration
             $table->foreignId('project_id')->constrained()->restrictOnDelete();
             $table->string('title');
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['user_id', 'updated_at']);
             $table->index(['project_id']);
@@ -36,6 +37,7 @@ return new class extends AiMigration
             $table->text('usage')->nullable();
             $table->text('meta')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['conversation_id', 'user_id', 'updated_at'], 'conversation_index');
             $table->index(['user_id']);

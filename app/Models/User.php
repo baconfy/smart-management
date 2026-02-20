@@ -22,7 +22,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected static function booted(): void
     {
         static::deleting(function (User $user) {
-            ProjectMember::where('user_id', $user->id)->delete();
+            ProjectMember::where('user_id', $user->id)->forceDelete();
         });
     }
 

@@ -319,19 +319,20 @@ test('task has many implementation notes', function (): void {
 });
 
 // ============================================================================
-// Cascade Delete
+// Cascade Soft Delete
 // ============================================================================
 
-test('tasks are deleted when project is deleted', function (): void {
+test('tasks are soft deleted when project is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
     $project->tasks()->create(['title' => 'Task', 'description' => 'Will be deleted.', 'status' => TaskStatus::Backlog->value, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->delete();
 
-    expect(Task::count())->toBe(0);
+    expect(Task::count())->toBe(0)
+        ->and(Task::withTrashed()->count())->toBe(1);
 });
 
-test('implementation notes are deleted when task is deleted', function (): void {
+test('implementation notes are soft deleted when task is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
     $task = $project->tasks()->create([
         'title' => 'Task',
@@ -344,5 +345,168 @@ test('implementation notes are deleted when task is deleted', function (): void 
     $task->implementationNotes()->create(['title' => 'Note', 'content' => 'Content.']);
     $task->delete();
 
-    expect($task->refresh()->implementationNotes()->count())->toBe(0);
+    expect(ImplementationNote::count())->toBe(0)
+        ->and(ImplementationNote::withTrashed()->count())->toBe(1);
+});
+
+test('subtasks are soft deleted when parent task is deleted', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $parent = $project->tasks()->create([
+        'title' => 'Parent',
+        'description' => 'Has subtasks.',
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::High->value,
+        'sort_order' => 1,
+    ]);
+
+    $project->tasks()->create([
+        'title' => 'Subtask',
+        'description' => 'Child.',
+        'parent_task_id' => $parent->id,
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::Medium->value,
+        'sort_order' => 1,
+    ]);
+
+    $parent->delete();
+
+    expect(Task::count())->toBe(0)
+        ->and(Task::withTrashed()->count())->toBe(2);
+});
+
+// ============================================================================
+// Cascade Restore
+// ============================================================================
+
+test('tasks are restored when project is restored', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be restored.', 'status' => TaskStatus::Backlog->value, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
+
+    $project->delete();
+    $project->restore();
+
+    expect(Task::count())->toBe(1);
+});
+
+test('implementation notes are restored when task is restored', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $task = $project->tasks()->create([
+        'title' => 'Task',
+        'description' => 'Has notes.',
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::Medium->value,
+        'sort_order' => 1,
+    ]);
+
+    $task->implementationNotes()->create(['title' => 'Note', 'content' => 'Content.']);
+    $task->delete();
+    $task->restore();
+
+    expect(ImplementationNote::count())->toBe(1);
+});
+
+test('subtasks are restored when parent task is restored', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $parent = $project->tasks()->create([
+        'title' => 'Parent',
+        'description' => 'Has subtasks.',
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::High->value,
+        'sort_order' => 1,
+    ]);
+
+    $project->tasks()->create([
+        'title' => 'Subtask',
+        'description' => 'Child.',
+        'parent_task_id' => $parent->id,
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::Medium->value,
+        'sort_order' => 1,
+    ]);
+
+    $parent->delete();
+    $parent->restore();
+
+    expect(Task::count())->toBe(2);
+});
+
+// ============================================================================
+// Cascade Force Delete
+// ============================================================================
+
+test('tasks are force deleted when project is force deleted', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be gone.', 'status' => TaskStatus::Backlog->value, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
+
+    $project->forceDelete();
+
+    expect(Task::withTrashed()->count())->toBe(0);
+});
+
+test('implementation notes are force deleted when task is force deleted', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $task = $project->tasks()->create([
+        'title' => 'Task',
+        'description' => 'Has notes.',
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::Medium->value,
+        'sort_order' => 1,
+    ]);
+
+    $task->implementationNotes()->create(['title' => 'Note', 'content' => 'Content.']);
+    $task->forceDelete();
+
+    expect(ImplementationNote::withTrashed()->count())->toBe(0);
+});
+
+test('subtasks are force deleted when parent task is force deleted', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $parent = $project->tasks()->create([
+        'title' => 'Parent',
+        'description' => 'Has subtasks.',
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::High->value,
+        'sort_order' => 1,
+    ]);
+
+    $subtask = $project->tasks()->create([
+        'title' => 'Subtask',
+        'description' => 'Child.',
+        'parent_task_id' => $parent->id,
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::Medium->value,
+        'sort_order' => 1,
+    ]);
+
+    $parent->forceDelete();
+
+    expect(Task::withTrashed()->where('id', $subtask->id)->exists())->toBeFalse()
+        ->and(Task::withTrashed()->where('id', $parent->id)->exists())->toBeFalse();
+});
+
+test('subtasks and notes are force deleted on deep cascade via project', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $parent = $project->tasks()->create([
+        'title' => 'Parent',
+        'description' => 'Has subtasks.',
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::High->value,
+        'sort_order' => 1,
+    ]);
+
+    $project->tasks()->create([
+        'title' => 'Subtask',
+        'description' => 'Child.',
+        'parent_task_id' => $parent->id,
+        'status' => TaskStatus::Backlog->value,
+        'priority' => TaskPriority::Medium->value,
+        'sort_order' => 1,
+    ]);
+
+    $parent->implementationNotes()->create(['title' => 'Note', 'content' => 'Content.']);
+
+    $project->forceDelete();
+
+    expect(Task::withTrashed()->count())->toBe(0)
+        ->and(ImplementationNote::withTrashed()->count())->toBe(0);
 });
