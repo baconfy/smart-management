@@ -20,6 +20,8 @@ test('can create a project status with required fields', function (): void {
         'position' => 0,
     ]);
 
+    $status->refresh();
+
     expect($status)
         ->toBeInstanceOf(ProjectStatus::class)
         ->name->toBe('To Do')
@@ -126,7 +128,18 @@ test('deleting status is restricted when tasks exist', function (): void {
     $status->delete();
 })->throws(QueryException::class);
 
-test('statuses are deleted when project is deleted', function (): void {
+test('statuses are deleted when project is force deleted', function (): void {
+    $project = Project::create(['name' => 'Test']);
+
+    $project->statuses()->create(['name' => 'To Do', 'slug' => 'todo', 'position' => 0]);
+    $project->statuses()->create(['name' => 'Done', 'slug' => 'done', 'position' => 1]);
+
+    $project->forceDelete();
+
+    expect(ProjectStatus::count())->toBe(0);
+});
+
+test('statuses persist when project is soft deleted', function (): void {
     $project = Project::create(['name' => 'Test']);
 
     $project->statuses()->create(['name' => 'To Do', 'slug' => 'todo', 'position' => 0]);
@@ -134,7 +147,7 @@ test('statuses are deleted when project is deleted', function (): void {
 
     $project->delete();
 
-    expect(ProjectStatus::count())->toBe(0);
+    expect(ProjectStatus::count())->toBe(2);
 });
 
 // ============================================================================

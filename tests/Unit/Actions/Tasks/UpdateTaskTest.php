@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 use App\Actions\Tasks\UpdateTask;
 use App\Enums\TaskPriority;
-use App\Enums\TaskStatus;
 use App\Models\Project;
 use App\Models\Task;
 
 test('it updates a task', function (): void {
     $project = Project::create(['name' => 'Test']);
+    $status = $project->statuses()->create(['name' => 'In Progress', 'slug' => 'in-progress', 'position' => 1]);
     $task = $project->tasks()->create(['title' => 'Old', 'description' => 'Old desc']);
 
-    $result = (new UpdateTask)($task, ['title' => 'New', 'status' => 'in_progress']);
+    $result = (new UpdateTask)($task, ['title' => 'New', 'project_status_id' => $status->id]);
 
     expect($result)
         ->toBeInstanceOf(Task::class)
         ->title->toBe('New')
-        ->status->toBe(TaskStatus::InProgress);
+        ->project_status_id->toBe($status->id);
 });
 
 test('it preserves unchanged fields', function (): void {

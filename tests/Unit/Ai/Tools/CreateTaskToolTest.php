@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Ai\Tools\CreateTask;
 use App\Enums\TaskPriority;
-use App\Enums\TaskStatus;
 use App\Models\Project;
 use App\Models\Task;
 use Laravel\Ai\Tools\Request;
@@ -31,7 +30,7 @@ test('create task tool creates a task with required fields', function (): void {
         ->project_id->toBe($project->id)
         ->title->toBe('Setup database')
         ->description->toBe('Create PostgreSQL schema and migrations.')
-        ->status->toBe(TaskStatus::Backlog)
+        ->project_status_id->toBeNull()
         ->priority->toBe(TaskPriority::Medium);
 
     expect($result)->toContain('Setup database');

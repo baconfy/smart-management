@@ -4,28 +4,29 @@ declare(strict_types=1);
 
 use App\Actions\Tasks\CreateTask;
 use App\Enums\TaskPriority;
-use App\Enums\TaskStatus;
 use App\Models\Project;
 use App\Models\Task;
 
 test('it creates a task for a project', function (): void {
     $project = Project::create(['name' => 'Test']);
+    $status = $project->statuses()->create(['name' => 'Backlog', 'slug' => 'backlog', 'position' => 0]);
 
     $task = (new CreateTask)($project, [
         'title' => 'Setup database',
         'description' => 'Create schema and migrations.',
+        'project_status_id' => $status->id,
     ]);
 
     expect($task)
         ->toBeInstanceOf(Task::class)
         ->project_id->toBe($project->id)
         ->title->toBe('Setup database')
-        ->description->toBe('Create schema and migrations.');
+        ->description->toBe('Create schema and migrations.')
+        ->project_status_id->toBe($status->id);
 
     $task->refresh();
 
     expect($task)
-        ->status->toBe(TaskStatus::Backlog)
         ->priority->toBe(TaskPriority::Medium);
 });
 

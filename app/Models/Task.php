@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\TaskPriority;
-use App\Enums\TaskStatus;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,7 +43,6 @@ class Task extends Model
     protected function casts(): array
     {
         return [
-            'status' => TaskStatus::class,
             'priority' => TaskPriority::class,
             'sort_order' => 'integer',
         ];
@@ -57,6 +54,14 @@ class Task extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Define the inverse relationship with the ProjectStatus model.
+     */
+    public function projectStatus(): BelongsTo
+    {
+        return $this->belongsTo(ProjectStatus::class);
     }
 
     /**
@@ -81,14 +86,6 @@ class Task extends Model
     public function implementationNotes(): HasMany
     {
         return $this->hasMany(ImplementationNote::class);
-    }
-
-    /**
-     * Scope a query to filter tasks by the given status.
-     */
-    public function scopeWithStatus(Builder $query, TaskStatus $status): Builder
-    {
-        return $query->where('status', $status);
     }
 
     /**

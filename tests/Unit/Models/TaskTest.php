@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Enums\TaskPriority;
-use App\Enums\TaskStatus;
 use App\Models\ImplementationNote;
 use App\Models\Project;
+use App\Models\ProjectStatus;
 use App\Models\Task;
 
 // ============================================================================
@@ -14,11 +14,12 @@ use App\Models\Task;
 
 test('can create a task with required fields', function (): void {
     $project = Project::create(['name' => 'Test Project']);
+    $status = $project->statuses()->create(['name' => 'Backlog', 'slug' => 'backlog', 'position' => 0]);
 
     $task = $project->tasks()->create([
         'title' => 'Implement HD Wallet Derivation',
         'description' => 'Create BIP44 derivation path for deposit addresses.',
-        'status' => TaskStatus::Backlog->value,
+        'project_status_id' => $status->id,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -26,7 +27,7 @@ test('can create a task with required fields', function (): void {
     expect($task)
         ->toBeInstanceOf(Task::class)
         ->title->toBe('Implement HD Wallet Derivation')
-        ->status->toBe(TaskStatus::Backlog)
+        ->project_status_id->toBe($status->id)
         ->priority->toBe(TaskPriority::High)
         ->sort_order->toBe(1);
 });
@@ -37,7 +38,6 @@ test('task has nullable optional fields', function (): void {
     $task = $project->tasks()->create([
         'title' => 'Simple task',
         'description' => 'No extras.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -47,7 +47,7 @@ test('task has nullable optional fields', function (): void {
         ->milestone->toBeNull()
         ->estimate->toBeNull()
         ->parent_task_id->toBeNull()
-        ->conversation_message_id->toBeNull();
+        ->project_status_id->toBeNull();
 });
 
 test('task stores phase and milestone', function (): void {
@@ -59,7 +59,6 @@ test('task stores phase and milestone', function (): void {
         'phase' => 'Phase 2',
         'milestone' => 'Core Infrastructure',
         'estimate' => '8h',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -80,7 +79,6 @@ test('task belongs to project', function (): void {
     $task = $project->tasks()->create([
         'title' => 'Test task',
         'description' => 'A task.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -90,13 +88,29 @@ test('task belongs to project', function (): void {
         ->id->toBe($project->id);
 });
 
+test('task belongs to project status', function (): void {
+    $project = Project::create(['name' => 'Test Project']);
+    $status = $project->statuses()->create(['name' => 'To Do', 'slug' => 'todo', 'position' => 0]);
+
+    $task = $project->tasks()->create([
+        'title' => 'Test task',
+        'description' => 'A task.',
+        'project_status_id' => $status->id,
+        'priority' => TaskPriority::Medium->value,
+        'sort_order' => 1,
+    ]);
+
+    expect($task->projectStatus)
+        ->toBeInstanceOf(ProjectStatus::class)
+        ->id->toBe($status->id);
+});
+
 test('project has many tasks', function (): void {
     $project = Project::create(['name' => 'Test Project']);
 
     $project->tasks()->create([
         'title' => 'Task A',
         'description' => 'First.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -104,7 +118,6 @@ test('project has many tasks', function (): void {
     $project->tasks()->create([
         'title' => 'Task B',
         'description' => 'Second.',
-        'status' => TaskStatus::InProgress->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 2,
     ]);
@@ -122,7 +135,6 @@ test('task can have subtasks', function (): void {
     $parent = $project->tasks()->create([
         'title' => 'Parent task',
         'description' => 'Has children.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -131,7 +143,6 @@ test('task can have subtasks', function (): void {
         'title' => 'Subtask A',
         'description' => 'Child A.',
         'parent_task_id' => $parent->id,
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -140,7 +151,6 @@ test('task can have subtasks', function (): void {
         'title' => 'Subtask B',
         'description' => 'Child B.',
         'parent_task_id' => $parent->id,
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Low->value,
         'sort_order' => 2,
     ]);
@@ -154,7 +164,6 @@ test('subtask belongs to parent', function (): void {
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Parent task.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -163,7 +172,6 @@ test('subtask belongs to parent', function (): void {
         'title' => 'Child',
         'description' => 'Child task.',
         'parent_task_id' => $parent->id,
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -174,51 +182,8 @@ test('subtask belongs to parent', function (): void {
 });
 
 // ============================================================================
-// Task Scopes
-// ============================================================================
-
-test('status scope filters tasks', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
-
-    $project->tasks()->create([
-        'title' => 'Todo',
-        'description' => 'Not started.',
-        'status' => TaskStatus::Backlog->value,
-        'priority' => TaskPriority::Medium->value,
-        'sort_order' => 1,
-    ]);
-
-    $project->tasks()->create([
-        'title' => 'Doing',
-        'description' => 'In progress.',
-        'status' => TaskStatus::InProgress->value,
-        'priority' => TaskPriority::High->value,
-        'sort_order' => 2,
-    ]);
-
-    $project->tasks()->create([
-        'title' => 'Finished',
-        'description' => 'Complete.',
-        'status' => TaskStatus::Done->value,
-        'priority' => TaskPriority::Low->value,
-        'sort_order' => 3,
-    ]);
-
-    expect($project->tasks()->withStatus(TaskStatus::Backlog)->get())->toHaveCount(1);
-    expect($project->tasks()->withStatus(TaskStatus::InProgress)->get())->toHaveCount(1);
-});
-
-// ============================================================================
 // Task Enums
 // ============================================================================
-
-test('all task statuses are valid', function (): void {
-    $expected = ['backlog', 'in_progress', 'done', 'blocked'];
-
-    $values = array_map(fn (TaskStatus $s) => $s->value, TaskStatus::cases());
-
-    expect($values)->toBe($expected);
-});
 
 test('all task priorities are valid', function (): void {
     $expected = ['high', 'medium', 'low'];
@@ -238,7 +203,6 @@ test('can create an implementation note for a task', function (): void {
     $task = $project->tasks()->create([
         'title' => 'HD Wallet',
         'description' => 'Implement derivation.',
-        'status' => TaskStatus::InProgress->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -259,7 +223,6 @@ test('implementation note stores code snippets as json', function (): void {
     $task = $project->tasks()->create([
         'title' => 'Scanner',
         'description' => 'Build scanner.',
-        'status' => TaskStatus::InProgress->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -286,7 +249,6 @@ test('implementation note belongs to task', function (): void {
     $task = $project->tasks()->create([
         'title' => 'Test task',
         'description' => 'A task.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -307,7 +269,6 @@ test('task has many implementation notes', function (): void {
     $task = $project->tasks()->create([
         'title' => 'Complex task',
         'description' => 'Needs multiple notes.',
-        'status' => TaskStatus::InProgress->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -324,7 +285,7 @@ test('task has many implementation notes', function (): void {
 
 test('tasks are soft deleted when project is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
-    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be deleted.', 'status' => TaskStatus::Backlog->value, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
+    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be deleted.', 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->delete();
 
@@ -337,7 +298,6 @@ test('implementation notes are soft deleted when task is deleted', function (): 
     $task = $project->tasks()->create([
         'title' => 'Task',
         'description' => 'Has notes.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -354,7 +314,6 @@ test('subtasks are soft deleted when parent task is deleted', function (): void 
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -363,7 +322,6 @@ test('subtasks are soft deleted when parent task is deleted', function (): void 
         'title' => 'Subtask',
         'description' => 'Child.',
         'parent_task_id' => $parent->id,
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -380,7 +338,7 @@ test('subtasks are soft deleted when parent task is deleted', function (): void 
 
 test('tasks are restored when project is restored', function (): void {
     $project = Project::create(['name' => 'Test Project']);
-    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be restored.', 'status' => TaskStatus::Backlog->value, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
+    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be restored.', 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->delete();
     $project->restore();
@@ -393,7 +351,6 @@ test('implementation notes are restored when task is restored', function (): voi
     $task = $project->tasks()->create([
         'title' => 'Task',
         'description' => 'Has notes.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -410,7 +367,6 @@ test('subtasks are restored when parent task is restored', function (): void {
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -419,7 +375,6 @@ test('subtasks are restored when parent task is restored', function (): void {
         'title' => 'Subtask',
         'description' => 'Child.',
         'parent_task_id' => $parent->id,
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -436,7 +391,7 @@ test('subtasks are restored when parent task is restored', function (): void {
 
 test('tasks are force deleted when project is force deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
-    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be gone.', 'status' => TaskStatus::Backlog->value, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
+    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be gone.', 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->forceDelete();
 
@@ -448,7 +403,6 @@ test('implementation notes are force deleted when task is force deleted', functi
     $task = $project->tasks()->create([
         'title' => 'Task',
         'description' => 'Has notes.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -464,7 +418,6 @@ test('subtasks are force deleted when parent task is force deleted', function ()
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -473,7 +426,6 @@ test('subtasks are force deleted when parent task is force deleted', function ()
         'title' => 'Subtask',
         'description' => 'Child.',
         'parent_task_id' => $parent->id,
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);
@@ -489,7 +441,6 @@ test('subtasks and notes are force deleted on deep cascade via project', functio
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -498,7 +449,6 @@ test('subtasks and notes are force deleted on deep cascade via project', functio
         'title' => 'Subtask',
         'description' => 'Child.',
         'parent_task_id' => $parent->id,
-        'status' => TaskStatus::Backlog->value,
         'priority' => TaskPriority::Medium->value,
         'sort_order' => 1,
     ]);

@@ -25,8 +25,11 @@ test('list tasks tool returns project tasks', function (): void {
 test('list tasks tool filters by status', function (): void {
     $project = Project::create(['name' => 'Test']);
 
-    $project->tasks()->create(['title' => 'Backlog Task', 'description' => 'D', 'status' => 'backlog']);
-    $project->tasks()->create(['title' => 'Done Task', 'description' => 'D', 'status' => 'done']);
+    $backlog = $project->statuses()->create(['name' => 'Backlog', 'slug' => 'backlog', 'position' => 0]);
+    $done = $project->statuses()->create(['name' => 'Done', 'slug' => 'done', 'position' => 1]);
+
+    $project->tasks()->create(['title' => 'Backlog Task', 'description' => 'D', 'project_status_id' => $backlog->id]);
+    $project->tasks()->create(['title' => 'Done Task', 'description' => 'D', 'project_status_id' => $done->id]);
 
     $result = (string) (new ListTasks($project))->handle(new Request(['status' => 'backlog']));
 

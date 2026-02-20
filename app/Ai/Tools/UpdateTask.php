@@ -37,24 +37,30 @@ readonly class UpdateTask implements Tool
             return 'Task not found in this project.';
         }
 
-        ($this->updateTask)($task, array_filter([
+        $data = array_filter([
             'title' => $request['title'] ?? null,
             'description' => $request['description'] ?? null,
             'phase' => $request['phase'] ?? null,
             'milestone' => $request['milestone'] ?? null,
-            'status' => $request['status'] ?? null,
             'priority' => $request['priority'] ?? null,
             'estimate' => $request['estimate'] ?? null,
-        ], fn ($value) => $value !== null && $value !== ''));
+        ], fn ($value) => $value !== null && $value !== '');
+
+        if ($statusSlug = $request['status'] ?? null) {
+            $projectStatus = $this->project->statuses()->where('slug', $statusSlug)->first();
+
+            if ($projectStatus) {
+                $data['project_status_id'] = $projectStatus->id;
+            }
+        }
+
+        ($this->updateTask)($task, $data);
 
         return "Task updated: \"{$task->title}\" (ID: {$task->id})";
     }
 
     /**
-     * Defines the schema for updating a task within the Lucius application.
-     *
-     * @param  JsonSchema  $schema  The JSON schema instance used to define the structure of the task data.
-     * @return array The array representing the schema definition with task properties, descriptions, and constraints.
+     * Defines the schema for updating a task.
      */
     public function schema(JsonSchema $schema): array
     {
@@ -64,7 +70,7 @@ readonly class UpdateTask implements Tool
             'description' => $schema->string()->description('New description.'),
             'phase' => $schema->string()->description('New phase.'),
             'milestone' => $schema->string()->description('New milestone.'),
-            'status' => $schema->string()->description('New status: backlog, in_progress, done, or blocked.'),
+            'status' => $schema->string()->description('New status slug (e.g. todo, in-progress, done).'),
             'priority' => $schema->string()->description('New priority: high, medium, or low.'),
             'estimate' => $schema->string()->description('New estimate.'),
         ];

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Ai\Tools\UpdateTask;
 use App\Enums\TaskPriority;
-use App\Enums\TaskStatus;
 use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
@@ -15,17 +14,18 @@ test('update task tool has a description', function (): void {
 
 test('update task tool updates a task', function (): void {
     $project = Project::create(['name' => 'Test']);
+    $status = $project->statuses()->create(['name' => 'In Progress', 'slug' => 'in-progress', 'position' => 1]);
     $task = $project->tasks()->create(['title' => 'Old', 'description' => 'Old desc']);
 
     $result = (string) (app()->make(UpdateTask::class, ['project' => $project]))->handle(new Request([
         'task_id' => $task->id,
         'title' => 'New Title',
-        'status' => 'in_progress',
+        'status' => 'in-progress',
     ]));
 
     $task->refresh();
 
-    expect($task)->title->toBe('New Title')->status->toBe(TaskStatus::InProgress);
+    expect($task)->title->toBe('New Title')->project_status_id->toBe($status->id);
     expect($result)->toContain('New Title');
 });
 
