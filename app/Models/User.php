@@ -17,6 +17,16 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user) {
+            ProjectMember::where('user_id', $user->id)->delete();
+        });
+    }
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>

@@ -19,6 +19,16 @@ class Task extends Model
     use HasFactory, HasUlids, SoftDeletes;
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Task $task) {
+            $task->implementationNotes()->delete();
+        });
+    }
+
+    /**
      * Define the castable attributes for the model.
      */
     protected function casts(): array

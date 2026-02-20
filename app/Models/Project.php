@@ -17,6 +17,20 @@ class Project extends Model
     use HasFactory, HasUlids, SoftDeletes;
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Project $project) {
+            $project->members()->delete();
+            $project->agents()->delete();
+            $project->decisions()->delete();
+            $project->businessRules()->delete();
+            $project->tasks->each->delete();
+        });
+    }
+
+    /**
      * Define the attributes that should be cast to native types.
      *
      * @return array<string, string>
