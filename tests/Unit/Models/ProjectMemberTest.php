@@ -12,7 +12,7 @@ use App\Models\User;
 
 test('database assigns default role when not specified', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $member = $project->members()->create(['user_id' => $user->id]);
     $member->refresh();
@@ -24,7 +24,7 @@ test('database assigns default role when not specified', function (): void {
 
 test('can create a project member with specific role', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $member = $project->members()->create([
         'user_id' => $user->id,
@@ -40,7 +40,7 @@ test('can create a project member with specific role', function (): void {
 
 test('member belongs to a project', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $member = $project->members()->create(['user_id' => $user->id, 'role' => 'member']);
 
@@ -51,7 +51,7 @@ test('member belongs to a project', function (): void {
 
 test('member belongs to a user', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $member = $project->members()->create(['user_id' => $user->id, 'role' => 'member']);
 
@@ -66,7 +66,7 @@ test('member belongs to a user', function (): void {
 
 test('members are soft deleted when project is deleted', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
@@ -78,7 +78,7 @@ test('members are soft deleted when project is deleted', function (): void {
 
 test('members are force deleted when user is deleted', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
@@ -93,7 +93,7 @@ test('members are force deleted when user is deleted', function (): void {
 
 test('members are restored when project is restored', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
@@ -109,7 +109,7 @@ test('members are restored when project is restored', function (): void {
 
 test('members are force deleted when project is force deleted', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 

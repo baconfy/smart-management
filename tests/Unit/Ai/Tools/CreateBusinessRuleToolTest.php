@@ -9,14 +9,14 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('create business rule tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(CreateBusinessRule::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('create business rule tool creates a record', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(CreateBusinessRule::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
@@ -40,8 +40,8 @@ test('create business rule tool creates a record', function (): void {
 });
 
 test('create business rule tool scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
 
     app()->make(CreateBusinessRule::class, ['project' => $projectA])->handle(new Request(['title' => 'Rule A', 'description' => 'Desc', 'category' => 'general']));
     app()->make(CreateBusinessRule::class, ['project' => $projectB])->handle(new Request(['title' => 'Rule B', 'description' => 'Desc', 'category' => 'general']));

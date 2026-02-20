@@ -8,7 +8,7 @@ use App\Models\Decision;
 use App\Models\Project;
 
 test('it creates a decision for a project', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $decision = (new CreateDecision)($project, [
         'title' => 'Use PostgreSQL',
@@ -27,7 +27,7 @@ test('it creates a decision for a project', function (): void {
 });
 
 test('it accepts optional fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $decision = (new CreateDecision)($project, [
         'title' => 'Use Redis',
@@ -43,8 +43,8 @@ test('it accepts optional fields', function (): void {
 });
 
 test('it scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
 
     (new CreateDecision)($projectA, ['title' => 'Decision A', 'choice' => 'A', 'reasoning' => 'R']);
     (new CreateDecision)($projectB, ['title' => 'Decision B', 'choice' => 'B', 'reasoning' => 'R']);

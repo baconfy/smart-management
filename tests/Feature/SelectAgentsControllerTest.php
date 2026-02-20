@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
-    $this->project = Project::create(['name' => 'Test']);
+    $this->project = Project::factory()->create(['name' => 'Test']);
     $this->project->members()->create(['user_id' => $this->user->id, 'role' => 'owner']);
 
     $this->conversation = Conversation::create([
@@ -60,7 +60,7 @@ test('it requires at least one agent', function () {
 test('it rejects agents from other projects', function () {
     Queue::fake();
 
-    $otherProject = Project::create(['name' => 'Other']);
+    $otherProject = Project::factory()->create(['name' => 'Other']);
     $otherAgent = $otherProject->agents()->create([
         'type' => AgentType::Architect->value,
         'name' => 'Architect',

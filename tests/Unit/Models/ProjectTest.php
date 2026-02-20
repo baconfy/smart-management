@@ -12,7 +12,7 @@ use Illuminate\Database\QueryException;
 // ============================================================================
 
 test('can create a project with required fields', function (): void {
-    $project = Project::create(['name' => 'Arkham District', 'description' => 'Cryptocurrency payment gateway']);
+    $project = Project::factory()->create(['name' => 'Arkham District', 'description' => 'Cryptocurrency payment gateway']);
 
     expect($project)
         ->toBeInstanceOf(Project::class)
@@ -24,7 +24,7 @@ test('can create a project with required fields', function (): void {
 test('can create a project with settings json', function (): void {
     $settings = ['default_provider' => 'anthropic', 'default_model' => 'claude-sonnet-4-5-20250929'];
 
-    $project = Project::create(['name' => 'Test Project', 'settings' => $settings]);
+    $project = Project::factory()->create(['name' => 'Test Project', 'settings' => $settings]);
 
     expect($project->settings)
         ->toBeArray()
@@ -41,7 +41,7 @@ test('project requires a name', function (): void {
 
 test('can add a member to a project', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $member = $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
@@ -51,7 +51,7 @@ test('can add a member to a project', function (): void {
 });
 
 test('project has many members', function (): void {
-    $project = Project::create(['name' => 'Team Project']);
+    $project = Project::factory()->create(['name' => 'Team Project']);
     $owner = User::factory()->create();
     $collaborator = User::factory()->create();
 
@@ -62,7 +62,7 @@ test('project has many members', function (): void {
 });
 
 test('project has many users through members', function (): void {
-    $project = Project::create(['name' => 'Team Project']);
+    $project = Project::factory()->create(['name' => 'Team Project']);
     $owner = User::factory()->create();
     $collaborator = User::factory()->create();
 
@@ -77,8 +77,8 @@ test('project has many users through members', function (): void {
 test('user has many projects through members', function (): void {
     $user = User::factory()->create();
 
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $projectB->members()->create(['user_id' => $user->id, 'role' => 'member']);
@@ -95,7 +95,7 @@ test('user has many projects through members', function (): void {
 test('project owner is the member with owner role', function (): void {
     $owner = User::factory()->create();
     $member = User::factory()->create();
-    $project = Project::create(['name' => 'Owned Project']);
+    $project = Project::factory()->create(['name' => 'Owned Project']);
 
     $project->members()->create(['user_id' => $owner->id, 'role' => 'owner']);
     $project->members()->create(['user_id' => $member->id, 'role' => 'member']);
@@ -106,7 +106,7 @@ test('project owner is the member with owner role', function (): void {
 });
 
 test('project without owner returns null', function (): void {
-    $project = Project::create(['name' => 'Orphan Project']);
+    $project = Project::factory()->create(['name' => 'Orphan Project']);
 
     expect($project->owner)->toBeNull();
 });
@@ -117,7 +117,7 @@ test('project without owner returns null', function (): void {
 
 test('member belongs to project and user', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $member = $project->members()->create([
         'user_id' => $user->id,
@@ -139,7 +139,7 @@ test('member belongs to project and user', function (): void {
 
 test('user cannot be added to the same project twice', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'member']);

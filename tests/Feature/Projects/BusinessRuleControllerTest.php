@@ -6,7 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 
 test('guest cannot view business rules', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $this->getJson(route('projects.business-rules.index', $project))->assertUnauthorized();
 });
@@ -14,7 +14,7 @@ test('guest cannot view business rules', function (): void {
 test('non-member cannot view business rules', function (): void {
     $user = User::factory()->create();
     $other = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $other->id, 'role' => 'owner']);
 
     $this->actingAs($user)->get(route('projects.business-rules.index', $project))->assertForbidden();
@@ -22,7 +22,7 @@ test('non-member cannot view business rules', function (): void {
 
 test('member can view business rules', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $project->businessRules()->create(['title' => 'Payment Rule', 'description' => 'Pay within 30 days.', 'category' => 'billing']);
@@ -39,8 +39,8 @@ test('member can view business rules', function (): void {
 
 test('business rules are scoped to project', function (): void {
     $user = User::factory()->create();
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $projectA->businessRules()->create(['title' => 'Rule A', 'description' => 'D', 'category' => 'billing']);
@@ -56,7 +56,7 @@ test('business rules are scoped to project', function (): void {
 
 test('empty business rules returns empty array', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)

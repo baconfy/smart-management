@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
-    $this->project = Project::create(['name' => 'Test Project']);
+    $this->project = Project::factory()->create(['name' => 'Test Project']);
 
     $this->conversation = Conversation::create([
         'id' => (string) Str::ulid(),

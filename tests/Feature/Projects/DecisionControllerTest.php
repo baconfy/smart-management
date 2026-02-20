@@ -7,21 +7,21 @@ use App\Models\Project;
 use App\Models\User;
 
 test('guest cannot view decisions', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $this->get(route('projects.decisions.index', $project))->assertRedirect('/login');
 });
 
 test('non-member cannot view decisions', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $this->actingAs($user)->get(route('projects.decisions.index', $project))->assertForbidden();
 });
 
 test('member can view decisions page', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->get(route('projects.decisions.index', $project))->assertOk()->assertInertia(fn ($page) => $page->component('projects/decisions/index'));
@@ -29,7 +29,7 @@ test('member can view decisions page', function (): void {
 
 test('decisions are passed to the page', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $project->decisions()->create(['title' => 'Use PostgreSQL', 'choice' => 'PostgreSQL', 'reasoning' => 'Best fit.']);
@@ -41,8 +41,8 @@ test('decisions are passed to the page', function (): void {
 
 test('decisions only include current project', function (): void {
     $user = User::factory()->create();
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $projectB->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 

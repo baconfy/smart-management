@@ -8,7 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
-    $this->project = Project::create(['name' => 'Test Project']);
+    $this->project = Project::factory()->create(['name' => 'Test Project']);
     $this->owner = User::factory()->create();
     $this->stranger = User::factory()->create();
 

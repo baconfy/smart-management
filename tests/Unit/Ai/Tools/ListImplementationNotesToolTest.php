@@ -7,12 +7,12 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('list implementation notes tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     expect((string) (new ListImplementationNotes($project))->description())->not->toBeEmpty();
 });
 
 test('list implementation notes tool returns notes for a task', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Setup DB', 'description' => 'D']);
 
     $task->implementationNotes()->create(['title' => 'Note 1', 'content' => 'Content 1']);
@@ -25,7 +25,7 @@ test('list implementation notes tool returns notes for a task', function (): voi
 });
 
 test('list implementation notes tool returns all project notes when no task id', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task1 = $project->tasks()->create(['title' => 'Task 1', 'description' => 'D']);
     $task2 = $project->tasks()->create(['title' => 'Task 2', 'description' => 'D']);
 
@@ -39,7 +39,7 @@ test('list implementation notes tool returns all project notes when no task id',
 });
 
 test('list implementation notes tool returns message when empty', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $result = (string) (new ListImplementationNotes($project))->handle(new Request([]));
 
@@ -47,8 +47,8 @@ test('list implementation notes tool returns message when empty', function (): v
 });
 
 test('list implementation notes tool only returns own project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $taskA = $projectA->tasks()->create(['title' => 'T', 'description' => 'D']);
     $taskB = $projectB->tasks()->create(['title' => 'T', 'description' => 'D']);
 

@@ -7,7 +7,7 @@ use App\Models\ImplementationNote;
 use App\Models\Project;
 
 test('it deletes an implementation note', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'To Delete', 'content' => 'C']);
 

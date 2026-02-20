@@ -6,7 +6,7 @@ use App\Actions\Projects\SeedProjectStatuses;
 use App\Models\Project;
 
 test('seed project statuses creates 3 defaults', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     (new SeedProjectStatuses)($project);
 
@@ -19,7 +19,7 @@ test('seed project statuses creates 3 defaults', function (): void {
 });
 
 test('seed project statuses assigns correct colors', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     (new SeedProjectStatuses)($project);
 
@@ -29,7 +29,7 @@ test('seed project statuses assigns correct colors', function (): void {
 });
 
 test('seed project statuses assigns sequential positions', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     (new SeedProjectStatuses)($project);
 
@@ -39,7 +39,7 @@ test('seed project statuses assigns sequential positions', function (): void {
 });
 
 test('seed project statuses marks only one as default', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     (new SeedProjectStatuses)($project);
 
@@ -48,7 +48,7 @@ test('seed project statuses marks only one as default', function (): void {
 });
 
 test('seed project statuses marks only done as closed', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     (new SeedProjectStatuses)($project);
 

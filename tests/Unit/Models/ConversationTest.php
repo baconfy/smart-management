@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 test('can create a conversation with required fields', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -30,7 +30,7 @@ test('can create a conversation with required fields', function (): void {
 
 test('conversation uses string primary key', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $ulid = (string) Str::ulid();
 
     $conversation = Conversation::create([
@@ -51,7 +51,7 @@ test('conversation uses string primary key', function (): void {
 
 test('conversation belongs to a project', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -67,7 +67,7 @@ test('conversation belongs to a project', function (): void {
 
 test('conversation belongs to a user', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -87,7 +87,7 @@ test('conversation belongs to a user', function (): void {
 
 test('conversations are soft deleted when project is deleted', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     Conversation::create([
         'id' => Str::ulid(),
@@ -104,7 +104,7 @@ test('conversations are soft deleted when project is deleted', function (): void
 
 test('messages are soft deleted when conversation is deleted', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -129,7 +129,7 @@ test('messages are soft deleted when conversation is deleted', function (): void
 
 test('messages are soft deleted via project cascade', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -159,7 +159,7 @@ test('messages are soft deleted via project cascade', function (): void {
 
 test('conversations are restored when project is restored', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     Conversation::create([
         'id' => Str::ulid(),
@@ -176,7 +176,7 @@ test('conversations are restored when project is restored', function (): void {
 
 test('messages are restored when conversation is restored', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -201,7 +201,7 @@ test('messages are restored when conversation is restored', function (): void {
 
 test('messages are restored via project cascade', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -231,7 +231,7 @@ test('messages are restored via project cascade', function (): void {
 
 test('conversations are force deleted when project is force deleted', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     Conversation::create([
         'id' => Str::ulid(),
@@ -247,7 +247,7 @@ test('conversations are force deleted when project is force deleted', function (
 
 test('messages are force deleted when conversation is force deleted', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),
@@ -271,7 +271,7 @@ test('messages are force deleted when conversation is force deleted', function (
 
 test('messages are force deleted via project cascade', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $conversation = Conversation::create([
         'id' => Str::ulid(),

@@ -8,7 +8,7 @@ use App\Models\Project;
 use App\Models\User;
 
 test('it deletes a conversation message', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $user = User::factory()->create();
 
     $conversation = $project->conversations()->create([

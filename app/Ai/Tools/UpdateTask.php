@@ -47,10 +47,10 @@ readonly class UpdateTask implements Tool
         ], fn ($value) => $value !== null && $value !== '');
 
         if ($statusSlug = $request['status'] ?? null) {
-            $projectStatus = $this->project->statuses()->where('slug', $statusSlug)->first();
+            $status = $this->project->statuses()->where('slug', $statusSlug)->first();
 
-            if ($projectStatus) {
-                $data['project_status_id'] = $projectStatus->id;
+            if ($status) {
+                $data['task_status_id'] = $status->id;
             }
         }
 

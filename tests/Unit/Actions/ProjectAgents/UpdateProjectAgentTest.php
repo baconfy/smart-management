@@ -7,7 +7,7 @@ use App\Models\Project;
 use App\Models\ProjectAgent;
 
 test('it updates a project agent', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $agent = $project->agents()->create(['type' => 'custom', 'name' => 'Old', 'instructions' => 'Old instructions']);
 
     $result = (new UpdateProjectAgent)($agent, ['name' => 'New', 'instructions' => 'New instructions']);
@@ -19,7 +19,7 @@ test('it updates a project agent', function (): void {
 });
 
 test('it partially updates a project agent', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $agent = $project->agents()->create(['type' => 'custom', 'name' => 'Keep', 'instructions' => 'Original']);
 
     (new UpdateProjectAgent)($agent, ['instructions' => 'Updated']);

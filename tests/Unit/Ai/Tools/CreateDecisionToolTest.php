@@ -9,14 +9,14 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('create decision tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(CreateDecision::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('create decision tool creates a decision record', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(CreateDecision::class, ['project' => $project]);
 
     $request = new Request([
@@ -42,7 +42,7 @@ test('create decision tool creates a decision record', function (): void {
 });
 
 test('create decision tool accepts optional fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(CreateDecision::class, ['project' => $project]);
 
     $request = new Request([
@@ -63,8 +63,8 @@ test('create decision tool accepts optional fields', function (): void {
 });
 
 test('create decision tool scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $toolA = app()->make(CreateDecision::class, ['project' => $projectA]);
     $toolB = app()->make(CreateDecision::class, ['project' => $projectB]);

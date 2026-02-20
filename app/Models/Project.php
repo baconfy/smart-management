@@ -116,11 +116,11 @@ class Project extends Model
     }
 
     /**
-     * Defines a one-to-many relationship with the ProjectStatus model.
+     * Defines a one-to-many relationship with the TaskStatus model.
      */
     public function statuses(): HasMany
     {
-        return $this->hasMany(ProjectStatus::class);
+        return $this->hasMany(TaskStatus::class);
     }
 
     /**

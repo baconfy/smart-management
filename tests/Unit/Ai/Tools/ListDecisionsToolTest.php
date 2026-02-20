@@ -8,14 +8,14 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('list decisions tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = new ListDecisions($project);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('list decisions tool returns project decisions', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -38,7 +38,7 @@ test('list decisions tool returns project decisions', function (): void {
 });
 
 test('list decisions tool filters by status', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $project->decisions()->create([
         'title' => 'Active Decision',
@@ -64,7 +64,7 @@ test('list decisions tool filters by status', function (): void {
 });
 
 test('list decisions tool returns all statuses by default', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $project->decisions()->create([
         'title' => 'Active',
@@ -89,7 +89,7 @@ test('list decisions tool returns all statuses by default', function (): void {
 });
 
 test('list decisions tool returns message when no decisions exist', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = new ListDecisions($project);
 
     $result = (string) $tool->handle(new Request([]));
@@ -98,8 +98,8 @@ test('list decisions tool returns message when no decisions exist', function ():
 });
 
 test('list decisions tool only returns decisions from its project', function (): void {
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $projectA->decisions()->create([
         'title' => 'Decision A',

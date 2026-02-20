@@ -6,7 +6,7 @@ use App\Actions\Projects\UpdateProject;
 use App\Models\Project;
 
 test('it updates a project', function (): void {
-    $project = Project::create(['name' => 'Original']);
+    $project = Project::factory()->create(['name' => 'Original']);
 
     $result = (new UpdateProject)($project, ['name' => 'Updated']);
 
@@ -18,7 +18,7 @@ test('it updates a project', function (): void {
 });
 
 test('it partially updates a project', function (): void {
-    $project = Project::create(['name' => 'Test', 'description' => 'Original description']);
+    $project = Project::factory()->create(['name' => 'Test', 'description' => 'Original description']);
 
     (new UpdateProject)($project, ['description' => 'New description']);
 

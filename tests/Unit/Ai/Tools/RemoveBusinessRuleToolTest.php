@@ -8,14 +8,14 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('remove business rule tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(RemoveBusinessRule::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('remove business rule tool removes a record', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $rule = $project->businessRules()->create([
         'title' => 'Payment must be confirmed within 24h',
@@ -35,7 +35,7 @@ test('remove business rule tool removes a record', function (): void {
 });
 
 test('remove business rule tool returns not found for missing rule', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(RemoveBusinessRule::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
@@ -46,8 +46,8 @@ test('remove business rule tool returns not found for missing rule', function ()
 });
 
 test('remove business rule tool scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $rule = $projectB->businessRules()->create([
         'title' => 'Other Project Rule',

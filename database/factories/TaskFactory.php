@@ -27,7 +27,7 @@ class TaskFactory extends Factory
             'description' => fake()->paragraphs(2, true),
             'phase' => fake()->optional()->randomElement(['planning', 'development', 'testing', 'deployment']),
             'milestone' => fake()->optional()->words(3, true),
-            'project_status_id' => null,
+            'task_status_id' => null,
             'priority' => fake()->randomElement(TaskPriority::cases()),
             'estimate' => fake()->optional()->randomElement(['1h', '2h', '4h', '1d', '2d', '1w']),
             'sort_order' => fake()->numberBetween(0, 100),

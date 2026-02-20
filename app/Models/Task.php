@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\TaskPriority;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -57,11 +58,11 @@ class Task extends Model
     }
 
     /**
-     * Define the inverse relationship with the ProjectStatus model.
+     * Define the relationship with the task status.
      */
-    public function projectStatus(): BelongsTo
+    public function status(): BelongsTo
     {
-        return $this->belongsTo(ProjectStatus::class);
+        return $this->belongsTo(TaskStatus::class, 'task_status_id');
     }
 
     /**
@@ -102,5 +103,29 @@ class Task extends Model
     public function getRouteKeyName(): string
     {
         return 'ulid';
+    }
+
+    /**
+     * Scope a query to filter tasks by status slug.
+     */
+    public function scopeWithStatus(Builder $query, string $slug): Builder
+    {
+        return $query->whereHas('status', fn (Builder $q) => $q->where('slug', $slug));
+    }
+
+    /**
+     * Scope a query to filter tasks in closed statuses.
+     */
+    public function scopeClosed(Builder $query): Builder
+    {
+        return $query->whereHas('status', fn (Builder $q) => $q->where('is_closed', true));
+    }
+
+    /**
+     * Scope a query to filter tasks in open statuses.
+     */
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->whereHas('status', fn (Builder $q) => $q->where('is_closed', false));
     }
 }

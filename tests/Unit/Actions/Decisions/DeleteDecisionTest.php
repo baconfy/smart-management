@@ -7,7 +7,7 @@ use App\Models\Decision;
 use App\Models\Project;
 
 test('it deletes a decision', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $decision = $project->decisions()->create([
         'title' => 'To Delete',
         'choice' => 'X',

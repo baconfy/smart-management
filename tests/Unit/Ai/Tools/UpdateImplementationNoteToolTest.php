@@ -7,12 +7,12 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('update implementation note tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     expect((string) (app()->make(UpdateImplementationNote::class, ['project' => $project]))->description())->not->toBeEmpty();
 });
 
 test('update implementation note tool updates a record', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Old', 'content' => 'Old content']);
 
@@ -30,7 +30,7 @@ test('update implementation note tool updates a record', function (): void {
 });
 
 test('update implementation note tool only updates provided fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Keep', 'content' => 'Keep too']);
 
@@ -44,8 +44,8 @@ test('update implementation note tool only updates provided fields', function ()
 });
 
 test('update implementation note tool scopes to project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $task = $projectB->tasks()->create(['title' => 'T', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Other', 'content' => 'C']);
 

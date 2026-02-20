@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Project;
-use App\Models\ProjectStatus;
+use App\Models\Task;
+use App\Models\TaskStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<ProjectStatus>
+ * @extends Factory<TaskStatus>
  */
-class ProjectStatusFactory extends Factory
+class TaskStatusFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -23,7 +23,7 @@ class ProjectStatusFactory extends Factory
         $name = fake()->unique()->word();
 
         return [
-            'project_id' => Project::factory(),
+            'project_id' => Task::factory(),
             'name' => $name,
             'slug' => str($name)->slug()->toString(),
             'color' => fake()->hexColor(),

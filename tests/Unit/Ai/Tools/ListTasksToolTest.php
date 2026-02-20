@@ -7,12 +7,12 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('list tasks tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     expect((string) (new ListTasks($project))->description())->not->toBeEmpty();
 });
 
 test('list tasks tool returns project tasks', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $project->tasks()->create(['title' => 'Task 1', 'description' => 'D1']);
     $project->tasks()->create(['title' => 'Task 2', 'description' => 'D2']);
@@ -23,13 +23,13 @@ test('list tasks tool returns project tasks', function (): void {
 });
 
 test('list tasks tool filters by status', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $backlog = $project->statuses()->create(['name' => 'Backlog', 'slug' => 'backlog', 'position' => 0]);
     $done = $project->statuses()->create(['name' => 'Done', 'slug' => 'done', 'position' => 1]);
 
-    $project->tasks()->create(['title' => 'Backlog Task', 'description' => 'D', 'project_status_id' => $backlog->id]);
-    $project->tasks()->create(['title' => 'Done Task', 'description' => 'D', 'project_status_id' => $done->id]);
+    $project->tasks()->create(['title' => 'Backlog Task', 'description' => 'D', 'task_status_id' => $backlog->id]);
+    $project->tasks()->create(['title' => 'Done Task', 'description' => 'D', 'task_status_id' => $done->id]);
 
     $result = (string) (new ListTasks($project))->handle(new Request(['status' => 'backlog']));
 
@@ -37,7 +37,7 @@ test('list tasks tool filters by status', function (): void {
 });
 
 test('list tasks tool filters by priority', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $project->tasks()->create(['title' => 'High Task', 'description' => 'D', 'priority' => 'high']);
     $project->tasks()->create(['title' => 'Low Task', 'description' => 'D', 'priority' => 'low']);
@@ -48,7 +48,7 @@ test('list tasks tool filters by priority', function (): void {
 });
 
 test('list tasks tool returns message when empty', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $result = (string) (new ListTasks($project))->handle(new Request([]));
 
@@ -56,13 +56,13 @@ test('list tasks tool returns message when empty', function (): void {
 });
 
 test('list tasks tool only returns own project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
 
     $projectA->tasks()->create(['title' => 'Task A', 'description' => 'D']);
     $projectB->tasks()->create(['title' => 'Task B', 'description' => 'D']);
 
-    $result = (string) (new ListTasks($projectA))->handle(new Request([]));
+    $result = (string) new ListTasks($projectA)->handle(new Request([]));
 
     expect($result)->toContain('Task A')->not->toContain('Task B');
 });

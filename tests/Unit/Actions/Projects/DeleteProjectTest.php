@@ -6,7 +6,7 @@ use App\Actions\Projects\DeleteProject;
 use App\Models\Project;
 
 test('it deletes a project', function (): void {
-    $project = Project::create(['name' => 'To Delete']);
+    $project = Project::factory()->create(['name' => 'To Delete']);
 
     $result = (new DeleteProject)($project);
 

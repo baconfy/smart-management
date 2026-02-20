@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 beforeEach(function () {
     Queue::fake();
 
-    $this->project = Project::create(['name' => 'Test']);
+    $this->project = Project::factory()->create(['name' => 'Test']);
     $this->user = User::factory()->create();
     $this->project->members()->create(['user_id' => $this->user->id, 'role' => 'owner']);
 });

@@ -13,7 +13,7 @@ use App\Models\Project;
 // ============================================================================
 
 test('can create a decision with required fields', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $decision = $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -30,7 +30,7 @@ test('can create a decision with required fields', function (): void {
 });
 
 test('decision stores alternatives as json', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $alternatives = ['MySQL', 'SQLite', 'MongoDB'];
 
     $decision = $project->decisions()->create([
@@ -47,7 +47,7 @@ test('decision stores alternatives as json', function (): void {
 });
 
 test('decision has nullable context and conversation_message_id', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $decision = $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -66,7 +66,7 @@ test('decision has nullable context and conversation_message_id', function (): v
 // ============================================================================
 
 test('decision belongs to project', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $decision = $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -81,7 +81,7 @@ test('decision belongs to project', function (): void {
 });
 
 test('project has many decisions', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -105,7 +105,7 @@ test('project has many decisions', function (): void {
 // ============================================================================
 
 test('active scope filters decisions', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -129,7 +129,7 @@ test('active scope filters decisions', function (): void {
 // ============================================================================
 
 test('decision status is cast to enum', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $decision = $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -154,7 +154,7 @@ test('all decision statuses are valid', function (): void {
 // ============================================================================
 
 test('can create a business rule with required fields', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $rule = $project->businessRules()->create([
         'title' => 'Non-custodial gateway',
@@ -175,7 +175,7 @@ test('can create a business rule with required fields', function (): void {
 // ============================================================================
 
 test('business rule belongs to project', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $rule = $project->businessRules()->create([
         'title' => 'Non-custodial',
@@ -190,7 +190,7 @@ test('business rule belongs to project', function (): void {
 });
 
 test('project has many business rules', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->businessRules()->create([
         'title' => 'Non-custodial',
@@ -214,7 +214,7 @@ test('project has many business rules', function (): void {
 // ============================================================================
 
 test('active scope filters business rules', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->businessRules()->create([
         'title' => 'Non-custodial',
@@ -238,7 +238,7 @@ test('active scope filters business rules', function (): void {
 // ============================================================================
 
 test('business rule status is cast to enum', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $rule = $project->businessRules()->create([
         'title' => 'Non-custodial',
@@ -263,7 +263,7 @@ test('all business rule statuses are valid', function (): void {
 // ============================================================================
 
 test('decisions are soft deleted when project is deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -279,7 +279,7 @@ test('decisions are soft deleted when project is deleted', function (): void {
 });
 
 test('business rules are soft deleted when project is deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->businessRules()->create([
         'title' => 'Non-custodial',
@@ -299,7 +299,7 @@ test('business rules are soft deleted when project is deleted', function (): voi
 // ============================================================================
 
 test('decisions are restored when project is restored', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -315,7 +315,7 @@ test('decisions are restored when project is restored', function (): void {
 });
 
 test('business rules are restored when project is restored', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->businessRules()->create([
         'title' => 'Non-custodial',
@@ -335,7 +335,7 @@ test('business rules are restored when project is restored', function (): void {
 // ============================================================================
 
 test('decisions are force deleted when project is force deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->decisions()->create([
         'title' => 'Use PostgreSQL',
@@ -350,7 +350,7 @@ test('decisions are force deleted when project is force deleted', function (): v
 });
 
 test('business rules are force deleted when project is force deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->businessRules()->create([
         'title' => 'Non-custodial',

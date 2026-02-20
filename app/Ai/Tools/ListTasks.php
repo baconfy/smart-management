@@ -31,10 +31,10 @@ readonly class ListTasks implements Tool
      */
     public function handle(Request $request): Stringable|string
     {
-        $query = $this->project->tasks()->with('projectStatus');
+        $query = $this->project->tasks()->with('status');
 
         if ($status = $request['status'] ?? null) {
-            $query->whereHas('projectStatus', fn ($q) => $q->where('slug', $status));
+            $query->whereHas('status', fn ($q) => $q->where('slug', $status));
         }
 
         if ($priority = $request['priority'] ?? null) {
@@ -48,7 +48,7 @@ readonly class ListTasks implements Tool
         }
 
         return $tasks->map(function ($t) {
-            $statusName = $t->projectStatus?->name ?? 'unset';
+            $statusName = $t->status?->name ?? 'unset';
 
             return "- [{$statusName}] [{$t->priority->value}] {$t->title} (ID: {$t->id}): {$t->description}";
         })->implode("\n");

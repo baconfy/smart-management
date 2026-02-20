@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
-    $this->project = Project::create(['name' => 'Test Project']);
+    $this->project = Project::factory()->create(['name' => 'Test Project']);
     $this->user = User::factory()->create();
     $this->project->members()->create(['user_id' => $this->user->id, 'role' => 'owner']);
 

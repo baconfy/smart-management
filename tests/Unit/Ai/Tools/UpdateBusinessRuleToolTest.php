@@ -8,14 +8,14 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('update business rule tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(UpdateBusinessRule::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('update business rule tool updates a record', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $rule = $project->businessRules()->create(['title' => 'Old Title', 'description' => 'Old Desc', 'category' => 'general']);
 
@@ -32,7 +32,7 @@ test('update business rule tool updates a record', function (): void {
 });
 
 test('update business rule tool can change status', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $rule = $project->businessRules()->create(['title' => 'Rule', 'description' => 'D', 'category' => 'c']);
 
@@ -45,7 +45,7 @@ test('update business rule tool can change status', function (): void {
 });
 
 test('update business rule tool only updates provided fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $rule = $project->businessRules()->create(['title' => 'Keep', 'description' => 'Keep Desc', 'category' => 'payments']);
 
@@ -60,8 +60,8 @@ test('update business rule tool only updates provided fields', function (): void
 });
 
 test('update business rule tool scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
 
     $rule = $projectB->businessRules()->create(['title' => 'Other', 'description' => 'D', 'category' => 'c']);
 

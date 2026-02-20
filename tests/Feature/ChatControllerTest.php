@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 // ============================================================================
 
 test('guest cannot send chat message', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $this->postJson(route('projects.chat', $project), ['message' => 'Hello', 'agent_ids' => [1]])->assertUnauthorized();
 });
@@ -24,7 +24,7 @@ test('guest cannot send chat message', function (): void {
 test('non-member cannot send chat message', function (): void {
     $user = User::factory()->create();
     $other = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $other->id, 'role' => 'owner']);
     $agent = $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'Test.']);
 
@@ -37,7 +37,7 @@ test('non-member cannot send chat message', function (): void {
 
 test('message is required', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['agent_ids' => [1]])->assertJsonValidationErrors('message');
@@ -45,7 +45,7 @@ test('message is required', function (): void {
 
 test('agent_ids must be an array', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Hello', 'agent_ids' => 'not-array'])->assertJsonValidationErrors('agent_ids');
@@ -53,7 +53,7 @@ test('agent_ids must be an array', function (): void {
 
 test('agent_ids must belong to the project', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Hello', 'agent_ids' => [99999]])->assertJsonValidationErrors('agent_ids.0');
@@ -63,7 +63,7 @@ test('agent_ids can be empty for moderator routing', function (): void {
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     ModeratorAgent::fake([json_encode(['agents' => [['type' => 'architect', 'confidence' => 0.5]], 'reasoning' => 'Generic.'])]);
@@ -79,7 +79,7 @@ test('member can send a message and conversation is created', function (): void 
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $agent = $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
 
@@ -94,7 +94,7 @@ test('user message is stored and agent job is dispatched', function (): void {
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $agent = $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
 
@@ -116,7 +116,7 @@ test('new conversation dispatches title generation job', function (): void {
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     ModeratorAgent::fake([json_encode(['agents' => [['type' => 'architect', 'confidence' => 0.5]], 'reasoning' => 'Generic.'])]);
@@ -130,7 +130,7 @@ test('continuing conversation does not dispatch title generation', function (): 
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $agent = $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
 
@@ -156,7 +156,7 @@ test('one job is dispatched per selected agent', function (): void {
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $architect = $project->agents()->create(['type' => AgentType::Architect->value, 'name' => 'Architect', 'instructions' => 'You are an architect.']);
     $analyst = $project->agents()->create(['type' => AgentType::Analyst->value, 'name' => 'Analyst', 'instructions' => 'You are an analyst.']);
@@ -180,7 +180,7 @@ test('empty agent_ids triggers moderator routing', function (): void {
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Should I use PostgreSQL?', 'agent_ids' => []])->assertRedirect();
@@ -194,7 +194,7 @@ test('moderator routes to multiple agents', function (): void {
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Analyze the database architecture.', 'agent_ids' => []])->assertRedirect();
@@ -208,7 +208,7 @@ test('moderator broadcasts agents processing event', function (): void {
     Queue::fake();
 
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->postJson(route('projects.chat', $project), ['message' => 'Should I use PostgreSQL?', 'agent_ids' => []])->assertRedirect();

@@ -11,7 +11,7 @@ use App\Models\ProjectAgent;
 // ============================================================================
 
 test('can create a project agent with required fields', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $agent = $project->agents()->create([
         'type' => AgentType::Architect->value,
@@ -27,7 +27,7 @@ test('can create a project agent with required fields', function (): void {
 });
 
 test('agent has nullable optional fields', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $agent = $project->agents()->create([
         'type' => AgentType::Analyst->value,
@@ -46,7 +46,7 @@ test('agent has nullable optional fields', function (): void {
 // ============================================================================
 
 test('type is cast to AgentType enum', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $agent = $project->agents()->create([
         'type' => 'architect',
@@ -59,7 +59,7 @@ test('type is cast to AgentType enum', function (): void {
 });
 
 test('is_default is cast to boolean', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $agent = $project->agents()->create([
         'type' => AgentType::Pm->value,
@@ -72,7 +72,7 @@ test('is_default is cast to boolean', function (): void {
 });
 
 test('settings are cast to array', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $settings = ['temperature' => 0.7, 'max_tokens' => 4096];
 
     $agent = $project->agents()->create([
@@ -88,7 +88,7 @@ test('settings are cast to array', function (): void {
 });
 
 test('tools are cast to array', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $tools = ['CreateTask', 'UpdateTask', 'ListTasks'];
 
     $agent = $project->agents()->create([
@@ -120,7 +120,7 @@ test('all agent types are valid', function (): void {
 // ============================================================================
 
 test('defaults scope filters only default agents', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->agents()->create([
         'type' => AgentType::Architect->value,
@@ -147,7 +147,7 @@ test('defaults scope filters only default agents', function (): void {
 });
 
 test('defaults scope excludes custom agents', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->agents()->create([
         'type' => AgentType::Custom->value,
@@ -164,7 +164,7 @@ test('defaults scope excludes custom agents', function (): void {
 // ============================================================================
 
 test('agent belongs to a project', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $agent = $project->agents()->create([
         'type' => AgentType::Architect->value,
@@ -178,7 +178,7 @@ test('agent belongs to a project', function (): void {
 });
 
 test('project has many agents', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->agents()->create([
         'type' => AgentType::Architect->value,
@@ -200,7 +200,7 @@ test('project has many agents', function (): void {
 // ============================================================================
 
 test('agents are soft deleted when project is deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->agents()->create([
         'type' => AgentType::Architect->value,
@@ -219,7 +219,7 @@ test('agents are soft deleted when project is deleted', function (): void {
 // ============================================================================
 
 test('agents are restored when project is restored', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->agents()->create([
         'type' => AgentType::Architect->value,
@@ -238,7 +238,7 @@ test('agents are restored when project is restored', function (): void {
 // ============================================================================
 
 test('agents are force deleted when project is force deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $project->agents()->create([
         'type' => AgentType::Architect->value,

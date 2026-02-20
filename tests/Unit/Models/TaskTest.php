@@ -5,21 +5,21 @@ declare(strict_types=1);
 use App\Enums\TaskPriority;
 use App\Models\ImplementationNote;
 use App\Models\Project;
-use App\Models\ProjectStatus;
 use App\Models\Task;
+use App\Models\TaskStatus;
 
 // ============================================================================
 // Task Creation
 // ============================================================================
 
 test('can create a task with required fields', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $status = $project->statuses()->create(['name' => 'Backlog', 'slug' => 'backlog', 'position' => 0]);
 
     $task = $project->tasks()->create([
         'title' => 'Implement HD Wallet Derivation',
         'description' => 'Create BIP44 derivation path for deposit addresses.',
-        'project_status_id' => $status->id,
+        'task_status_id' => $status->id,
         'priority' => TaskPriority::High->value,
         'sort_order' => 1,
     ]);
@@ -27,13 +27,13 @@ test('can create a task with required fields', function (): void {
     expect($task)
         ->toBeInstanceOf(Task::class)
         ->title->toBe('Implement HD Wallet Derivation')
-        ->project_status_id->toBe($status->id)
+        ->task_status_id->toBe($status->id)
         ->priority->toBe(TaskPriority::High)
         ->sort_order->toBe(1);
 });
 
 test('task has nullable optional fields', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $task = $project->tasks()->create([
         'title' => 'Simple task',
@@ -47,11 +47,11 @@ test('task has nullable optional fields', function (): void {
         ->milestone->toBeNull()
         ->estimate->toBeNull()
         ->parent_task_id->toBeNull()
-        ->project_status_id->toBeNull();
+        ->task_status_id->toBeNull();
 });
 
 test('task stores phase and milestone', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $task = $project->tasks()->create([
         'title' => 'Scanner implementation',
@@ -74,7 +74,7 @@ test('task stores phase and milestone', function (): void {
 // ============================================================================
 
 test('task belongs to project', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $task = $project->tasks()->create([
         'title' => 'Test task',
@@ -89,38 +89,19 @@ test('task belongs to project', function (): void {
 });
 
 test('task belongs to project status', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create();
     $status = $project->statuses()->create(['name' => 'To Do', 'slug' => 'todo', 'position' => 0]);
 
-    $task = $project->tasks()->create([
-        'title' => 'Test task',
-        'description' => 'A task.',
-        'project_status_id' => $status->id,
-        'priority' => TaskPriority::Medium->value,
-        'sort_order' => 1,
-    ]);
+    $task = $project->tasks()->create(['title' => 'Test task', 'description' => 'A task.', 'task_status_id' => $status->id, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
-    expect($task->projectStatus)
-        ->toBeInstanceOf(ProjectStatus::class)
-        ->id->toBe($status->id);
+    expect($task->status)->toBeInstanceOf(TaskStatus::class)->id->toBe($status->id);
 });
 
 test('project has many tasks', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create();
 
-    $project->tasks()->create([
-        'title' => 'Task A',
-        'description' => 'First.',
-        'priority' => TaskPriority::High->value,
-        'sort_order' => 1,
-    ]);
-
-    $project->tasks()->create([
-        'title' => 'Task B',
-        'description' => 'Second.',
-        'priority' => TaskPriority::Medium->value,
-        'sort_order' => 2,
-    ]);
+    $project->tasks()->create(['title' => 'Task A', 'description' => 'First.', 'priority' => TaskPriority::High->value, 'sort_order' => 1]);
+    $project->tasks()->create(['title' => 'Task B', 'description' => 'Second.', 'priority' => TaskPriority::Medium->value, 'sort_order' => 2]);
 
     expect($project->tasks)->toHaveCount(2);
 });
@@ -130,7 +111,7 @@ test('project has many tasks', function (): void {
 // ============================================================================
 
 test('task can have subtasks', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $parent = $project->tasks()->create([
         'title' => 'Parent task',
@@ -159,7 +140,7 @@ test('task can have subtasks', function (): void {
 });
 
 test('subtask belongs to parent', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $parent = $project->tasks()->create([
         'title' => 'Parent',
@@ -198,7 +179,7 @@ test('all task priorities are valid', function (): void {
 // ============================================================================
 
 test('can create an implementation note for a task', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $task = $project->tasks()->create([
         'title' => 'HD Wallet',
@@ -218,7 +199,7 @@ test('can create an implementation note for a task', function (): void {
 });
 
 test('implementation note stores code snippets as json', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $task = $project->tasks()->create([
         'title' => 'Scanner',
@@ -244,7 +225,7 @@ test('implementation note stores code snippets as json', function (): void {
 });
 
 test('implementation note belongs to task', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $task = $project->tasks()->create([
         'title' => 'Test task',
@@ -264,7 +245,7 @@ test('implementation note belongs to task', function (): void {
 });
 
 test('task has many implementation notes', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     $task = $project->tasks()->create([
         'title' => 'Complex task',
@@ -284,7 +265,7 @@ test('task has many implementation notes', function (): void {
 // ============================================================================
 
 test('tasks are soft deleted when project is deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $project->tasks()->create(['title' => 'Task', 'description' => 'Will be deleted.', 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->delete();
@@ -294,7 +275,7 @@ test('tasks are soft deleted when project is deleted', function (): void {
 });
 
 test('implementation notes are soft deleted when task is deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $task = $project->tasks()->create([
         'title' => 'Task',
         'description' => 'Has notes.',
@@ -310,7 +291,7 @@ test('implementation notes are soft deleted when task is deleted', function (): 
 });
 
 test('subtasks are soft deleted when parent task is deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',
@@ -337,7 +318,7 @@ test('subtasks are soft deleted when parent task is deleted', function (): void 
 // ============================================================================
 
 test('tasks are restored when project is restored', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $project->tasks()->create(['title' => 'Task', 'description' => 'Will be restored.', 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->delete();
@@ -347,7 +328,7 @@ test('tasks are restored when project is restored', function (): void {
 });
 
 test('implementation notes are restored when task is restored', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $task = $project->tasks()->create([
         'title' => 'Task',
         'description' => 'Has notes.',
@@ -363,7 +344,7 @@ test('implementation notes are restored when task is restored', function (): voi
 });
 
 test('subtasks are restored when parent task is restored', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',
@@ -390,7 +371,7 @@ test('subtasks are restored when parent task is restored', function (): void {
 // ============================================================================
 
 test('tasks are force deleted when project is force deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $project->tasks()->create(['title' => 'Task', 'description' => 'Will be gone.', 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->forceDelete();
@@ -399,7 +380,7 @@ test('tasks are force deleted when project is force deleted', function (): void 
 });
 
 test('implementation notes are force deleted when task is force deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $task = $project->tasks()->create([
         'title' => 'Task',
         'description' => 'Has notes.',
@@ -414,7 +395,7 @@ test('implementation notes are force deleted when task is force deleted', functi
 });
 
 test('subtasks are force deleted when parent task is force deleted', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',
@@ -437,7 +418,7 @@ test('subtasks are force deleted when parent task is force deleted', function ()
 });
 
 test('subtasks and notes are force deleted on deep cascade via project', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $parent = $project->tasks()->create([
         'title' => 'Parent',
         'description' => 'Has subtasks.',

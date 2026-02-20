@@ -8,12 +8,12 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('update task tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     expect((string) (app()->make(UpdateTask::class, ['project' => $project]))->description())->not->toBeEmpty();
 });
 
 test('update task tool updates a task', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $status = $project->statuses()->create(['name' => 'In Progress', 'slug' => 'in-progress', 'position' => 1]);
     $task = $project->tasks()->create(['title' => 'Old', 'description' => 'Old desc']);
 
@@ -25,12 +25,12 @@ test('update task tool updates a task', function (): void {
 
     $task->refresh();
 
-    expect($task)->title->toBe('New Title')->project_status_id->toBe($status->id);
+    expect($task)->title->toBe('New Title')->task_status_id->toBe($status->id);
     expect($result)->toContain('New Title');
 });
 
 test('update task tool only updates provided fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Keep', 'description' => 'Keep too', 'priority' => 'high']);
 
     (app()->make(UpdateTask::class, ['project' => $project]))->handle(new Request([
@@ -43,8 +43,8 @@ test('update task tool only updates provided fields', function (): void {
 });
 
 test('update task tool scopes to project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $task = $projectB->tasks()->create(['title' => 'Other', 'description' => 'D']);
 
     $result = (string) (app()->make(UpdateTask::class, ['project' => $projectA]))->handle(new Request([

@@ -8,7 +8,7 @@ use App\Models\ProjectMember;
 use App\Models\User;
 
 test('it removes a project member', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $user = User::factory()->create();
 
     $member = $project->members()->create(['user_id' => $user->id, 'role' => 'member']);
@@ -20,7 +20,7 @@ test('it removes a project member', function (): void {
 });
 
 test('it only removes the specified member', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $userA = User::factory()->create();
     $userB = User::factory()->create();
 

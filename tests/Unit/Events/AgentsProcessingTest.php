@@ -10,7 +10,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
-    $this->project = Project::create(['name' => 'Test Project']);
+    $this->project = Project::factory()->create(['name' => 'Test Project']);
     $this->user = User::factory()->create();
 
     $this->conversation = Conversation::create([

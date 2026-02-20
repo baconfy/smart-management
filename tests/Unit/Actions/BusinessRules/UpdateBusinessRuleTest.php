@@ -8,7 +8,7 @@ use App\Models\BusinessRule;
 use App\Models\Project;
 
 test('it updates a business rule', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $rule = $project->businessRules()->create([
         'title' => 'Old Title',
         'description' => 'Old description',
@@ -27,7 +27,7 @@ test('it updates a business rule', function (): void {
 });
 
 test('it can change status', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $rule = $project->businessRules()->create([
         'title' => 'Rule',
         'description' => 'D',
@@ -40,7 +40,7 @@ test('it can change status', function (): void {
 });
 
 test('it preserves unchanged fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $rule = $project->businessRules()->create([
         'title' => 'Keep',
         'description' => 'Original',

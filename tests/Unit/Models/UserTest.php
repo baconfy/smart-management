@@ -14,8 +14,8 @@ use Illuminate\Support\Str;
 test('user has many projects through members', function (): void {
     $user = User::factory()->create();
 
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $projectB->members()->create(['user_id' => $user->id, 'role' => 'member']);
@@ -27,7 +27,7 @@ test('user has many projects through members', function (): void {
 
 test('user has many conversations', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
 
     Conversation::create([
         'id' => (string) Str::ulid(),

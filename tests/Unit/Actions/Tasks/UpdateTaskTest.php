@@ -8,20 +8,20 @@ use App\Models\Project;
 use App\Models\Task;
 
 test('it updates a task', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $status = $project->statuses()->create(['name' => 'In Progress', 'slug' => 'in-progress', 'position' => 1]);
     $task = $project->tasks()->create(['title' => 'Old', 'description' => 'Old desc']);
 
-    $result = (new UpdateTask)($task, ['title' => 'New', 'project_status_id' => $status->id]);
+    $result = (new UpdateTask)($task, ['title' => 'New', 'task_status_id' => $status->id]);
 
     expect($result)
         ->toBeInstanceOf(Task::class)
         ->title->toBe('New')
-        ->project_status_id->toBe($status->id);
+        ->task_status_id->toBe($status->id);
 });
 
 test('it preserves unchanged fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Keep', 'description' => 'Keep too', 'priority' => 'high']);
 
     (new UpdateTask)($task, ['description' => 'Updated desc']);

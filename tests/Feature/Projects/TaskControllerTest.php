@@ -6,7 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 
 test('guest cannot view tasks', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $this->getJson(route('projects.tasks.index', $project))->assertUnauthorized();
 });
@@ -14,7 +14,7 @@ test('guest cannot view tasks', function (): void {
 test('non-member cannot view tasks', function (): void {
     $user = User::factory()->create();
     $other = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $other->id, 'role' => 'owner']);
 
     $this->actingAs($user)->get(route('projects.tasks.index', $project))->assertForbidden();
@@ -22,7 +22,7 @@ test('non-member cannot view tasks', function (): void {
 
 test('member can view tasks', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $project->tasks()->create(['title' => 'Setup DB', 'description' => 'Create schema.']);
@@ -34,8 +34,8 @@ test('member can view tasks', function (): void {
 
 test('tasks are scoped to project', function (): void {
     $user = User::factory()->create();
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $projectA->tasks()->create(['title' => 'Task A', 'description' => 'D']);
@@ -48,7 +48,7 @@ test('tasks are scoped to project', function (): void {
 
 test('empty tasks returns empty array', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->get(route('projects.tasks.index', $project))->assertInertia(
@@ -62,7 +62,7 @@ test('empty tasks returns empty array', function (): void {
 
 test('member can view task detail', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $task = $project->tasks()->create(['title' => 'Setup DB', 'description' => 'Create schema.']);
@@ -75,7 +75,7 @@ test('member can view task detail', function (): void {
 
 test('task detail includes subtasks', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $parent = $project->tasks()->create(['title' => 'Parent', 'description' => 'D']);
@@ -88,8 +88,8 @@ test('task detail includes subtasks', function (): void {
 
 test('task from another project returns 404', function (): void {
     $user = User::factory()->create();
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $task = $projectB->tasks()->create(['title' => 'Other', 'description' => 'D']);

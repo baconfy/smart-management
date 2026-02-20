@@ -8,13 +8,13 @@ use App\Models\Project;
 use App\Models\Task;
 
 test('it creates a task for a project', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $status = $project->statuses()->create(['name' => 'Backlog', 'slug' => 'backlog', 'position' => 0]);
 
     $task = (new CreateTask)($project, [
         'title' => 'Setup database',
         'description' => 'Create schema and migrations.',
-        'project_status_id' => $status->id,
+        'task_status_id' => $status->id,
     ]);
 
     expect($task)
@@ -22,7 +22,7 @@ test('it creates a task for a project', function (): void {
         ->project_id->toBe($project->id)
         ->title->toBe('Setup database')
         ->description->toBe('Create schema and migrations.')
-        ->project_status_id->toBe($status->id);
+        ->task_status_id->toBe($status->id);
 
     $task->refresh();
 
@@ -31,7 +31,7 @@ test('it creates a task for a project', function (): void {
 });
 
 test('it accepts optional fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $task = (new CreateTask)($project, [
         'title' => 'Deploy API',
@@ -50,8 +50,8 @@ test('it accepts optional fields', function (): void {
 });
 
 test('it scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
 
     (new CreateTask)($projectA, ['title' => 'Task A', 'description' => 'D']);
     (new CreateTask)($projectB, ['title' => 'Task B', 'description' => 'D']);

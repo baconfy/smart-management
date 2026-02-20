@@ -8,7 +8,7 @@ use App\Models\BusinessRule;
 use App\Models\Project;
 
 test('it creates a business rule for a project', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $rule = (new CreateBusinessRule)($project, [
         'title' => 'Max discount 20%',
@@ -27,8 +27,8 @@ test('it creates a business rule for a project', function (): void {
 });
 
 test('it scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
 
     (new CreateBusinessRule)($projectA, ['title' => 'Rule A', 'description' => 'D', 'category' => 'billing']);
     (new CreateBusinessRule)($projectB, ['title' => 'Rule B', 'description' => 'D', 'category' => 'security']);

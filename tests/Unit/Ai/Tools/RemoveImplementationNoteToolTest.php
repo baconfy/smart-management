@@ -8,14 +8,14 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('remove implementation note tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(RemoveImplementationNote::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('remove implementation note tool removes a record', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
 
     $note = $task->implementationNotes()->create([
@@ -35,7 +35,7 @@ test('remove implementation note tool removes a record', function (): void {
 });
 
 test('remove implementation note tool returns not found for missing note', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(RemoveImplementationNote::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
@@ -46,8 +46,8 @@ test('remove implementation note tool returns not found for missing note', funct
 });
 
 test('remove implementation note tool scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $task = $projectB->tasks()->create(['title' => 'T', 'description' => 'D']);
 
     $note = $task->implementationNotes()->create([

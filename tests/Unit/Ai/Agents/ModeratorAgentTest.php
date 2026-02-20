@@ -7,7 +7,7 @@ use App\Enums\AgentType;
 use App\Models\Project;
 
 beforeEach(function () {
-    $this->project = Project::create(['name' => 'Test Project']);
+    $this->project = Project::factory()->create(['name' => 'Test Project']);
 
     $this->architect = $this->project->agents()->create([
         'type' => AgentType::Architect->value,

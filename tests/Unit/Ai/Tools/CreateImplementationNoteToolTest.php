@@ -8,12 +8,12 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('create implementation note tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     expect((string) (app()->make(CreateImplementationNote::class, ['project' => $project]))->description())->not->toBeEmpty();
 });
 
 test('create implementation note tool creates a record', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Setup DB', 'description' => 'D']);
 
     $tool = app()->make(CreateImplementationNote::class, ['project' => $project]);
@@ -37,7 +37,7 @@ test('create implementation note tool creates a record', function (): void {
 });
 
 test('create implementation note tool accepts code snippets', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Setup DB', 'description' => 'D']);
 
     $tool = app()->make(CreateImplementationNote::class, ['project' => $project]);
@@ -58,8 +58,8 @@ test('create implementation note tool accepts code snippets', function (): void 
 });
 
 test('create implementation note tool validates task belongs to project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $task = $projectB->tasks()->create(['title' => 'Other', 'description' => 'D']);
 
     $tool = app()->make(CreateImplementationNote::class, ['project' => $projectA]);

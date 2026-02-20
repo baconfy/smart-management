@@ -30,7 +30,7 @@ test('container resolves our custom conversation store', function (): void {
 // ============================================================================
 
 test('stores conversation with project_id', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $user = User::factory()->create();
 
     $store = resolve(ConversationStore::class);
@@ -51,7 +51,7 @@ test('stores conversation with project_id', function (): void {
 // ============================================================================
 
 test('stores assistant message with project_agent_id', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $agent = $project->agents()->create([
         'type' => AgentType::Architect->value,
         'name' => 'Architect',
@@ -78,7 +78,7 @@ test('stores assistant message with project_agent_id', function (): void {
 });
 
 test('stores user message with null project_agent_id', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $user = User::factory()->create();
 
     $store = resolve(ConversationStore::class);
@@ -103,8 +103,8 @@ test('stores user message with null project_agent_id', function (): void {
 
 test('latest conversation id is scoped by project', function (): void {
     $user = User::factory()->create();
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $store = resolve(ConversationStore::class);
 
@@ -125,7 +125,7 @@ test('latest conversation id is scoped by project', function (): void {
 // ============================================================================
 
 test('reset clears agent context between operations', function (): void {
-    $project = Project::create(['name' => 'Test Project']);
+    $project = Project::factory()->create(['name' => 'Test Project']);
     $agent = $project->agents()->create([
         'type' => AgentType::Architect->value,
         'name' => 'Architect',

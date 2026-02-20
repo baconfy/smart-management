@@ -8,7 +8,7 @@ use App\Models\Project;
 use App\Models\User;
 
 test('it creates a conversation for a project', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $user = User::factory()->create();
 
     $conversation = (new CreateConversation)($project, [
@@ -25,8 +25,8 @@ test('it creates a conversation for a project', function (): void {
 });
 
 test('it scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
     $user = User::factory()->create();
 
     (new CreateConversation)($projectA, ['id' => str()->ulid()->toBase32(), 'user_id' => $user->id, 'title' => 'Conv A']);

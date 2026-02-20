@@ -7,7 +7,7 @@ use App\Models\ImplementationNote;
 use App\Models\Project;
 
 test('it updates an implementation note', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Old', 'content' => 'Old content']);
 
@@ -20,7 +20,7 @@ test('it updates an implementation note', function (): void {
 });
 
 test('it preserves unchanged fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
     $note = $task->implementationNotes()->create(['title' => 'Keep', 'content' => 'Original']);
 

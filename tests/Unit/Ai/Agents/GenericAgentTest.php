@@ -10,7 +10,7 @@ use App\Models\Project;
 use App\Models\ProjectAgent;
 
 beforeEach(function () {
-    $this->project = Project::create([
+    $this->project = Project::factory()->create([
         'name' => 'Smart Management',
         'description' => 'AI-powered project management tool.',
     ]);

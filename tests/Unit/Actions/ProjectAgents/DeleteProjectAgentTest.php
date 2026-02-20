@@ -7,7 +7,7 @@ use App\Models\Project;
 use App\Models\ProjectAgent;
 
 test('it deletes a project agent', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $agent = $project->agents()->create(['type' => 'custom', 'name' => 'Agent', 'instructions' => 'Instructions']);
 
     $result = (new DeleteProjectAgent)($agent);

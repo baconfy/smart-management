@@ -8,7 +8,7 @@ use App\Models\Decision;
 use App\Models\Project;
 
 test('it updates a decision', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $decision = $project->decisions()->create([
         'title' => 'Use MySQL',
         'choice' => 'MySQL',
@@ -27,7 +27,7 @@ test('it updates a decision', function (): void {
 });
 
 test('it can change status', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $decision = $project->decisions()->create([
         'title' => 'Old Decision',
         'choice' => 'X',
@@ -40,7 +40,7 @@ test('it can change status', function (): void {
 });
 
 test('it preserves unchanged fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $decision = $project->decisions()->create([
         'title' => 'Keep',
         'choice' => 'Redis',

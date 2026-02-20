@@ -8,14 +8,14 @@ use App\Models\Project;
 use Laravel\Ai\Tools\Request;
 
 test('update decision tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(UpdateDecision::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('update decision tool updates a decision', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $decision = $project->decisions()->create([
         'title' => 'Use MySQL',
@@ -43,7 +43,7 @@ test('update decision tool updates a decision', function (): void {
 });
 
 test('update decision tool can change status', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $decision = $project->decisions()->create([
         'title' => 'Use MySQL',
@@ -62,7 +62,7 @@ test('update decision tool can change status', function (): void {
 });
 
 test('update decision tool only updates provided fields', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $decision = $project->decisions()->create([
         'title' => 'Use Redis',
@@ -86,8 +86,8 @@ test('update decision tool only updates provided fields', function (): void {
 });
 
 test('update decision tool scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $decision = $projectB->decisions()->create([
         'title' => 'Other Project Decision',

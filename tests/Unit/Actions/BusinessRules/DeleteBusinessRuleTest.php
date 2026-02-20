@@ -7,7 +7,7 @@ use App\Models\BusinessRule;
 use App\Models\Project;
 
 test('it deletes a business rule', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $rule = $project->businessRules()->create([
         'title' => 'To Delete',
         'description' => 'D',

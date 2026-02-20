@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
-    $this->project = Project::create(['name' => 'Test']);
+    $this->project = Project::factory()->create(['name' => 'Test']);
     $this->user = User::factory()->create();
 
     $this->conversation = Conversation::create([

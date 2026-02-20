@@ -12,14 +12,14 @@ use Illuminate\Support\Str;
 // ============================================================================
 
 test('guest cannot view project conversations', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $this->get(route('projects.conversations.index', $project))
         ->assertRedirect('/login');
 });
 
 test('non-member cannot view project conversations', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -33,7 +33,7 @@ test('non-member cannot view project conversations', function (): void {
 
 test('member can view conversations index', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $this->actingAs($user)->get(route('projects.conversations.index', $project))->assertOk()->assertInertia(
@@ -47,7 +47,7 @@ test('member can view conversations index', function (): void {
 
 test('member can view a conversation', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
     $conversation = Conversation::create([
@@ -72,7 +72,7 @@ test('member can view a conversation', function (): void {
 test('non-member cannot view a conversation', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $otherUser->id, 'role' => 'owner']);
 
     $conversation = Conversation::create([
@@ -89,8 +89,8 @@ test('non-member cannot view a conversation', function (): void {
 
 test('conversation must belong to the project', function (): void {
     $user = User::factory()->create();
-    $project = Project::create(['name' => 'Project A']);
-    $otherProject = Project::create(['name' => 'Project B']);
+    $project = Project::factory()->create(['name' => 'Project A']);
+    $otherProject = Project::factory()->create(['name' => 'Project B']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
     $otherProject->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 

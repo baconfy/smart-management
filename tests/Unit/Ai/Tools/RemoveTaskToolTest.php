@@ -8,14 +8,14 @@ use App\Models\Task;
 use Laravel\Ai\Tools\Request;
 
 test('remove task tool has a description', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(RemoveTask::class, ['project' => $project]);
 
     expect((string) $tool->description())->not->toBeEmpty();
 });
 
 test('remove task tool removes a task', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $task = $project->tasks()->create([
         'title' => 'Setup database',
@@ -34,7 +34,7 @@ test('remove task tool removes a task', function (): void {
 });
 
 test('remove task tool returns not found for missing task', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $tool = app()->make(RemoveTask::class, ['project' => $project]);
 
     $result = (string) $tool->handle(new Request([
@@ -45,8 +45,8 @@ test('remove task tool returns not found for missing task', function (): void {
 });
 
 test('remove task tool scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'Project A']);
-    $projectB = Project::create(['name' => 'Project B']);
+    $projectA = Project::factory()->create(['name' => 'Project A']);
+    $projectB = Project::factory()->create(['name' => 'Project B']);
 
     $task = $projectB->tasks()->create([
         'title' => 'Other Project Task',

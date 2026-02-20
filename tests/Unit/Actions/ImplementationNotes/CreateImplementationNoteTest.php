@@ -7,7 +7,7 @@ use App\Models\ImplementationNote;
 use App\Models\Project;
 
 test('it creates an implementation note for a task', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
 
     $note = (new CreateImplementationNote)($task, [
@@ -23,7 +23,7 @@ test('it creates an implementation note for a task', function (): void {
 });
 
 test('it accepts code snippets', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $task = $project->tasks()->create(['title' => 'Task', 'description' => 'D']);
 
     $note = (new CreateImplementationNote)($task, [
@@ -36,7 +36,7 @@ test('it accepts code snippets', function (): void {
 });
 
 test('it scopes to the given task', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
     $taskA = $project->tasks()->create(['title' => 'Task A', 'description' => 'D']);
     $taskB = $project->tasks()->create(['title' => 'Task B', 'description' => 'D']);
 

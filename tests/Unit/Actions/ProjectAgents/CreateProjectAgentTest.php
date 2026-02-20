@@ -7,7 +7,7 @@ use App\Models\Project;
 use App\Models\ProjectAgent;
 
 test('it creates a project agent', function (): void {
-    $project = Project::create(['name' => 'Test']);
+    $project = Project::factory()->create(['name' => 'Test']);
 
     $agent = (new CreateProjectAgent)($project, [
         'type' => 'custom',
@@ -23,8 +23,8 @@ test('it creates a project agent', function (): void {
 });
 
 test('it scopes to the given project', function (): void {
-    $projectA = Project::create(['name' => 'A']);
-    $projectB = Project::create(['name' => 'B']);
+    $projectA = Project::factory()->create(['name' => 'A']);
+    $projectB = Project::factory()->create(['name' => 'B']);
 
     (new CreateProjectAgent)($projectA, ['type' => 'custom', 'name' => 'Agent A', 'instructions' => 'A']);
     (new CreateProjectAgent)($projectB, ['type' => 'custom', 'name' => 'Agent B', 'instructions' => 'B']);
