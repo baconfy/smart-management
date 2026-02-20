@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
@@ -127,5 +128,13 @@ class Task extends Model
     public function scopeOpen(Builder $query): Builder
     {
         return $query->whereHas('status', fn (Builder $q) => $q->where('is_closed', false));
+    }
+
+    /**
+     * Establishes a one-to-one relationship with the Conversation model.
+     */
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class);
     }
 }

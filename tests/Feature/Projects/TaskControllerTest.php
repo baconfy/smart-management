@@ -26,8 +26,7 @@ test('index returns tasks with statuses for kanban', function (): void {
         'task_status_id' => $todo->id,
     ]);
 
-    $response = $this->actingAs($this->user)
-        ->get(route('projects.tasks.index', $this->project));
+    $response = $this->actingAs($this->user)->get(route('projects.tasks.index', $this->project));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -89,8 +88,7 @@ test('update changes task status', function (): void {
         ->patch(route('projects.tasks.update', [$this->project, $task]), [
             'task_status_id' => $done->id,
         ])
-        ->assertOk()
-        ->assertJson(['success' => true]);
+        ->assertRedirect();
 
     expect($task->refresh()->task_status_id)->toBe($done->id);
 });
@@ -109,7 +107,7 @@ test('update changes sort order', function (): void {
         ->patch(route('projects.tasks.update', [$this->project, $task]), [
             'sort_order' => 3,
         ])
-        ->assertOk();
+        ->assertRedirect();
 
     expect($task->refresh()->sort_order)->toBe(3);
 });
@@ -130,7 +128,7 @@ test('update changes status and sort order together', function (): void {
             'task_status_id' => $inProgress->id,
             'sort_order' => 2,
         ])
-        ->assertOk();
+        ->assertRedirect();
 
     $task->refresh();
     expect($task->task_status_id)->toBe($inProgress->id);
@@ -163,11 +161,9 @@ test('update forbids non-members', function (): void {
         'task_status_id' => $todo->id,
     ]);
 
-    $this->actingAs($stranger)
-        ->patch(route('projects.tasks.update', [$this->project, $task]), [
-            'task_status_id' => $todo->id,
-        ])
-        ->assertForbidden();
+    $this->actingAs($stranger)->patch(route('projects.tasks.update', [$this->project, $task]), [
+        'task_status_id' => $todo->id,
+    ])->assertForbidden();
 });
 
 test('update rejects task from another project', function (): void {

@@ -15,12 +15,14 @@ return new class extends AiMigration
             $table->string('id', 26)->primary();
             $table->foreignId('user_id');
             $table->foreignId('project_id')->constrained()->restrictOnDelete();
+            $table->foreignId('task_id')->nullable()->constrained('tasks')->nullOnDelete();
             $table->string('title');
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['user_id', 'updated_at']);
             $table->index(['project_id']);
+            $table->unique('task_id');
         });
 
         Schema::create('agent_conversation_messages', function (Blueprint $table) {

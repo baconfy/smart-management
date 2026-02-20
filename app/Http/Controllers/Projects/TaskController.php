@@ -9,7 +9,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;

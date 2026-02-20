@@ -18,7 +18,6 @@ class SeedProjectAgents
                 'CreateDecision',
                 'ListDecisions',
                 'UpdateDecision',
-                'RemoveDecision',
                 'ListBusinessRules',
             ],
         ],
@@ -30,8 +29,6 @@ class SeedProjectAgents
                 'CreateBusinessRule',
                 'ListBusinessRules',
                 'UpdateBusinessRule',
-                'RemoveBusinessRule',
-                'RemoveBusinessRule',
             ],
         ],
         [
@@ -41,7 +38,6 @@ class SeedProjectAgents
                 'ListTasks',
                 'CreateTask',
                 'UpdateTask',
-                'RemoveTask',
                 'ListDecisions',
                 'ListBusinessRules',
             ],
@@ -56,7 +52,6 @@ class SeedProjectAgents
                 'CreateImplementationNote',
                 'ListImplementationNotes',
                 'UpdateImplementationNote',
-                'RemoveImplementationNote',
             ],
         ],
         [
@@ -70,7 +65,6 @@ class SeedProjectAgents
                 'CreateImplementationNote',
                 'ListImplementationNotes',
                 'UpdateImplementationNote',
-                'RemoveImplementationNote',
             ],
         ],
     ];

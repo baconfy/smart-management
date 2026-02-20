@@ -70,4 +70,12 @@ class Conversation extends Model
     {
         return $this->hasMany(ConversationMessage::class, 'conversation_id');
     }
+
+    /**
+     * Defines a relationship indicating that this model belongs to a Task model.
+     */
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class);
+    }
 }
