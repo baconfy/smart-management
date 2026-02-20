@@ -2,97 +2,189 @@
 
 declare(strict_types=1);
 
+use App\Actions\Projects\SeedProjectStatuses;
 use App\Models\Project;
 use App\Models\User;
 
-test('guest cannot view tasks', function (): void {
-    $project = Project::factory()->create(['name' => 'Test']);
-
-    $this->getJson(route('projects.tasks.index', $project))->assertUnauthorized();
-});
-
-test('non-member cannot view tasks', function (): void {
-    $user = User::factory()->create();
-    $other = User::factory()->create();
-    $project = Project::factory()->create(['name' => 'Test']);
-    $project->members()->create(['user_id' => $other->id, 'role' => 'owner']);
-
-    $this->actingAs($user)->get(route('projects.tasks.index', $project))->assertForbidden();
-});
-
-test('member can view tasks', function (): void {
-    $user = User::factory()->create();
-    $project = Project::factory()->create(['name' => 'Test']);
-    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-
-    $project->tasks()->create(['title' => 'Setup DB', 'description' => 'Create schema.']);
-
-    $this->actingAs($user)->get(route('projects.tasks.index', $project))->assertOk()->assertInertia(
-        fn ($page) => $page->component('projects/tasks/index')->has('tasks', 1)->where('tasks.0.title', 'Setup DB')
-    );
-});
-
-test('tasks are scoped to project', function (): void {
-    $user = User::factory()->create();
-    $projectA = Project::factory()->create(['name' => 'A']);
-    $projectB = Project::factory()->create(['name' => 'B']);
-    $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-
-    $projectA->tasks()->create(['title' => 'Task A', 'description' => 'D']);
-    $projectB->tasks()->create(['title' => 'Task B', 'description' => 'D']);
-
-    $this->actingAs($user)->get(route('projects.tasks.index', $projectA))->assertInertia(
-        fn ($page) => $page->has('tasks', 1)->where('tasks.0.title', 'Task A')
-    );
-});
-
-test('empty tasks returns empty array', function (): void {
-    $user = User::factory()->create();
-    $project = Project::factory()->create(['name' => 'Test']);
-    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
-
-    $this->actingAs($user)->get(route('projects.tasks.index', $project))->assertInertia(
-        fn ($page) => $page->has('tasks', 0)
-    );
+beforeEach(function () {
+    $this->user = User::factory()->create();
+    $this->project = Project::factory()->create();
+    $this->project->members()->create(['user_id' => $this->user->id, 'role' => 'owner']);
+    (new SeedProjectStatuses)($this->project);
 });
 
 // ============================================================================
-// Task Detail (Show)
+// Index (Kanban Board)
 // ============================================================================
 
-test('member can view task detail', function (): void {
-    $user = User::factory()->create();
-    $project = Project::factory()->create(['name' => 'Test']);
-    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+test('index returns tasks with statuses for kanban', function (): void {
+    $todo = $this->project->statuses()->where('slug', 'todo')->first();
 
-    $task = $project->tasks()->create(['title' => 'Setup DB', 'description' => 'Create schema.']);
-    $task->implementationNotes()->create(['title' => 'Note 1', 'content' => 'Use PostgreSQL.']);
+    $this->project->tasks()->create([
+        'title' => 'Task A',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+    ]);
 
-    $this->actingAs($user)->get(route('projects.tasks.show', [$project, $task]))->assertOk()->assertInertia(
-        fn ($page) => $page->component('projects/tasks/show')->where('task.title', 'Setup DB')->has('implementationNotes', 1)->where('implementationNotes.0.title', 'Note 1')
+    $response = $this->actingAs($this->user)
+        ->get(route('projects.tasks.index', $this->project));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('projects/tasks/index')
+        ->has('statuses', 3)
+        ->has('tasks', 1)
     );
 });
 
-test('task detail includes subtasks', function (): void {
-    $user = User::factory()->create();
-    $project = Project::factory()->create(['name' => 'Test']);
-    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+test('index excludes subtasks from root level', function (): void {
+    $todo = $this->project->statuses()->where('slug', 'todo')->first();
 
-    $parent = $project->tasks()->create(['title' => 'Parent', 'description' => 'D']);
-    $parent->subtasks()->create(['title' => 'Subtask', 'description' => 'D', 'project_id' => $project->id]);
+    $parent = $this->project->tasks()->create([
+        'title' => 'Parent',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+    ]);
 
-    $this->actingAs($user)->get(route('projects.tasks.show', [$project, $parent]))->assertInertia(
-        fn ($page) => $page->has('subtasks', 1)->where('subtasks.0.title', 'Subtask')
-    );
+    $this->project->tasks()->create([
+        'title' => 'Subtask',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+        'parent_task_id' => $parent->id,
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('projects.tasks.index', $this->project))
+        ->assertInertia(fn ($page) => $page->has('tasks', 1));
 });
 
-test('task from another project returns 404', function (): void {
-    $user = User::factory()->create();
-    $projectA = Project::factory()->create(['name' => 'A']);
-    $projectB = Project::factory()->create(['name' => 'B']);
-    $projectA->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+test('index requires authentication', function (): void {
+    $this->get(route('projects.tasks.index', $this->project))
+        ->assertRedirect('/login');
+});
 
-    $task = $projectB->tasks()->create(['title' => 'Other', 'description' => 'D']);
+test('index forbids non-members', function (): void {
+    $stranger = User::factory()->create();
 
-    $this->actingAs($user)->get(route('projects.tasks.show', [$projectA, $task]))->assertNotFound();
+    $this->actingAs($stranger)
+        ->get(route('projects.tasks.index', $this->project))
+        ->assertForbidden();
+});
+
+// ============================================================================
+// Update (Kanban Drag & Drop)
+// ============================================================================
+
+test('update changes task status', function (): void {
+    $todo = $this->project->statuses()->where('slug', 'todo')->first();
+    $done = $this->project->statuses()->where('slug', 'done')->first();
+
+    $task = $this->project->tasks()->create([
+        'title' => 'Task',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+    ]);
+
+    $this->actingAs($this->user)
+        ->patch(route('projects.tasks.update', [$this->project, $task]), [
+            'task_status_id' => $done->id,
+        ])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    expect($task->refresh()->task_status_id)->toBe($done->id);
+});
+
+test('update changes sort order', function (): void {
+    $todo = $this->project->statuses()->where('slug', 'todo')->first();
+
+    $task = $this->project->tasks()->create([
+        'title' => 'Task',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+        'sort_order' => 0,
+    ]);
+
+    $this->actingAs($this->user)
+        ->patch(route('projects.tasks.update', [$this->project, $task]), [
+            'sort_order' => 3,
+        ])
+        ->assertOk();
+
+    expect($task->refresh()->sort_order)->toBe(3);
+});
+
+test('update changes status and sort order together', function (): void {
+    $todo = $this->project->statuses()->where('slug', 'todo')->first();
+    $inProgress = $this->project->statuses()->where('slug', 'in_progress')->first();
+
+    $task = $this->project->tasks()->create([
+        'title' => 'Task',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+        'sort_order' => 0,
+    ]);
+
+    $this->actingAs($this->user)
+        ->patch(route('projects.tasks.update', [$this->project, $task]), [
+            'task_status_id' => $inProgress->id,
+            'sort_order' => 2,
+        ])
+        ->assertOk();
+
+    $task->refresh();
+    expect($task->task_status_id)->toBe($inProgress->id);
+    expect($task->sort_order)->toBe(2);
+});
+
+test('update rejects invalid status id', function (): void {
+    $todo = $this->project->statuses()->where('slug', 'todo')->first();
+
+    $task = $this->project->tasks()->create([
+        'title' => 'Task',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+    ]);
+
+    $this->actingAs($this->user)
+        ->patch(route('projects.tasks.update', [$this->project, $task]), [
+            'task_status_id' => 99999,
+        ])
+        ->assertSessionHasErrors('task_status_id');
+});
+
+test('update forbids non-members', function (): void {
+    $stranger = User::factory()->create();
+    $todo = $this->project->statuses()->where('slug', 'todo')->first();
+
+    $task = $this->project->tasks()->create([
+        'title' => 'Task',
+        'description' => 'D',
+        'task_status_id' => $todo->id,
+    ]);
+
+    $this->actingAs($stranger)
+        ->patch(route('projects.tasks.update', [$this->project, $task]), [
+            'task_status_id' => $todo->id,
+        ])
+        ->assertForbidden();
+});
+
+test('update rejects task from another project', function (): void {
+    $otherProject = Project::factory()->create();
+    $otherProject->members()->create(['user_id' => $this->user->id, 'role' => 'owner']);
+    (new SeedProjectStatuses)($otherProject);
+
+    $otherStatus = $otherProject->statuses()->where('slug', 'todo')->first();
+    $otherTask = $otherProject->tasks()->create([
+        'title' => 'Other Task',
+        'description' => 'D',
+        'task_status_id' => $otherStatus->id,
+    ]);
+
+    $this->actingAs($this->user)
+        ->patch(route('projects.tasks.update', [$this->project, $otherTask]), [
+            'task_status_id' => $otherStatus->id,
+        ])
+        ->assertNotFound();
 });

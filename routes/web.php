@@ -47,4 +47,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
      */
     Route::get('p/{project}/t', [TaskController::class, 'index'])->name('projects.tasks.index');
     Route::get('p/{project}/t/{task}', [TaskController::class, 'show'])->name('projects.tasks.show');
+    Route::patch('p/{project}/t/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
 });

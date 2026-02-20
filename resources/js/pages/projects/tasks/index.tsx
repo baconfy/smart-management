@@ -1,76 +1,188 @@
+import { pointerWithin, DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
+import { router } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { GavelIcon, MessageCircleMore } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ProjectNavPanel } from '@/components/navigation/project-nav-panel';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import AppLayout from '@/layouts/app-layout';
+import { KanbanCard, KanbanColumn } from '@/pages/projects/tasks/partials';
 import { dashboard } from '@/routes';
 import { show } from '@/routes/projects';
 import { index as conversations } from '@/routes/projects/conversations';
-import { show as showTask } from '@/routes/projects/tasks';
+import { update as updateTask } from '@/routes/projects/tasks';
 import type { BreadcrumbItem } from '@/types';
-import type { Project, Task } from '@/types/models';
+import type { Project, Task, TaskStatus } from '@/types/models';
 
 type Props = {
     project: Project;
+    statuses: TaskStatus[];
     tasks: Task[];
 };
 
-const STATUS_COLORS: Record<string, string> = {
-    backlog: 'bg-zinc-500/20 text-zinc-300',
-    in_progress: 'bg-blue-500/20 text-blue-300',
-    done: 'bg-green-500/20 text-green-300',
-    blocked: 'bg-red-500/20 text-red-300',
-};
+export default function TasksIndex({ project, statuses, tasks: initialTasks }: Props) {
+    const [tasks, setTasks] = useState<Task[]>(initialTasks);
+    const [activeTask, setActiveTask] = useState<Task | null>(null);
+    const pendingStatusRef = useRef<Map<number, number>>(new Map());
 
-const PRIORITY_COLORS: Record<string, string> = {
-    high: 'bg-red-500/20 text-red-300',
-    medium: 'bg-amber-500/20 text-amber-300',
-    low: 'bg-zinc-500/20 text-zinc-300',
-};
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 8 },
+        }),
+    );
 
-export default function TasksIndex({ project, tasks }: Props) {
+    const tasksByStatus = useMemo(() => {
+        const map = new Map<number, Task[]>();
+
+        for (const status of statuses) {
+            map.set(status.id, []);
+        }
+
+        for (const task of tasks) {
+            if (task.task_status_id && map.has(task.task_status_id)) {
+                map.get(task.task_status_id)!.push(task);
+            }
+        }
+
+        // Sort by sort_order within each column
+        for (const [, columnTasks] of map) {
+            columnTasks.sort((a, b) => a.sort_order - b.sort_order);
+        }
+
+        return map;
+    }, [tasks, statuses]);
+
+    const findStatusIdByTaskId = useCallback(
+        (taskId: number): number | null => {
+            for (const [statusId, columnTasks] of tasksByStatus) {
+                if (columnTasks.some((t) => t.id === taskId)) {
+                    return statusId;
+                }
+            }
+            return null;
+        },
+        [tasksByStatus],
+    );
+
+    function handleDragStart(event: DragStartEvent) {
+        const task = tasks.find((t) => t.id === event.active.id);
+        setActiveTask(task ?? null);
+        pendingStatusRef.current.clear();
+    }
+
+    function handleDragOver(event: DragOverEvent) {
+        const { active, over } = event;
+        if (!over) return;
+
+        const activeId = active.id as number;
+        const overId = over.id;
+
+        const activeStatusId = findStatusIdByTaskId(activeId);
+
+        let overStatusId: number | null = null;
+
+        if (typeof overId === 'string' && String(overId).startsWith('column-')) {
+            overStatusId = Number(String(overId).replace('column-', ''));
+        } else {
+            overStatusId = findStatusIdByTaskId(overId as number);
+        }
+
+        if (!activeStatusId || !overStatusId || activeStatusId === overStatusId) return;
+
+        pendingStatusRef.current.set(activeId, overStatusId);
+
+        setTasks((prev) => prev.map((t) => (t.id === activeId ? { ...t, task_status_id: overStatusId } : t)));
+    }
+
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        setActiveTask(null);
+
+        if (!over) {
+            pendingStatusRef.current.clear();
+            return;
+        }
+
+        const activeId = active.id as number;
+        const task = tasks.find((t) => t.id === activeId);
+        if (!task) return;
+
+        const targetStatusId = pendingStatusRef.current.get(activeId) ?? task.task_status_id;
+        pendingStatusRef.current.clear();
+
+        // Reorder within a column
+        if (typeof over.id === 'number' && activeId !== over.id) {
+            setTasks((prev) => {
+                const columnTasks = prev.filter((t) => t.task_status_id === targetStatusId).sort((a, b) => a.sort_order - b.sort_order);
+
+                const oldIndex = columnTasks.findIndex((t) => t.id === activeId);
+                const newIndex = columnTasks.findIndex((t) => t.id === over.id);
+
+                if (oldIndex === -1 || newIndex === -1) return prev;
+
+                const reordered = arrayMove(columnTasks, oldIndex, newIndex);
+                const updatedIds = new Map(reordered.map((t, i) => [t.id, i]));
+
+                return prev.map((t) => (updatedIds.has(t.id) ? { ...t, sort_order: updatedIds.get(t.id)! } : t));
+            });
+        }
+
+        // Persist
+        const sortOrder = tasks
+            .filter((t) => t.task_status_id === targetStatusId)
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .findIndex((t) => t.id === activeId);
+
+        router.patch(
+            updateTask({ project: project.ulid, task: task.ulid }).url,
+            {
+                task_status_id: targetStatusId,
+                sort_order: Math.max(sortOrder, 0),
+            },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: dashboard().url },
         { title: project.name, href: show(project.ulid).url },
         { title: 'Tasks', href: '#' },
     ];
 
+    const hasTasks = tasks.length > 0;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs} sidebar={<ProjectNavPanel project={project} />}>
-            <div className="mx-auto w-full max-w-5xl p-6">
-                {tasks.length === 0 ? (
-                    <Empty className="flex h-full items-center justify-center">
-                        <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                                <GavelIcon />
-                            </EmptyMedia>
-                            <EmptyTitle>No tasks yet.</EmptyTitle>
-                            <EmptyDescription>Chat with the Architect agent to create decisions.</EmptyDescription>
-                        </EmptyHeader>
-                        <EmptyContent className="flex-row justify-center gap-2">
-                            <Button size="lg" render={<Link href={conversations(project.ulid)} />}>
-                                <MessageCircleMore /> Start a conversation
-                            </Button>
-                        </EmptyContent>
-                    </Empty>
-                ) : (
-                    <div className="space-y-2">
-                        {tasks.map((task) => (
-                            <Link key={task.id} href={showTask({ project: project.ulid, task: task.ulid }).url} className="flex items-center gap-3 rounded-xl border border-border bg-muted/50 px-5 py-4 transition-colors hover:bg-muted">
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="font-medium tracking-tight text-foreground">{task.title}</h3>
-                                    {task.phase && <span className="text-xs text-muted-foreground">{task.phase}</span>}
-                                </div>
-                                <div className="flex shrink-0 items-center gap-2">
-                                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${PRIORITY_COLORS[task.priority] ?? ''}`}>{task.priority}</span>
-                                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[task.status] ?? ''}`}>{task.status}</span>
-                                </div>
-                            </Link>
-                        ))}
+            {!hasTasks ? (
+                <Empty className="flex h-full items-center justify-center">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <GavelIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>No tasks yet.</EmptyTitle>
+                        <EmptyDescription>Chat with the PM agent to create tasks.</EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent className="flex-row justify-center gap-2">
+                        <Button size="lg" render={<Link href={conversations(project.ulid)} />}>
+                            <MessageCircleMore /> Start a conversation
+                        </Button>
+                    </EmptyContent>
+                </Empty>
+            ) : (
+                <div className="flex h-full flex-col overflow-hidden">
+                    <div className="flex flex-1 gap-6 overflow-x-auto">
+                        <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+                            {statuses.map((status) => (
+                                <KanbanColumn key={status.id} status={status} tasks={tasksByStatus.get(status.id) ?? []} projectUlid={project.ulid} />
+                            ))}
+                            <DragOverlay>{activeTask ? <KanbanCard task={activeTask} projectUlid={project.ulid} isDragOverlay /> : null}</DragOverlay>
+                        </DndContext>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

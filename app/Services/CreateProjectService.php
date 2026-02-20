@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Actions\Projects\AddProjectMember;
 use App\Actions\Projects\CreateProject;
 use App\Actions\Projects\SeedProjectAgents;
+use App\Actions\Projects\SeedProjectStatuses;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,12 @@ readonly class CreateProjectService
     /**
      * Handles the initialization of dependencies required for project creation, member addition, and agent seeding.
      */
-    public function __construct(private CreateProject $createProject, private AddProjectMember $addProjectMember, private SeedProjectAgents $seedProjectAgents) {}
+    public function __construct(
+        private CreateProject $createProject,
+        private AddProjectMember $addProjectMember,
+        private SeedProjectAgents $seedProjectAgents,
+        private SeedProjectStatuses $seedProjectStatuses,
+    ) {}
 
     /**
      * Handles the invocation of the class, creating a project, and associating the provided user as the owner.
@@ -38,6 +44,7 @@ readonly class CreateProjectService
             $project = ($this->createProject)($data);
 
             ($this->addProjectMember)($project, $owner, 'owner');
+            ($this->seedProjectStatuses)($project);
             ($this->seedProjectAgents)($project);
 
             return $project;

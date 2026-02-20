@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Ai\Tools;
 
 use App\Actions\Tasks\CreateTask as CreateTaskAction;
+use App\Enums\TaskPriority;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -34,6 +35,10 @@ readonly class CreateTask implements Tool
         $parentTaskId = $request['parent_task_id'] ?? null;
         $statusSlug = ($request['status'] ?? null) ?: null;
 
+        if (isset($request['priority']) && ! TaskPriority::tryFrom($request['priority'])) {
+            unset($request['priority']);
+        }
+
         $status = $statusSlug
             ? $this->project->statuses()->where('slug', $statusSlug)->first()
             : $this->project->statuses()->default()->first();
@@ -44,7 +49,7 @@ readonly class CreateTask implements Tool
             'phase' => $request['phase'] ?? null,
             'milestone' => $request['milestone'] ?? null,
             'task_status_id' => $status?->id,
-            'priority' => $request['priority'] ?? null,
+            'priority' => ($request['priority'] ?? null) ?: 'medium',
             'estimate' => $request['estimate'] ?? null,
             'parent_task_id' => $parentTaskId ?: null,
         ], fn ($value) => $value !== null && $value !== ''));
@@ -63,6 +68,7 @@ readonly class CreateTask implements Tool
     public function schema(JsonSchema $schema): array
     {
         $slugs = $this->project->statuses()->ordered()->pluck('slug')->implode(', ');
+        $priorities = implode(', ', array_map(fn ($p) => $p->value, TaskPriority::cases()));
 
         return [
             'title' => $schema->string()->description('Short title for the task.')->required(),
@@ -70,7 +76,7 @@ readonly class CreateTask implements Tool
             'phase' => $schema->string()->description('Project phase (e.g. MVP, v2).'),
             'milestone' => $schema->string()->description('Milestone this task belongs to.'),
             'status' => $schema->string()->description("Task status slug. Available: {$slugs}. Defaults to the project default status."),
-            'priority' => $schema->string()->description('Priority: high, medium, or low. Defaults to medium.'),
+            'priority' => $schema->string()->description("Task priority, Available: {$priorities} . Defaults to medium."),
             'estimate' => $schema->string()->description('Time estimate (e.g. "3 days", "2 hours").'),
             'parent_task_id' => $schema->integer()->description('Parent task ID to create a subtask.'),
         ];

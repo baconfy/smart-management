@@ -1,6 +1,6 @@
 # Project Vision: AI-Powered Project Manager
 
-> **Status:** Phase 1 + 1.5 + 2 complete, Phase 3 in progress (Steps 1-13 complete, 226 tests)
+> **Status:** Phase 1 + 1.5 + 2 complete, Phase 3 in progress (Steps 1-15 complete, 395 tests)
 > **Type:** Open Source — Serious side project
 > **Target Audience:** Freelancers & Solopreneurs
 > **Stack:** Laravel 12 + Inertia.js + React 19 | Laravel AI SDK
@@ -216,10 +216,10 @@ Each agent reads artifacts for context and writes artifacts as output. Conversat
     - `title` — Task name
     - `description` — What needs to be done
     - `phase` / `milestone` — Grouping
-    - `status` — Backlog, In Progress, Done, Blocked
+    - `task_status_id` — FK to project-specific `task_statuses` table (customizable per project, defaults: To Do, In Progress, Done)
     - `priority` — High, Medium, Low
     - `estimate` — Effort estimate
-    - `dependencies` — Other tasks
+    - `parent_task_id` — Subtask hierarchy
 - **Example:** *"Implement HD Wallet Derivation — Phase 1, High priority, ~8h estimate"*
 
 #### 4. Implementation Notes
@@ -291,7 +291,7 @@ Moderator     → All (read-only)             → Delegates to appropriate agent
 
 ### Convention: String columns + PHP Enums
 
-All enum-like values are stored as **strings** in the database (not DB enums). Validation and type safety happen in PHP via Enums. This avoids painful DB migrations when adding new values.
+All enum-like values are stored as **strings** in the database (not DB enums). Validation and type safety happen in PHP via Enums. This avoids painful DB migrations when adding new values. **Exception:** Task statuses are stored in a dedicated `task_statuses` table per project (customizable, not enum).
 
 ### Core Tables
 
@@ -377,16 +377,28 @@ business_rules
 ├── status (string — active | deprecated)
 ├── timestamps
 
+task_statuses
+├── id (bigint, autoincrement)
+├── project_id (FK → projects, cascade delete)
+├── name (string — "To Do", "In Progress", "Done")
+├── slug (string — "to-do", "in-progress", "done")
+├── color (string — hex color for kanban column header)
+├── position (int — column order)
+├── is_default (bool — assigned to new tasks)
+├── is_closed (bool — marks completion for metrics)
+├── timestamps
+├── UNIQUE(project_id, slug)
+
 tasks
 ├── id (bigint, autoincrement)
 ├── project_id (FK → projects)
 ├── title (string), description (text)
 ├── phase (string, nullable), milestone (string, nullable)
-├── status (string — backlog | in_progress | done | blocked)
+├── task_status_id (FK → task_statuses, nullable, restrictOnDelete)
 ├── priority (string — high | medium | low)
 ├── estimate (string, nullable — hours or story points)
 ├── sort_order (int)
-├── parent_task_id (FK → tasks, nullable — for subtasks)
+├── parent_task_id (FK → tasks, nullable, nullOnDelete — subtasks become root)
 ├── timestamps
 
 implementation_notes
@@ -600,7 +612,7 @@ class CreateDecision implements Tool
 - Moderator confidence-based fallback (asks user when uncertain)
 - Per-project agents with editable instructions + "reset to default" button
 - Artifact system: Decisions, Business Rules, Tasks, Implementation Notes
-- Task list/board view (read from artifacts)
+- Task kanban board (drag-and-drop, customizable statuses per project)
 - Task detail view with dedicated technical chat
 - Multi-provider AI support (user provides their own API key)
 - Conversation persistence (RemembersConversations + custom ConversationStore)

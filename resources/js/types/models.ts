@@ -60,6 +60,17 @@ export type ConversationMessage = {
     created_at: string;
 };
 
+export type TaskStatus = {
+    id: number;
+    project_id: number;
+    name: string;
+    slug: string;
+    color: string;
+    position: number;
+    is_default: boolean;
+    is_closed: boolean;
+};
+
 export type Task = {
     id: number;
     ulid: string;
@@ -68,7 +79,8 @@ export type Task = {
     description: string;
     phase: string | null;
     milestone: string | null;
-    status: string;
+    task_status_id: number | null;
+    status: TaskStatus | null;
     priority: string;
     estimate: string | null;
     sort_order: number;

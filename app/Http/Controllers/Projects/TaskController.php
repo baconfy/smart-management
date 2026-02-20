@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Projects;
 
+use App\Actions\Tasks\UpdateTask;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,11 +18,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class TaskController extends Controller
 {
     /**
-     * Display a listing of tasks for the specified project.
-     *
-     * @param  Request  $request  The incoming HTTP request instance.
-     * @param  Project  $project  The project instance for which tasks are being listed.
-     * @return Response The response containing the rendered tasks view.
+     * Display the kanban board for the specified project.
      */
     public function index(Request $request, Project $project): Response
     {
@@ -28,17 +26,32 @@ class TaskController extends Controller
 
         return Inertia::render('projects/tasks/index', [
             'project' => $project,
-            'tasks' => $project->tasks()->whereNull('parent_task_id')->latest()->get(),
+            'statuses' => $project->statuses()->ordered()->get(),
+            'tasks' => $project->tasks()->with('status')->whereNull('parent_task_id')->orderBy('sort_order')->get(),
         ]);
     }
 
     /**
+     * Update a task's status or sort order (kanban drag and drop).
+     */
+    public function update(Request $request, Project $project, Task $task, UpdateTask $updateTask): \Illuminate\Http\RedirectResponse
+    {
+        $this->authorize('view', $project);
+
+        abort_unless($task->project_id === $project->id, 404);
+
+        $validated = $request->validate([
+            'task_status_id' => ['sometimes', 'exists:task_statuses,id'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
+        ]);
+
+        $updateTask($task, $validated);
+
+        return back();
+    }
+
+    /**
      * Displays the details of a task within a project.
-     *
-     * @param  Request  $request  The incoming HTTP request instance.
-     * @param  Project  $project  The project instance being accessed.
-     * @param  Task  $task  The task instance belonging to the project.
-     * @return Response The rendered response containing project, task, and related data.
      *
      * @throws AuthorizationException If the user is unauthorized to view the project.
      * @throws NotFoundHttpException If the task does not belong to the specified project.
@@ -51,8 +64,8 @@ class TaskController extends Controller
 
         return Inertia::render('projects/tasks/show', [
             'project' => $project,
-            'task' => $task,
-            'subtasks' => $task->subtasks()->get(),
+            'task' => $task->load('status'),
+            'subtasks' => $task->subtasks()->with('status')->get(),
             'implementationNotes' => $task->implementationNotes()->latest()->get(),
         ]);
     }

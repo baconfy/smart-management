@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Ai\Tools;
 
 use App\Actions\Tasks\UpdateTask as UpdateTaskAction;
+use App\Enums\TaskPriority;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -35,6 +36,10 @@ readonly class UpdateTask implements Tool
 
         if (! $task) {
             return 'Task not found in this project.';
+        }
+
+        if (isset($data['priority']) && ! TaskPriority::tryFrom($data['priority'])) {
+            unset($data['priority']);
         }
 
         $data = array_filter([
