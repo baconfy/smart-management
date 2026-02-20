@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Projects;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

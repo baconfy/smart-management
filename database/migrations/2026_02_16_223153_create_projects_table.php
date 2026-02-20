@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->json('settings')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 };

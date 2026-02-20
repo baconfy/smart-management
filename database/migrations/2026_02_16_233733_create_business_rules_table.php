@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('business_rules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('project_id')->constrained()->restrictOnDelete();
             $table->string('title');
             $table->text('description');
             $table->string('category');
             $table->string('status')->default('active');
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['project_id', 'status']);
             $table->index(['project_id', 'category']);

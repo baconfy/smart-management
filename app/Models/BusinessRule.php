@@ -8,9 +8,12 @@ use App\Enums\BusinessRuleStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BusinessRule extends Model
 {
+    use SoftDeletes;
+
     /**
      * Define the attribute type casting for the model.
      */

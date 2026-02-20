@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->ulid();
-            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('project_id')->constrained()->restrictOnDelete();
             $table->string('title');
             $table->text('description');
             $table->string('phase')->nullable();
@@ -25,6 +25,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->foreignId('parent_task_id')->nullable()->constrained('tasks')->nullOnDelete();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['project_id', 'status']);
             $table->index(['project_id', 'priority']);

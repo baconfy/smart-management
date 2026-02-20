@@ -340,7 +340,6 @@ test('tasks are deleted when project is deleted', function (): void {
 
 test('implementation notes are deleted when task is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
-
     $task = $project->tasks()->create([
         'title' => 'Task',
         'description' => 'Has notes.',
@@ -350,8 +349,7 @@ test('implementation notes are deleted when task is deleted', function (): void 
     ]);
 
     $task->implementationNotes()->create(['title' => 'Note', 'content' => 'Content.']);
-
     $task->delete();
 
-    expect(ImplementationNote::count())->toBe(0);
+    expect($task->refresh()->implementationNotes()->count())->toBe(0);
 });

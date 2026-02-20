@@ -38,12 +38,12 @@ class SeedProjectAgents
             'type' => AgentType::Pm,
             'name' => 'PM',
             'tools' => [
-                'ListDecisions',
-                'ListBusinessRules',
-                'CreateTask',
                 'ListTasks',
+                'CreateTask',
                 'UpdateTask',
                 'RemoveTask',
+                'ListDecisions',
+                'ListBusinessRules',
             ],
         ],
         [

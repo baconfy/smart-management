@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('implementation_notes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('task_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('task_id')->constrained()->restrictOnDelete();
             $table->string('title');
             $table->text('content');
             $table->json('code_snippets')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['task_id']);
         });

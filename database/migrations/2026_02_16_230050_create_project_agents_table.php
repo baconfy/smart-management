@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('project_agents', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('project_id')->constrained()->restrictOnDelete();
             $table->string('type');
             $table->string('name');
             $table->text('instructions');
