@@ -324,14 +324,7 @@ test('task has many implementation notes', function (): void {
 
 test('tasks are deleted when project is deleted', function (): void {
     $project = Project::create(['name' => 'Test Project']);
-
-    $project->tasks()->create([
-        'title' => 'Task',
-        'description' => 'Will be deleted.',
-        'status' => TaskStatus::Backlog->value,
-        'priority' => TaskPriority::Medium->value,
-        'sort_order' => 1,
-    ]);
+    $project->tasks()->create(['title' => 'Task', 'description' => 'Will be deleted.', 'status' => TaskStatus::Backlog->value, 'priority' => TaskPriority::Medium->value, 'sort_order' => 1]);
 
     $project->delete();
 

@@ -6,11 +6,14 @@ namespace App\Models;
 
 use App\Enums\AgentType;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectAgent extends Model
 {
+    use HasFactory;
+
     /**
      * Define the attributes that should be type casted.
      */
