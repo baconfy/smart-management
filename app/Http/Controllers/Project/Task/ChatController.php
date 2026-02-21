@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Projects;
+namespace App\Http\Controllers\Project\Task;
 
 use App\Actions\ConversationMessages\CreateConversationMessage;
 use App\Http\Controllers\Controller;
@@ -13,7 +13,7 @@ use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 
-class TaskChatController extends Controller
+class ChatController extends Controller
 {
     /**
      * Handle the incoming request to store a chat message for a specific task within a project.

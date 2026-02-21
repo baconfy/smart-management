@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Projects;
+namespace App\Http\Controllers\Project\Task;
 
 use App\Actions\Tasks\StartTaskConversation;
 use App\Http\Controllers\Controller;
@@ -11,7 +11,7 @@ use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-class StartTaskController extends Controller
+class StartController extends Controller
 {
     /**
      * Handles the invocation of a task-related conversation start.

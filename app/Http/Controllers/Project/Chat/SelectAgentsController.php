@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Projects;
+namespace App\Http\Controllers\Project\Chat;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SelectAgentsRequest;
@@ -19,7 +19,7 @@ class SelectAgentsController extends Controller
      *
      * @throws AuthorizationException If the authenticated user is not authorized to view the project.
      */
-    public function store(SelectAgentsRequest $request, Project $project, Conversation $conversation, DispatchAgentsService $dispatchAgents): JsonResponse
+    public function __invoke(SelectAgentsRequest $request, Project $project, Conversation $conversation, DispatchAgentsService $dispatchAgents): JsonResponse
     {
         $this->authorize('view', $project);
 

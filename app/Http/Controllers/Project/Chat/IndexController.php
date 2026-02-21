@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Projects;
+namespace App\Http\Controllers\Project\Chat;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreChatMessageRequest;
@@ -10,7 +10,7 @@ use App\Models\Project;
 use App\Services\SendChatMessageService;
 use Illuminate\Http\RedirectResponse;
 
-class ChatController extends Controller
+class IndexController extends Controller
 {
     /**
      * Handle the incoming request to send a chat message for a project conversation.
