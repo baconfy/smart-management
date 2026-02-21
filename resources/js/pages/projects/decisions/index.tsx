@@ -42,7 +42,7 @@ export default function DecisionIndex({ project, decisions }: { project: Project
                             <EmptyDescription>Chat with the Architect agent to create decisions.</EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent className="flex-row justify-center gap-2">
-                            <Button size="lg" render={<Link href={conversations(project.ulid)} />}>
+                            <Button size="lg" render={<Link href={conversations({ project: project.ulid })} />}>
                                 <MessageCircleMore /> Start a conversation
                             </Button>
                         </EmptyContent>
@@ -54,7 +54,7 @@ export default function DecisionIndex({ project, decisions }: { project: Project
                             const rotation = rotations[i % rotations.length];
 
                             return (
-                                <button key={decision.id} type="button" onClick={() => setSelected(decision)} className={`${colors.bg} ${rotation} clickable flex aspect-square flex-col rounded-sm p-5 text-left shadow-md transition-all hover:scale-105 hover:rotate-0 hover:shadow-lg`}>
+                                <button key={decision.id} type="button" onClick={() => setSelected(decision)} className={`${colors.bg} ${rotation} flex aspect-square clickable flex-col rounded-sm p-5 text-left shadow-md transition-all hover:scale-105 hover:rotate-0 hover:shadow-lg`}>
                                     <h3 className={`mt-2 line-clamp-3 text-sm leading-snug font-bold ${colors.text}`}>{decision.title}</h3>
                                     <p className={`mt-2 line-clamp-5 text-xs leading-relaxed ${colors.text} opacity-60`}>{decision.reasoning}</p>
                                 </button>

@@ -180,7 +180,7 @@ export function ChatInput() {
         setMessage('');
         await sendMessage(content);
 
-        // Refocus textarea after send
+        // Refocus the textarea after sending
         setTimeout(() => textareaRef.current?.focus(), 10);
     }
 
