@@ -97,7 +97,7 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
     async function sendMessage(content: string) {
         const tempId = `temp-${Date.now()}`;
 
-        // Optimistic UI — add user message immediately
+        // Optimistic UI — add a user message immediately
         setMessages((prev) => [...prev, { id: tempId, role: 'user', content } as ConversationMessage]);
         setIsSending(true);
 
@@ -108,7 +108,7 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
                 agent_ids: selectedAgentIds,
             });
 
-            // First message creates the conversation
+            // The first message creates the conversation
             if (!conversationId) {
                 setConversationId(data.conversation_id);
                 onConversationCreated?.(data.conversation_id);

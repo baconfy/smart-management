@@ -10,15 +10,15 @@ use App\Http\Requests\StoreChatMessageRequest;
 use App\Jobs\ProcessChatMessage;
 use App\Models\Project;
 use App\Models\Task;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 
-class ChatController extends Controller
+class SendMessageController extends Controller
 {
     /**
      * Handle the incoming request to store a chat message for a specific task within a project.
      */
-    public function __invoke(StoreChatMessageRequest $request, Project $project, Task $task, CreateConversationMessage $createConversationMessage): RedirectResponse
+    public function __invoke(StoreChatMessageRequest $request, Project $project, Task $task, CreateConversationMessage $createConversationMessage): JsonResponse
     {
         $this->authorize('view', $project);
 
@@ -37,6 +37,6 @@ class ChatController extends Controller
 
         ProcessChatMessage::dispatch($conversation, $project, $request->validated('message'), $request->validated('agent_ids', []));
 
-        return back();
+        return response()->json(['conversation_id' => $conversation->id]);
     }
 }

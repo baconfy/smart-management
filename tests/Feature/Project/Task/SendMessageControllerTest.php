@@ -37,10 +37,11 @@ test('stores user message and dispatches processing job', function () {
     Queue::fake();
 
     $this->actingAs($this->user)
-        ->post(route('projects.tasks.chat', [$this->project, $this->task]), [
+        ->postJson(route('projects.tasks.send', [$this->project, $this->task]), [
             'message' => 'How should I handle token refresh?',
         ])
-        ->assertRedirect();
+        ->assertOk()
+        ->assertJsonStructure(['conversation_id']);
 
     expect($this->conversation->messages()->where('role', 'user')->count())->toBe(1);
     expect($this->conversation->messages()->first()->content)->toBe('How should I handle token refresh?');
@@ -55,11 +56,12 @@ test('sends message with specific agent ids', function () {
     $architect = $this->project->agents()->where('type', 'architect')->first();
 
     $this->actingAs($this->user)
-        ->post(route('projects.tasks.chat', [$this->project, $this->task]), [
+        ->postJson(route('projects.tasks.send', [$this->project, $this->task]), [
             'message' => 'Review this approach',
             'agent_ids' => [$technical->id, $architect->id],
         ])
-        ->assertRedirect();
+        ->assertOk()
+        ->assertJsonStructure(['conversation_id']);
 
     Queue::assertPushed(ProcessChatMessage::class, function ($job) use ($technical, $architect) {
         return in_array($technical->id, $job->agentIds ?? [])
@@ -75,23 +77,23 @@ test('returns 404 if task has no conversation', function () {
     ]);
 
     $this->actingAs($this->user)
-        ->post(route('projects.tasks.chat', [$this->project, $taskWithoutConvo]), [
+        ->postJson(route('projects.tasks.send', [$this->project, $taskWithoutConvo]), [
             'message' => 'Hello',
         ])
         ->assertNotFound();
 });
 
 test('requires authentication', function () {
-    $this->post(route('projects.tasks.chat', [$this->project, $this->task]), [
+    $this->postJson(route('projects.tasks.send', [$this->project, $this->task]), [
         'message' => 'Hello',
-    ])->assertRedirect('/login');
+    ])->assertUnauthorized();
 });
 
 test('forbids non-members', function () {
     $stranger = User::factory()->create();
 
     $this->actingAs($stranger)
-        ->post(route('projects.tasks.chat', [$this->project, $this->task]), [
+        ->postJson(route('projects.tasks.send', [$this->project, $this->task]), [
             'message' => 'Hello',
         ])
         ->assertForbidden();

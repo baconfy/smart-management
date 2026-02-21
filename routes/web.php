@@ -37,7 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('p/{project}/t', Project\Task\IndexController::class)->name('projects.tasks.index');
     Route::get('p/{project}/t/{task}', Project\Task\ShowController::class)->name('projects.tasks.show');
     Route::patch('p/{project}/t/{task}', Project\Task\UpdateController::class)->name('projects.tasks.update');
-    Route::post('p/{project}/t/{task}/c', Project\Task\ChatController::class)->name('projects.tasks.chat');
+    Route::post('p/{project}/t/{task}/c', Project\Task\SendMessageController::class)->name('projects.tasks.send');
     Route::post('p/{project}/t/{task}/s', Project\Task\StartController::class)->name('projects.tasks.start');
 
 });

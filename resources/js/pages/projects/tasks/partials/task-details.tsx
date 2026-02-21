@@ -10,20 +10,20 @@ export function TaskDetails({ task, subtasks, implementationNotes }: Props) {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="space-y-3">
-                <h1 className="text-2xl font-semibold tracking-tight">{task.title}</h1>
+            <div className="space-y-6">
+                <h1 className="text-2xl leading-relaxed font-semibold tracking-tight">{task.title}</h1>
                 <div className="flex items-center gap-2">
                     {task.status && (
-                        <span className="rounded-full px-2.5 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: task.status.color }}>
+                        <span className="rounded px-2.5 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: task.status.color }}>
                             {task.status.name}
                         </span>
                     )}
-                    <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{task.priority}</span>
-                    {task.phase && <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{task.phase}</span>}
-                    {task.milestone && <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{task.milestone}</span>}
-                    {task.estimate && <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{task.estimate}</span>}
+                    <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.priority}</span>
+                    {task.phase && <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.phase}</span>}
+                    {task.milestone && <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.milestone}</span>}
+                    {task.estimate && <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.estimate}</span>}
                 </div>
-                <p className="text-sm text-muted-foreground">{task.description}</p>
+                <p className="font-mono text-base text-muted-foreground">{task.description}</p>
             </div>
 
             {/* Subtasks */}

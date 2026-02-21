@@ -31,6 +31,7 @@ class ShowController extends Controller
 
         return Inertia::render('projects/tasks/show', [
             'project' => $project,
+            'agents' => $project->agents()->orderBy('name')->get(),
             'task' => $task->load('status'),
             'subtasks' => $task->subtasks()->with('status')->get(),
             'implementationNotes' => $task->implementationNotes()->latest()->get(),
