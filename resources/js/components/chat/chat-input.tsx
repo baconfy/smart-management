@@ -1,5 +1,5 @@
 import { ArrowUp, Loader2, Paperclip, X } from 'lucide-react';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useRef, useState } from 'react';
 
 import { useChat } from '@/components/chat/chat-provider';
 import { Badge } from '@/components/ui/badge';
@@ -9,18 +9,14 @@ import { cn } from '@/lib/utils';
 // --- Types ---
 
 type ChatInputContextValue = {
-    formProcessing: boolean;
+    message: string;
     hasContent: boolean;
     files: File[];
     textareaRef: React.RefObject<HTMLTextAreaElement | null>;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
+    setMessage: (value: string) => void;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     removeFile: (index: number) => void;
-    setHasContent: (value: boolean) => void;
-};
-
-type ChatInputProps = {
-    formProcessing?: boolean;
 };
 
 // --- Context ---
@@ -55,16 +51,8 @@ function ChatInputFiles() {
 }
 
 function ChatInputTextarea() {
-    const { formProcessing, textareaRef, setHasContent } = useChatInput();
+    const { message, textareaRef, setMessage } = useChatInput();
     const { isBusy } = useChat();
-
-    const disabled = formProcessing || isBusy;
-
-    useEffect(() => {
-        if (!disabled) {
-            setTimeout(() => textareaRef.current?.focus(), 10);
-        }
-    }, [disabled, textareaRef]);
 
     function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -73,18 +61,16 @@ function ChatInputTextarea() {
         }
     }
 
-    return <InputGroupTextarea name="message" ref={textareaRef} placeholder="Send a message..." onKeyDown={handleKeyDown} onChange={(e) => setHasContent(e.target.value.trim().length > 0)} disabled={disabled} autoFocus rows={1} className="max-h-56 min-h-16" />;
+    return <InputGroupTextarea ref={textareaRef} placeholder="Send a message..." value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown} disabled={isBusy} autoFocus rows={1} className="max-h-56 min-h-16" />;
 }
 
 function ChatInputAttach() {
-    const { formProcessing, fileInputRef, handleFileChange } = useChatInput();
+    const { fileInputRef, handleFileChange } = useChatInput();
     const { isBusy } = useChat();
-
-    const disabled = formProcessing || isBusy;
 
     return (
         <>
-            <InputGroupButton size="icon-sm" type="button" onClick={() => fileInputRef.current?.click()} aria-label="Attach file" disabled={disabled}>
+            <InputGroupButton size="icon-sm" type="button" onClick={() => fileInputRef.current?.click()} aria-label="Attach file" disabled={isBusy}>
                 <Paperclip className="size-4" />
             </InputGroupButton>
 
@@ -95,14 +81,11 @@ function ChatInputAttach() {
 
 function ChatInputAgents() {
     const { isBusy, agents, selectedAgentIds, toggleAgent } = useChat();
-    const { formProcessing } = useChatInput();
-
-    const disabled = formProcessing || isBusy;
 
     return (
-        <div className={cn('flex items-center gap-2', { 'cursor-not-allowed opacity-50': disabled })}>
+        <div className={cn('flex items-center gap-2', { 'cursor-not-allowed opacity-50': isBusy })}>
             {agents.map((agent) => (
-                <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className={cn('font-bold select-none text-shadow-2xs', { clickable: !disabled })} onClick={() => !disabled && toggleAgent(agent.id)}>
+                <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className={cn('font-bold select-none text-shadow-2xs', { clickable: !isBusy })} onClick={() => !isBusy && toggleAgent(agent.id)}>
                     {agent.name}
                 </Badge>
             ))}
@@ -111,14 +94,12 @@ function ChatInputAgents() {
 }
 
 function ChatInputSubmit() {
-    const { formProcessing, hasContent } = useChatInput();
-    const { isBusy } = useChat();
-
-    const disabled = formProcessing || isBusy;
+    const { hasContent } = useChatInput();
+    const { isBusy, isSending } = useChat();
 
     return (
-        <InputGroupButton type="submit" size="icon-sm" variant={hasContent ? 'default' : 'ghost'} disabled={disabled || !hasContent} aria-label="Send message">
-            {disabled ? <Loader2 className="animate-spin stroke-3" /> : <ArrowUp className="stroke-3" />}
+        <InputGroupButton type="submit" size="icon-sm" variant={hasContent ? 'default' : 'ghost'} disabled={isBusy || !hasContent} aria-label="Send message">
+            {isSending ? <Loader2 className="animate-spin stroke-3" /> : <ArrowUp className="stroke-3" />}
         </InputGroupButton>
     );
 }
@@ -170,12 +151,14 @@ function ChatInputPoll() {
 
 // --- Root ---
 
-export function ChatInput({ formProcessing = false }: ChatInputProps) {
-    const { conversation, selectedAgentIds, poll } = useChat();
-    const [hasContent, setHasContent] = useState(false);
+export function ChatInput() {
+    const { sendMessage, poll, isBusy } = useChat();
+    const [message, setMessage] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const hasContent = message.trim().length > 0;
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         if (e.target.files) {
@@ -188,28 +171,34 @@ export function ChatInput({ formProcessing = false }: ChatInputProps) {
         setFiles((prev) => prev.filter((_, i) => i !== index));
     }
 
-    return (
-        <ChatInputContext.Provider value={{ formProcessing, hasContent, files, textareaRef, fileInputRef, handleFileChange, removeFile, setHasContent }}>
-            {!poll && (
-                <>
-                    <input type="hidden" name="conversation_id" value={conversation.id} />
-                    {selectedAgentIds.map((id) => (
-                        <input key={id} type="hidden" name="agent_ids[]" value={id} />
-                    ))}
-                </>
-            )}
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
 
-            <InputGroup className={cn('h-auto flex-col rounded-xl p-0.5', { 'cursor-not-allowed': formProcessing })}>
-                {poll ? (
-                    <ChatInputPoll />
-                ) : (
-                    <>
-                        <ChatInputFiles />
-                        <ChatInputTextarea />
-                        <ChatInputFooter />
-                    </>
-                )}
-            </InputGroup>
+        if (!hasContent || isBusy) return;
+
+        const content = message.trim();
+        setMessage('');
+        await sendMessage(content);
+
+        // Refocus textarea after send
+        setTimeout(() => textareaRef.current?.focus(), 10);
+    }
+
+    return (
+        <ChatInputContext.Provider value={{ message, hasContent, files, textareaRef, fileInputRef, setMessage, handleFileChange, removeFile }}>
+            <form onSubmit={handleSubmit}>
+                <InputGroup className={cn('h-auto flex-col rounded-xl p-0.5', { 'cursor-not-allowed': isBusy })}>
+                    {poll ? (
+                        <ChatInputPoll />
+                    ) : (
+                        <>
+                            <ChatInputFiles />
+                            <ChatInputTextarea />
+                            <ChatInputFooter />
+                        </>
+                    )}
+                </InputGroup>
+            </form>
         </ChatInputContext.Provider>
     );
 }

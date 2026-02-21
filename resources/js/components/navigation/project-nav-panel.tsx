@@ -20,7 +20,7 @@ export function ProjectNavPanel({ project }: { project: Project }) {
     const { url } = usePage();
 
     const items: NavItem[] = [
-        { title: 'Conversations', icon: MessageSquare, href: conversations(project.ulid).url, enabled: true },
+        { title: 'Conversations', icon: MessageSquare, href: conversations({ project: project.ulid }).url, enabled: true },
         { title: 'Tasks', icon: ListTodo, href: tasks(project.ulid).url, enabled: true },
         { title: 'Decisions', icon: Gavel, href: decisions(project.ulid).url, enabled: true },
         { title: 'Business Rules', icon: BookOpen, href: businessRules(project.ulid).url, enabled: true },
