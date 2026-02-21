@@ -205,9 +205,9 @@ export default function ConversationShow({ project, agents, conversation, messag
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} sidebar={<ConversationsNavPanel project={project} conversations={conversations} />}>
-            <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col">
+            <div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
                 <div className="no-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4">
-                    <div className="mx-auto w-full space-y-4">
+                    <div className="mx-auto w-full max-w-5xl space-y-4">
                         {turns.map((turn, i) => {
                             const isLastTurn = i === turns.length - 1;
                             const turnProcessing = isLastTurn ? processingAgents : [];
@@ -264,7 +264,7 @@ export default function ConversationShow({ project, agents, conversation, messag
                     </div>
                 </div>
 
-                <div className="mx-auto w-full shrink-0 px-12 pb-4">
+                <div className="max-w-5xl shrink-0 mx-auto w-full px-12 pb-4">
                     <Form {...chat.form(project.ulid)} resetOnSuccess={['message']} onSuccess={handleSuccess} options={{ preserveState: true, preserveScroll: true }}>
                         {({ processing }) => <InputChat textareaRef={textareaRef} agents={agents} conversationId={conversation.id} processing={processing || isBusy} poll={poll} onSelectAgents={handleSelectAgents} onAgentsChange={(ids) => (selectedAgentIdsRef.current = ids)} />}
                     </Form>

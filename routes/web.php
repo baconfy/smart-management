@@ -6,6 +6,8 @@ use App\Http\Controllers\Projects\ChatController;
 use App\Http\Controllers\Projects\ConversationController;
 use App\Http\Controllers\Projects\DecisionController;
 use App\Http\Controllers\Projects\SelectAgentsController;
+use App\Http\Controllers\Projects\StartTaskController;
+use App\Http\Controllers\Projects\TaskChatController;
 use App\Http\Controllers\Projects\TaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,4 +50,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('p/{project}/t', [TaskController::class, 'index'])->name('projects.tasks.index');
     Route::get('p/{project}/t/{task}', [TaskController::class, 'show'])->name('projects.tasks.show');
     Route::patch('p/{project}/t/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
+    Route::post('p/{project}/t/{task}/c', TaskChatController::class)->name('projects.tasks.chat');
+    Route::post('p/{project}/t/{task}/s', StartTaskController::class)->name('projects.tasks.start');
 });

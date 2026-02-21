@@ -19,6 +19,7 @@ export default function ConversationIndex({ project, agents, conversations }: { 
         <AppLayout breadcrumbs={breadcrumbs} sidebar={<ConversationsNavPanel project={project} conversations={conversations} />}>
             <div className="flex flex-1 flex-col items-center justify-center gap-4">
                 <h1 className="text-2xl font-bold">What can I help with?</h1>
+
                 <Form {...chat.form(project.ulid)} options={{ preserveState: true, preserveScroll: true }} resetOnSuccess={['message']} className="w-full max-w-3xl">
                     {({ processing }) => <InputChat agents={agents} processing={processing} />}
                 </Form>
