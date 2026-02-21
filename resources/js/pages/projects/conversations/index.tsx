@@ -17,8 +17,8 @@ type Props = {
 };
 
 function ConversationInner({ project, conversations }: { project: Project; conversations: CursorPaginated<Conversation> }) {
-    const { title, messages } = useChat();
-    const hasMessages = messages.length > 0;
+    const { title, messages, processingAgents } = useChat();
+    const hasMessages = messages.length > 0 || processingAgents.length > 0;
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: dashboard().url },

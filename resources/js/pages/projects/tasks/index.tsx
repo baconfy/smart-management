@@ -166,14 +166,14 @@ export default function TasksIndex({ project, statuses, tasks: initialTasks }: P
                         <EmptyDescription>Chat with the PM agent to create tasks.</EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent className="flex-row justify-center gap-2">
-                        <Button size="lg" render={<Link href={conversations(project.ulid)} />}>
+                        <Button size="lg" render={<Link href={conversations({ project: project.ulid })} />}>
                             <MessageCircleMore /> Start a conversation
                         </Button>
                     </EmptyContent>
                 </Empty>
             ) : (
                 <div className="flex h-full flex-col overflow-hidden">
-                    <div className="flex flex-1 gap-6 overflow-scroll no-scrollbar">
+                    <div className="no-scrollbar flex flex-1 gap-6 overflow-scroll">
                         <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
                             {statuses.map((status) => (
                                 <KanbanColumn key={status.id} status={status} tasks={tasksByStatus.get(status.id) ?? []} projectUlid={project.ulid} />

@@ -6,22 +6,28 @@ type Props = {
     implementationNotes: ImplementationNote[];
 };
 
+const PRIORITY_COLORS: Record<string, string> = {
+    high: 'bg-red-500/20 text-red-300',
+    medium: 'bg-amber-500/20 text-amber-300',
+    low: 'bg-zinc-500/20 text-zinc-300',
+};
+
 export function TaskDetails({ task, subtasks, implementationNotes }: Props) {
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="space-y-6">
-                <h1 className="text-2xl leading-relaxed font-semibold tracking-tight">{task.title}</h1>
+                <h1 className="text-2xl leading-relaxed font-bold tracking-tighter">{task.title}</h1>
                 <div className="flex items-center gap-2">
                     {task.status && (
-                        <span className="rounded px-2.5 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: task.status.color }}>
+                        <span className="flex h-5 items-center justify-center rounded px-2.5 text-[0.5rem] leading-none font-bold uppercase" style={{ backgroundColor: task.status.color }}>
                             {task.status.name}
                         </span>
                     )}
-                    <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.priority}</span>
-                    {task.phase && <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.phase}</span>}
-                    {task.milestone && <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.milestone}</span>}
-                    {task.estimate && <span className="rounded bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">{task.estimate}</span>}
+                    <span className={`flex h-5 items-center justify-center rounded px-2 text-[0.5rem] leading-none font-bold uppercase ${PRIORITY_COLORS[task.priority] ?? ''}`}>{task.priority}</span>
+                    {task.phase && <span className="bg-accent justify-center flex h-5 items-center rounded px-2 text-[0.5rem] leading-none font-bold uppercase">{task.phase}</span>}
+                    {task.milestone && <span className="flex h-5 items-center justify-center rounded bg-accent px-2 text-[0.5rem] leading-none font-bold uppercase">{task.milestone}</span>}
+                    {task.estimate && <span className="flex h-5 items-center justify-center rounded bg-accent px-2 text-[0.5rem] leading-none font-bold uppercase">{task.estimate}</span>}
                 </div>
                 <p className="font-mono text-base text-muted-foreground">{task.description}</p>
             </div>

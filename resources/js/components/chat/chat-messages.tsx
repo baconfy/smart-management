@@ -76,6 +76,20 @@ export function ChatMessages() {
     return (
         <div className="no-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4">
             <div className="mx-auto w-full max-w-5xl space-y-4">
+                {/* Standalone processing — no turns yet (e.g. task auto-start) */}
+                {turns.length === 0 && processingAgents.length > 0 && (
+                    <div className="space-y-4">
+                        {processingAgents.map((pa) => (
+                            <div key={pa.id} className="flex justify-start">
+                                <div className="flex items-center gap-2 rounded-xl bg-muted px-4 py-3">
+                                    <span className="text-sm font-medium tracking-tighter text-primary">{pa.name}</span>
+                                    <ThinkingDots />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {turns.map((turn, i) => {
                     const isLastTurn = i === turns.length - 1;
                     const turnProcessing = isLastTurn ? processingAgents : [];

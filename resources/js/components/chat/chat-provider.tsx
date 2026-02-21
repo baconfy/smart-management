@@ -68,14 +68,15 @@ type ChatProviderProps = {
     projectUlid: string;
     sendUrl: string;
     defaultSelectedAgentIds?: number[];
+    initialProcessingAgents?: ProcessingAgent[];
     onConversationCreated?: (conversationId: string) => void;
     children: React.ReactNode;
 };
 
-export function ChatProvider({ conversation = null, agents, messages: initialMessages = [], projectUlid, sendUrl, onConversationCreated, defaultSelectedAgentIds = [], children }: ChatProviderProps) {
+export function ChatProvider({ conversation = null, agents, messages: initialMessages = [], projectUlid, sendUrl, onConversationCreated, defaultSelectedAgentIds = [], initialProcessingAgents = [], children }: ChatProviderProps) {
     const [conversationId, setConversationId] = useState<string | null>(conversation?.id ?? null);
     const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages);
-    const [processingAgents, setProcessingAgents] = useState<ProcessingAgent[]>([]);
+    const [processingAgents, setProcessingAgents] = useState<ProcessingAgent[]>(initialProcessingAgents ?? []);
     const [poll, setPoll] = useState<PollState | null>(null);
     const [title, setTitle] = useState(conversation?.title ?? '');
     const [isRouting, setIsRouting] = useState(false);

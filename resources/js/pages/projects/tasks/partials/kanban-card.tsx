@@ -1,7 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { router } from '@inertiajs/react';
-import { Badge } from '@/components/ui/badge';
 import { show as showTask } from '@/routes/projects/tasks';
 import type { Task } from '@/types/models';
 

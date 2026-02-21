@@ -80,13 +80,8 @@ readonly class StartTaskConversation
         }
 
         $parts[] = '';
-        $parts[] = 'Based on the above, provide:';
-        $parts[] = '1. A step-by-step action plan for implementing this task';
-        $parts[] = '2. Key technical decisions and trade-offs';
-        $parts[] = '3. Potential risks or blockers';
-        $parts[] = '4. Suggested subtasks breakdown if applicable';
-        $parts[] = '';
         $parts[] = 'Always respond in the same language as the task title and description.';
+        $parts[] = 'Always respond as short as possible.';
 
         return implode("\n", $parts);
     }
