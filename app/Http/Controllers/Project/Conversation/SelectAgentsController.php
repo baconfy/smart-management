@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Project\Chat;
+namespace App\Http\Controllers\Project\Conversation;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SelectAgentsRequest;

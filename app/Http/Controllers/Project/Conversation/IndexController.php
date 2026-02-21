@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Project\Conversation;
 
 use App\Http\Controllers\Controller;
+use App\Models\Conversation;
 use App\Models\Project;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,16 +13,22 @@ use Inertia\Response;
 class IndexController extends Controller
 {
     /**
-     * Display the conversations index for a specified project.
+     * Display the conversations page, optionally showing a specific conversation.
      */
-    public function __invoke(Project $project): Response
+    public function __invoke(Project $project, ?Conversation $conversation = null): Response
     {
         $this->authorize('view', $project);
+
+        if ($conversation) {
+            abort_unless($conversation->project_id === $project->id, 404);
+        }
 
         return Inertia::render('projects/conversations/index', [
             'project' => $project->only('id', 'ulid', 'name', 'description', 'created_at'),
             'agents' => $project->agents()->orderBy('name')->get(),
             'conversations' => $project->conversations()->select('id', 'title', 'updated_at')->latest('updated_at')->cursorPaginate(20),
+            'conversation' => $conversation?->only('id', 'title', 'created_at', 'updated_at'),
+            'messages' => $conversation?->messages()->orderBy('created_at')->get() ?? [],
         ]);
     }
 }

@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Models\Conversation;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Str;
+
+// ============================================================================
+// Authorization
+// ============================================================================
 
 test('guest cannot view project conversations', function (): void {
     $project = Project::factory()->create(['name' => 'Test']);
@@ -21,12 +27,88 @@ test('non-member cannot view project conversations', function (): void {
         ->assertForbidden();
 });
 
+// ============================================================================
+// Index (No Conversation)
+// ============================================================================
+
 test('member can view conversations index', function (): void {
     $user = User::factory()->create();
     $project = Project::factory()->create(['name' => 'Test']);
     $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
 
-    $this->actingAs($user)->get(route('projects.conversations.index', $project))->assertOk()->assertInertia(
-        fn ($page) => $page->component('projects/conversations/index')->has('project')->has('agents')
-    );
+    $this->actingAs($user)
+        ->get(route('projects.conversations.index', $project))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('projects/conversations/index')
+            ->has('project')
+            ->has('agents')
+            ->where('conversation', null)
+            ->where('messages', [])
+        );
+});
+
+// ============================================================================
+// Show (With Conversation)
+// ============================================================================
+
+test('member can view a conversation', function (): void {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['name' => 'Test']);
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+
+    $conversation = Conversation::create([
+        'id' => Str::ulid(),
+        'user_id' => $user->id,
+        'project_id' => $project->id,
+        'title' => 'Test conversation',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.conversations.index', [$project, $conversation]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('projects/conversations/index')
+            ->has('project')
+            ->has('agents')
+            ->has('conversation')
+            ->has('messages')
+        );
+});
+
+test('non-member cannot view a conversation', function (): void {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $project = Project::factory()->create(['name' => 'Test']);
+    $project->members()->create(['user_id' => $otherUser->id, 'role' => 'owner']);
+
+    $conversation = Conversation::create([
+        'id' => Str::ulid(),
+        'user_id' => $otherUser->id,
+        'project_id' => $project->id,
+        'title' => 'Test conversation',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.conversations.index', [$project, $conversation]))
+        ->assertForbidden();
+});
+
+test('conversation must belong to the project', function (): void {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['name' => 'Project A']);
+    $otherProject = Project::factory()->create(['name' => 'Project B']);
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+    $otherProject->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+
+    $conversation = Conversation::create([
+        'id' => Str::ulid(),
+        'user_id' => $user->id,
+        'project_id' => $otherProject->id,
+        'title' => 'Other project conversation',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.conversations.index', [$project, $conversation]))
+        ->assertNotFound();
 });

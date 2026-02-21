@@ -18,6 +18,7 @@ export function ProjectsPanel() {
                         View all <ChevronsRight />
                     </SidebarGroupLabel>
                 </div>
+
                 <SidebarMenu>
                     {projects.length === 0 ? (
                         <Empty>
