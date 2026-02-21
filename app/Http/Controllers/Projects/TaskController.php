@@ -61,11 +61,15 @@ class TaskController extends Controller
 
         abort_unless($task->project_id === $project->id, 404);
 
+        $conversation = $task->conversation;
+
         return Inertia::render('projects/tasks/show', [
             'project' => $project,
             'task' => $task->load('status'),
             'subtasks' => $task->subtasks()->with('status')->get(),
             'implementationNotes' => $task->implementationNotes()->latest()->get(),
+            'conversation' => $conversation,
+            'messages' => $conversation ? $conversation->messages()->oldest()->get() : [],
         ]);
     }
 }

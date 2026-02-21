@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\Projects\BusinessRuleController;
+use App\Http\Controllers\Projects\ChatController;
 use App\Http\Controllers\Projects\ConversationController;
 use App\Http\Controllers\Projects\DecisionController;
 use App\Http\Controllers\Projects\SelectAgentsController;

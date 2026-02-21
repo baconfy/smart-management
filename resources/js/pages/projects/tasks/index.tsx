@@ -173,7 +173,7 @@ export default function TasksIndex({ project, statuses, tasks: initialTasks }: P
                 </Empty>
             ) : (
                 <div className="flex h-full flex-col overflow-hidden">
-                    <div className="flex flex-1 gap-6 overflow-x-auto">
+                    <div className="flex flex-1 gap-6 overflow-scroll no-scrollbar">
                         <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
                             {statuses.map((status) => (
                                 <KanbanColumn key={status.id} status={status} tasks={tasksByStatus.get(status.id) ?? []} projectUlid={project.ulid} />
