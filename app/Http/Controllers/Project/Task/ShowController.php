@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Project\Task;
 
+use App\Enums\AgentType;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
@@ -28,6 +29,7 @@ class ShowController extends Controller
         abort_unless($task->project_id === $project->id, 404);
 
         $conversation = $task->conversation;
+        $technicalAgent = $project->agents()->where('type', AgentType::Technical)->first();
 
         return Inertia::render('projects/tasks/show', [
             'project' => $project,
@@ -36,7 +38,8 @@ class ShowController extends Controller
             'subtasks' => $task->subtasks()->with('status')->get(),
             'implementationNotes' => $task->implementationNotes()->latest()->get(),
             'conversation' => $conversation,
-            'messages' => $conversation ? $conversation->messages()->oldest()->get() : [],
+            'messages' => $conversation ? $conversation->messages()->whereNull('meta->hidden')->oldest()->get() : [],
+            'defaultAgentIds' => $technicalAgent ? [$technicalAgent->id] : [],
         ]);
     }
 }

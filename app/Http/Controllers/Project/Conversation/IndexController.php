@@ -28,7 +28,7 @@ class IndexController extends Controller
             'agents' => $project->agents()->orderBy('name')->get(),
             'conversations' => $project->conversations()->whereNull('task_id')->select('id', 'title', 'updated_at')->latest('updated_at')->cursorPaginate(20),
             'conversation' => $conversation?->only('id', 'title', 'created_at', 'updated_at'),
-            'messages' => $conversation?->messages()->orderBy('created_at')->get() ?? [],
+            'messages' => $conversation?->messages()->whereNull('meta->hidden')->oldest()->get() ?? [],
         ]);
     }
 }

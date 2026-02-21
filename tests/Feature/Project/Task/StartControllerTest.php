@@ -62,3 +62,30 @@ test('forbids non-members', function () {
         ->post(route('projects.tasks.start', [$this->project, $this->task]))
         ->assertForbidden();
 });
+
+test('creates a user message with task context', function () {
+    Queue::fake();
+
+    $this->actingAs($this->user)->post(route('projects.tasks.start', [$this->project, $this->task]));
+
+    $conversation = $this->task->refresh()->conversation;
+    $userMessage = $conversation->messages()->where('role', 'user')->first();
+
+    expect($userMessage)
+        ->not->toBeNull()
+        ->user_id->toBe($this->user->id)
+        ->content->toContain('Implement auth')
+        ->content->toContain('JWT auth with refresh tokens');
+});
+
+test('user message is marked as hidden', function () {
+    Queue::fake();
+
+    $this->actingAs($this->user)
+        ->post(route('projects.tasks.start', [$this->project, $this->task]));
+
+    $conversation = $this->task->refresh()->conversation;
+    $userMessage = $conversation->messages()->where('role', 'user')->first();
+
+    expect($userMessage->meta)->toBe(['hidden' => true]);
+});

@@ -83,15 +83,17 @@ export function ChatMessages() {
                     const isMultiAgent = totalResponders > 1;
 
                     return (
-                        <div key={turn.userMessage.id} className="space-y-4">
+                        <div key={i} className="space-y-4">
                             {/* User message */}
-                            <div className="flex justify-end">
-                                <div className="max-w-[75%] rounded-xl bg-primary px-4 py-3 text-primary-foreground text-shadow-2xs">
-                                    <div className="prose prose-base max-w-none prose-invert">
-                                        <ReactMarkdown>{turn.userMessage.content}</ReactMarkdown>
+                            {turn.userMessage && (
+                                <div className="flex justify-end">
+                                    <div className="max-w-[75%] rounded-xl bg-primary px-4 py-3 text-primary-foreground text-shadow-2xs">
+                                        <div className="prose prose-base max-w-none prose-invert">
+                                            <ReactMarkdown>{turn.userMessage.content}</ReactMarkdown>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Routing indicator */}
                             {isLastTurn && isRouting && (

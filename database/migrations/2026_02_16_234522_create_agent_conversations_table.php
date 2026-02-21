@@ -37,7 +37,7 @@ return new class extends AiMigration
             $table->text('tool_calls')->nullable();
             $table->text('tool_results')->nullable();
             $table->text('usage')->nullable();
-            $table->text('meta')->nullable();
+            $table->jsonb('meta')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

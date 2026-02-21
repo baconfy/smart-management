@@ -23,6 +23,7 @@ type Props = {
     implementationNotes: ImplementationNote[];
     conversation?: Conversation | null;
     messages?: ConversationMessage[];
+    defaultAgentIds?: number[];
 };
 
 function TaskBreadcrumbs(project: Project, task: Task): BreadcrumbItem[] {
@@ -71,8 +72,7 @@ function TaskChatInner({ project, task, subtasks, implementationNotes }: { proje
 
                 {/* Title */}
                 <div className={cn('flex flex-col items-center justify-center overflow-hidden transition-all duration-500 ease-in-out', hasMessages ? 'max-h-0 opacity-0' : 'max-h-32 pb-4 opacity-100')}>
-                    <h1 className="text-2xl font-bold">{task.title}</h1>
-                    {task.description && <p className="mt-1 text-muted-foreground">{task.description}</p>}
+                    <h1 className="text-2xl font-bold">What can I help with?</h1>
                 </div>
 
                 {/* Messages */}
@@ -105,13 +105,13 @@ function TaskChatInner({ project, task, subtasks, implementationNotes }: { proje
 
 // --- Root ---
 
-export default function TaskShow({ project, agents, task, subtasks = [], implementationNotes = [], conversation = null, messages = [] }: Props) {
+export default function TaskShow({ project, agents, task, subtasks = [], implementationNotes = [], conversation = null, messages = [], defaultAgentIds = [] }: Props) {
     if (!conversation) {
         return <TaskEmpty project={project} task={task} subtasks={subtasks} implementationNotes={implementationNotes} />;
     }
 
     return (
-        <ChatProvider conversation={conversation} agents={agents} messages={messages} projectUlid={project.ulid} sendUrl={send.url({ project: project.ulid, task: task.id })}>
+        <ChatProvider conversation={conversation} agents={agents} messages={messages} projectUlid={project.ulid} defaultSelectedAgentIds={defaultAgentIds} sendUrl={send.url({ project: project.ulid, task: task.id })}>
             <TaskChatInner project={project} task={task} subtasks={subtasks} implementationNotes={implementationNotes} />
         </ChatProvider>
     );

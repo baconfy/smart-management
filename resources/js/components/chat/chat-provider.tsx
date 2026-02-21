@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { selectAgents } from '@/routes/projects/conversations';
 import type { Conversation, ConversationMessage, ProjectAgent } from '@/types/models';
 
@@ -10,7 +10,7 @@ export type PollCandidate = { type: string; confidence: number };
 export type PollState = { candidates: PollCandidate[]; reasoning: string };
 
 export type Turn = {
-    userMessage: ConversationMessage;
+    userMessage: ConversationMessage | null;
     assistantMessages: ConversationMessage[];
 };
 
@@ -41,6 +41,8 @@ function groupIntoTurns(messages: ConversationMessage[]): Turn[] {
             turns.push({ userMessage: msg, assistantMessages: [] });
         } else if (turns.length > 0) {
             turns[turns.length - 1].assistantMessages.push(msg);
+        } else {
+            turns.push({ userMessage: null, assistantMessages: [msg] });
         }
     }
 
@@ -65,11 +67,12 @@ type ChatProviderProps = {
     messages?: ConversationMessage[];
     projectUlid: string;
     sendUrl: string;
+    defaultSelectedAgentIds?: number[];
     onConversationCreated?: (conversationId: string) => void;
     children: React.ReactNode;
 };
 
-export function ChatProvider({ conversation = null, agents, messages: initialMessages = [], projectUlid, sendUrl, onConversationCreated, children }: ChatProviderProps) {
+export function ChatProvider({ conversation = null, agents, messages: initialMessages = [], projectUlid, sendUrl, onConversationCreated, defaultSelectedAgentIds = [], children }: ChatProviderProps) {
     const [conversationId, setConversationId] = useState<string | null>(conversation?.id ?? null);
     const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages);
     const [processingAgents, setProcessingAgents] = useState<ProcessingAgent[]>([]);
@@ -77,7 +80,7 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
     const [title, setTitle] = useState(conversation?.title ?? '');
     const [isRouting, setIsRouting] = useState(false);
     const [isSending, setIsSending] = useState(false);
-    const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
+    const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>(defaultSelectedAgentIds);
     const routingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const turns = groupIntoTurns(messages);
