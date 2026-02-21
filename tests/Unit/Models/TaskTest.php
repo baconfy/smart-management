@@ -167,7 +167,7 @@ test('subtask belongs to parent', function (): void {
 // ============================================================================
 
 test('all task priorities are valid', function (): void {
-    $expected = ['high', 'medium', 'low'];
+    $expected = ['critical', 'high', 'medium', 'low'];
 
     $values = array_map(fn (TaskPriority $p) => $p->value, TaskPriority::cases());
 
