@@ -1,18 +1,16 @@
-import { Link, router } from '@inertiajs/react';
-import { BotIcon, MessageCircleMore, PlusIcon } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { BotIcon, PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import SettingsLayout from '@/layouts/project/settings-layout';
-import { dashboard } from '@/routes';
-import { show } from '@/routes/projects';
-import type { BreadcrumbItem, Project, ProjectAgent } from '@/types';
 import { AgentCard } from '@/pages/projects/settings/agents/partials/agent-card';
 import { AgentForm } from '@/pages/projects/settings/agents/partials/agent-form';
+import { dashboard } from '@/routes';
+import { show } from '@/routes/projects';
 import { destroy } from '@/routes/projects/agents';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { index as conversations } from '@/routes/projects/conversations';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import type { BreadcrumbItem, Project, ProjectAgent } from '@/types';
 
 // --- Types ---
 
