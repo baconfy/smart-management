@@ -178,6 +178,7 @@ export default function TasksIndex({ project, statuses, tasks: initialTasks }: P
                             {statuses.map((status) => (
                                 <KanbanColumn key={status.id} status={status} tasks={tasksByStatus.get(status.id) ?? []} projectUlid={project.ulid} />
                             ))}
+
                             <DragOverlay>{activeTask ? <KanbanCard task={activeTask} projectUlid={project.ulid} isDragOverlay /> : null}</DragOverlay>
                         </DndContext>
                     </div>
