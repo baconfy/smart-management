@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use App\Actions\Projects\SeedProjectAgents;
-use App\Actions\Tasks\StartTaskConversation;
 use App\Jobs\ProcessAgentMessage;
 use App\Models\Conversation;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\StartTaskConversation;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {

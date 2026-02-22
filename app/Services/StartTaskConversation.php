@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Actions\Tasks;
+namespace App\Services;
 
 use App\Actions\ConversationMessages\CreateConversationMessage;
+use App\Actions\Conversations\UpdateConversation;
 use App\Ai\Stores\ProjectConversationStore;
 use App\Enums\AgentType;
 use App\Jobs\ProcessAgentMessage;
@@ -18,7 +19,11 @@ readonly class StartTaskConversation
     /**
      * Initialize a new instance of the class with dependencies.
      */
-    public function __construct(private ProjectConversationStore $store, private CreateConversationMessage $createConversationMessage) {}
+    public function __construct(
+        private ProjectConversationStore $store,
+        private UpdateConversation $updateConversation,
+        private CreateConversationMessage $createConversationMessage,
+    ) {}
 
     /**
      * Handle the invocation to either retrieve an existing conversation for the task
@@ -30,18 +35,44 @@ readonly class StartTaskConversation
             return $task->conversation;
         }
 
-        $project = $task->project;
-        $conversation = $this->store->forProject($project)->createConversation($user->id, $task->title);
-        $conversation->update(['task_id' => $task->id]);
+        [$project, $conversation] = $this->setupTask($task, $user);
+        $this->moveTaskToInProgress($project, $task);
 
+        $message = $this->buildTaskContext($task);
+        $this->createMessage($conversation, $user, $message, $project->agents()->whereType(AgentType::Technical)->first());
+
+        $this->store->reset();
+
+        return $conversation;
+    }
+
+    /**
+     * Assigns a task to a user and creates a conversation for the task within the project.
+     */
+    private function setupTask(Task $task, User $user): array
+    {
+        $conversation = $this->store->forProject($task->project)->createConversation($user->id, $task->title);
+        ($this->updateConversation)($conversation, ['task_id' => $task->id]);
+
+        return [$task->project, $conversation];
+    }
+
+    /**
+     * Move the specified task to the "In Progress" status within the given project.
+     */
+    private function moveTaskToInProgress(mixed $project, Task $task): void
+    {
         $inProgress = $project->statuses()->where('is_in_progress', true)->first();
         if ($inProgress) {
             $task->update(['task_status_id' => $inProgress->id]);
         }
+    }
 
-        $technicalAgent = $project->agents()->where('type', AgentType::Technical)->first();
-        $message = $this->buildTaskContext($task);
-
+    /**
+     * Create a new message in the specified conversation and dispatch the processing of a technical agent message.
+     */
+    private function createMessage(mixed $conversation, User $user, string $message, $technicalAgent): void
+    {
         ($this->createConversationMessage)($conversation, [
             'id' => (string) Str::ulid(),
             'user_id' => $user->id,
@@ -51,10 +82,6 @@ readonly class StartTaskConversation
         ]);
 
         ProcessAgentMessage::dispatch($conversation, $technicalAgent, $message);
-
-        $this->store->reset();
-
-        return $conversation;
     }
 
     /**

@@ -89,3 +89,15 @@ test('user message is marked as hidden', function () {
 
     expect($userMessage->meta)->toBe(['hidden' => true]);
 });
+
+test('marks task as in progress when starting conversation', function () {
+    Queue::fake();
+
+    expect($this->task->status->slug)->toBe('todo');
+
+    $this->actingAs($this->user)->post(route('projects.tasks.start', [$this->project, $this->task]));
+
+    $inProgress = $this->project->statuses()->where('slug', 'in_progress')->first();
+
+    expect($this->task->refresh()->task_status_id)->toBe($inProgress->id);
+});

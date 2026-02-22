@@ -37,6 +37,7 @@ class SeedProjectStatuses
                 'color' => '#3b82f6',
                 'position' => 1,
                 'is_default' => false,
+                'is_in_progress' => true,
                 'is_closed' => false,
             ],
             [

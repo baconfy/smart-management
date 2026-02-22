@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('color', 7)->default('#71717a');
             $table->unsignedSmallInteger('position')->default(0);
             $table->boolean('is_default')->default(false);
+            $table->boolean('is_in_progress')->default(false);
             $table->boolean('is_closed')->default(false);
             $table->timestamps();
 
