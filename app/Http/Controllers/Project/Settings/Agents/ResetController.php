@@ -17,6 +17,8 @@ class ResetController extends Controller
     {
         $this->authorize('view', $project);
 
+        abort_unless($agent->is_default, 403);
+
         $instructions = file_get_contents(resource_path("instructions/{$agent->type->value}.md"));
         $name = str_replace('# ', '', strtok($instructions, "\n"));
 

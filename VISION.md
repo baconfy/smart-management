@@ -281,6 +281,17 @@ Moderator     → All (read-only)             → Delegates to appropriate agent
 - Hidden messages (`meta->hidden`) keep AI context without cluttering user chat
 - Agent responds in same language as task title/description
 
+### Settings & Agent Management
+- Settings page with tab link navigation: General (project config) and Agents (CRUD)
+- Agent list with clickable cards showing name, type badge, model, and tools
+- Sheet (slide-in panel) for create/edit with Inertia `<Form>` pattern
+- Editable per agent: name, instructions (markdown), model override, tools (checkbox toggle)
+- Custom agents: `AgentType::Custom`, no `.md` file, fully user-defined
+- Default agents: can be edited, reset to default restores name + instructions from `resources/instructions/{type}.md`
+- Soft delete: agents are soft-deleted, preserving conversation history
+- AlertDialog confirmation for destructive actions
+- Available tools discovered dynamically from `app/Ai/Tools/` directory
+
 ### Layout Strategy
 
 - Desktop-first (no mobile — complex PM tool with AI chat, agents, kanban, artifacts)

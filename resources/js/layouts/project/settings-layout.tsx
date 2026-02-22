@@ -18,7 +18,7 @@ export default function SettingsLayout({ breadcrumbs, project, children }: { bre
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} sidebar={<ProjectNavPanel project={project} />}>
-            <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-8">
                 <nav className="flex gap-1 border-b border-border">
                     {tabs.map((tab) => {
                         const isActive = url === tab.href || (tab.href !== `/p/${project.ulid}/s` && url.startsWith(tab.href));

@@ -1,5 +1,5 @@
 import { Form, router } from '@inertiajs/react';
-import { RotateCcw, Trash2 } from 'lucide-react';
+import { RotateCcw, SaveIcon, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,10 @@ export function AgentForm({ project, agent, availableTools, onClose, onDelete }:
     }
 
     const formProps = isEditing ? update.form({ project: project.ulid, agent: agent.id }) : store.form({ project: project.ulid });
+
+    const formatToolName = (text: string) => {
+        return text.replace(/([A-Z])/g, ' $1').trim();
+    };
 
     return (
         <Form {...formProps} onSuccess={onClose} className="flex flex-1 flex-col">
@@ -52,12 +56,11 @@ export function AgentForm({ project, agent, availableTools, onClose, onDelete }:
 
                                 <Field>
                                     <FieldLabel>Tools</FieldLabel>
-                                    <FieldDescription>Select which tools this agent can use.</FieldDescription>
-                                    <div className="mt-2 grid grid-cols-1 gap-2">
+                                    <div className="mt-2 grid grid-cols-3 gap-2">
                                         {availableTools.map((tool) => (
                                             <label key={tool} className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted">
                                                 <Checkbox checked={selectedTools.includes(tool)} onCheckedChange={() => toggleTool(tool)} />
-                                                <span>{tool}</span>
+                                                <span>{formatToolName(tool)}</span>
                                             </label>
                                         ))}
                                     </div>
@@ -69,6 +72,7 @@ export function AgentForm({ project, agent, availableTools, onClose, onDelete }:
 
                             <div className="space-y-2">
                                 <Button type="submit" disabled={processing} className="w-full">
+                                    <SaveIcon />
                                     {processing && <Spinner />} {isEditing ? 'Save Changes' : 'Create Agent'}
                                 </Button>
 
@@ -91,7 +95,7 @@ export function AgentForm({ project, agent, availableTools, onClose, onDelete }:
                                         <AlertDialog>
                                             <AlertDialogTrigger
                                                 render={
-                                                    <Button variant="destructive" className="mt-6 w-full">
+                                                    <Button variant="destructive" className="w-full">
                                                         <Trash2 />
                                                         Remove agent
                                                     </Button>

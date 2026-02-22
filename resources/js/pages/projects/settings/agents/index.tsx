@@ -1,5 +1,5 @@
-import { router } from '@inertiajs/react';
-import { PlusIcon } from 'lucide-react';
+import { Link, router } from '@inertiajs/react';
+import { BotIcon, MessageCircleMore, PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -10,6 +10,9 @@ import type { BreadcrumbItem, Project, ProjectAgent } from '@/types';
 import { AgentCard } from '@/pages/projects/settings/agents/partials/agent-card';
 import { AgentForm } from '@/pages/projects/settings/agents/partials/agent-form';
 import { destroy } from '@/routes/projects/agents';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { index as conversations } from '@/routes/projects/conversations';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 // --- Types ---
 
@@ -65,18 +68,35 @@ export default function AgentsPage({ project, agents, availableTools }: PageProp
             </div>
 
             <div className="space-y-3">
-                {agents.map((agent) => (
-                    <AgentCard key={agent.id} agent={agent} onEdit={() => openEdit(agent)} />
-                ))}
-
-                {agents.length === 0 && <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No agents configured.</div>}
+                {agents.length <= 0 ? (
+                    <Empty className="flex h-full items-center justify-center">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <BotIcon />
+                            </EmptyMedia>
+                            <EmptyTitle>No agents yet.</EmptyTitle>
+                            <EmptyDescription>Create your first agent.</EmptyDescription>
+                        </EmptyHeader>
+                        <EmptyContent className="flex-row justify-center gap-2">
+                            <Button onClick={openCreate}>
+                                <PlusIcon className="size-4" /> New Agent
+                            </Button>
+                        </EmptyContent>
+                    </Empty>
+                ) : (
+                    <div className="grid grid-cols-2 gap-6">
+                        {agents.map((agent) => (
+                            <AgentCard key={agent.id} agent={agent} onEdit={() => openEdit(agent)} />
+                        ))}
+                    </div>
+                )}
             </div>
 
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetContent className="flex flex-col w-full sm:max-w-lg md:max-w-2xl">
+            <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+                <DialogContent className="flex w-full flex-col sm:max-w-lg md:max-w-5xl">
                     <AgentForm key={editingAgent?.id ?? 'new'} project={project} agent={editingAgent} availableTools={availableTools} onClose={handleClose} onDelete={() => handleDelete(editingAgent!)} />
-                </SheetContent>
-            </Sheet>
+                </DialogContent>
+            </Dialog>
         </SettingsLayout>
     );
 }

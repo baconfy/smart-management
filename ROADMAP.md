@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-22 (Steps 1-16 complete, 410 tests)
+> **Last updated:** 2026-02-22 (Steps 1-17 complete, 426 tests)
 
 ---
 
@@ -72,6 +72,10 @@ These decisions were made during ideation and refined during implementation:
 61. **initialProcessingAgents prop:** Backend detects conversation with no assistant response yet, passes processing agents to frontend. Solves race condition where Echo event fires before frontend connects.
 62. **CSS animation for chat transition:** Flex spacers + `transition-[flex]` animate input from center to bottom. Title fades via `max-h-0 opacity-0`. No JavaScript animation library needed.
 63. **TaskDetails in floating Dialog:** When task has conversation, details shown in Dialog triggered by floating button (bottom-right). Keeps chat as primary UI, details accessible on demand.
+64. **Settings with tab links:** Settings page uses `<Link>` styled as tabs instead of `<Tabs>` component. Each tab is a separate route (`/s` General, `/s/a` Agents). Shared `SettingsLayout` component renders tab navigation.
+65. **Agent CRUD with Sheet:** Agent create/edit uses Sheet (slide-in panel) instead of Dialog or separate page. Keeps list visible while editing. Uses Inertia `<Form>` with wayfinder routes.
+66. **Scoped route binding for agents:** Routes use `->scopeBindings()` to let Laravel scope `{agent}` to `{project}` via the `agents()` relationship. Eliminates manual `abort_unless($agent->project_id === $project->id, 404)` checks.
+67. **Reset agent from .md:** Default agents can reset name + instructions from `resources/instructions/{type}.md`. Name extracted from first line (`# Name`). Custom agents cannot be reset (403).
 
 ---
 
@@ -185,11 +189,25 @@ These decisions were made during ideation and refined during implementation:
 
 ---
 
-## Phase 4 — Agent Management & Polish
+## Phase 4 — Agent Management & Polish (Partial ✅)
 
 > Goal: Agent configuration UI, prompt tuning, and UX refinements.
 
-- [ ] Agent Management UI (view/edit instructions, reset to default, settings)
+### 4.1 Settings & Agent Management ✅
+- [x] Settings page with tab link navigation (General / Agents)
+- [x] `Settings/IndexController` — General placeholder
+- [x] `Settings/Agents/IndexController` — lists agents + available tools
+- [x] `Settings/Agents/StoreController` — creates custom agents (`AgentType::Custom`)
+- [x] `Settings/Agents/UpdateController` — edits name, instructions, model, tools
+- [x] `Settings/Agents/DestroyController` — soft deletes agents (scoped binding)
+- [x] `Settings/Agents/ResetController` — resets default agent name + instructions from `.md`
+- [x] Agent list page with clickable cards
+- [x] Sheet lateral for create/edit form (Inertia `<Form>` pattern)
+- [x] Tools toggle via Checkbox + hidden inputs
+- [x] AlertDialog for delete confirmation
+- [x] Settings enabled in sidebar navigation
+
+### 4.2 Polish (TODO)
 - [ ] Prompt tuning (agents too verbose, create artifacts without asking)
 - [ ] React Compiler crash investigation (ConversationShow `useMemoCache` error)
 - [ ] Token streaming (SSE or WebSocket, resolves Pusher payload too large)
@@ -197,6 +215,8 @@ These decisions were made during ideation and refined during implementation:
 - [ ] Chat messages top-to-bottom (replace `flex-col-reverse` — aligns with streaming)
 - [ ] Start Task → mark as "In Progress" automatically
 - [ ] Task filtering (status, priority, phase, search)
+- [ ] Agent card design improvements
+- [ ] AI SDK Elements (Vercel) for chat UI polish
 
 ---
 
@@ -253,13 +273,26 @@ These decisions were made during ideation and refined during implementation:
 | Task show page — TaskEmpty vs TaskChat, floating Dialog | — |
 | `meta` column migration `text` → `jsonb` | — |
 
+### Settings & Agent Management (Step 17) ✅
+
+| What | Tests |
+|------|-------|
+| `Settings/IndexController` — General page | 3 |
+| `Settings/Agents/IndexController` — list agents + availableTools | 3 |
+| `Settings/Agents/StoreController` — create custom agent | 2 |
+| `Settings/Agents/UpdateController` — edit agent (scoped binding) | 3 |
+| `Settings/Agents/DestroyController` — soft delete agent | 2 |
+| `Settings/Agents/ResetController` — reset name + instructions from .md | 3 |
+| Settings layout with tab links (General / Agents) | — |
+| Agent list page with cards + Sheet form | — |
+
 ### Known Issues (deferred)
 - **Pusher payload too large:** Long AI responses exceed Pusher's 10KB limit. Fix: token streaming (Phase 4).
 - **React Compiler crash:** `useMemoCache` null error in ConversationShow. Fix: investigate in Phase 4.
 - **Tool call round-trips:** PM creating 16 tasks = 16 AI round-trips (~120s). Fix: batch optimization (Phase 4).
 - **Chat scroll direction:** `flex-col-reverse` starts messages at bottom. Fix: top-to-bottom with streaming (Phase 4).
 
-**Total: 410 tests, all passing.**
+**Total: 426 tests, all passing.**
 
 ---
 
