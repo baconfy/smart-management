@@ -20,7 +20,7 @@ class IndexController extends Controller
 
         return Inertia::render('projects/settings/agents/index', [
             'project' => $project,
-            'agents' => $project->agents()->orderBy('name')->get(),
+            'agents' => $project->agents()->visible()->orderBy('name')->get(),
             'availableTools' => collect(glob(app_path('Ai/Tools/*.php')))->map(fn ($path) => basename($path, '.php'))->values()->all(),
         ]);
     }

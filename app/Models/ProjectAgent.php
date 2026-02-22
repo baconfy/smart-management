@@ -23,6 +23,7 @@ class ProjectAgent extends Model
         return [
             'type' => AgentType::class,
             'is_default' => 'boolean',
+            'is_system' => 'boolean',
             'settings' => 'array',
             'tools' => 'array',
         ];
@@ -42,5 +43,13 @@ class ProjectAgent extends Model
     public function scopeDefaults(Builder $query): Builder
     {
         return $query->where('is_default', true);
+    }
+
+    /**
+     * Only user-visible agents (excludes system agents like Moderator).
+     */
+    public function scopeVisible(Builder $query): Builder
+    {
+        return $query->where('is_system', false);
     }
 }

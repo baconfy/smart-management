@@ -38,7 +38,10 @@ readonly class ListTasks implements Tool
         }
 
         if ($priority = $request['priority'] ?? null) {
-            $query->where('priority', TaskPriority::from($priority));
+            $validPriority = TaskPriority::tryFrom($priority);
+            if ($validPriority) {
+                $query->where('priority', $validPriority);
+            }
         }
 
         $tasks = $query->latest()->get();

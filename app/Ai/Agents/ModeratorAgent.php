@@ -6,7 +6,7 @@ namespace App\Ai\Agents;
 
 use App\Models\Project;
 use App\Models\ProjectAgent;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Laravel\Ai\Attributes\UseCheapestModel;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Promptable;
@@ -18,6 +18,9 @@ class ModeratorAgent implements Agent
     use Promptable;
 
     private const float CONFIDENCE_THRESHOLD = 0.8;
+
+    /** @var Collection<int, ProjectAgent>|null */
+    private ?Collection $cachedAgents = null;
 
     /**
      * Initialize the class with a given project instance.
@@ -35,7 +38,7 @@ class ModeratorAgent implements Agent
      */
     public function instructions(): Stringable|string
     {
-        $agents = $this->project->agents()->get();
+        $agents = $this->cachedAgents ??= $this->project->agents()->visible()->get();
         $agentList = $agents->map(fn (ProjectAgent $agent) => "- {$agent->type->value}: {$agent->name}")->implode("\n");
 
         return <<<INSTRUCTIONS
@@ -158,7 +161,16 @@ class ModeratorAgent implements Agent
         $cleaned = trim($response->text);
         $cleaned = preg_replace('/^```(?:json)?\s*|\s*```$/s', '', $cleaned);
 
-        return json_decode($cleaned, true);
+        $result = json_decode($cleaned, true);
+
+        if (! is_array($result) || ! isset($result['agents']) || ! is_array($result['agents'])) {
+            return [
+                'agents' => [],
+                'reasoning' => 'Failed to parse routing response.',
+            ];
+        }
+
+        return $result;
     }
 
     /**

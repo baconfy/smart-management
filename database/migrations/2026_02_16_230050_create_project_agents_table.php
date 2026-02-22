@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('is_default')->default(false);
             $table->json('settings')->nullable();
             $table->json('tools')->nullable();
+            $table->boolean('is_system')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });

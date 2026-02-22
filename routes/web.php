@@ -20,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('p/{project}/c/{conversation?}', Project\Conversation\IndexController::class)->name('projects.conversations.index')->scopeBindings();
     Route::post('p/{project}/c', Project\Conversation\SendMessageController::class)->name('projects.conversations.send');
     Route::post('p/{project}/c/{conversation}/s', Project\Conversation\SelectAgentsController::class)->name('projects.conversations.select-agents')->scopeBindings();
+    Route::get('p/{project}/c/{conversation}/m', Project\Conversation\MessagesController::class)->name('projects.conversations.messages')->scopeBindings();
 
     /**
      * Decisions

@@ -1,7 +1,8 @@
 import axios from 'axios';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { selectAgents } from '@/routes/projects/conversations';
-import type { Conversation, ConversationMessage, ProjectAgent } from '@/types/models';
+import type { Conversation, ConversationMessage, CursorPaginated, ProjectAgent } from '@/types';
 
 // --- Types ---
 
@@ -25,10 +26,15 @@ type ChatContextValue = {
     isBusy: boolean;
     poll: PollState | null;
     title: string;
+    error: string | null;
+    hasMoreMessages: boolean;
+    isLoadingMore: boolean;
     selectedAgentIds: number[];
     toggleAgent: (id: number) => void;
     sendMessage: (content: string) => Promise<void>;
     handleSelectAgents: (agentIds: number[]) => void;
+    clearError: () => void;
+    loadMoreMessages: () => Promise<void>;
 };
 
 // --- Helpers ---
@@ -49,6 +55,17 @@ function groupIntoTurns(messages: ConversationMessage[]): Turn[] {
     return turns;
 }
 
+function extractMessages(input: CursorPaginated<ConversationMessage> | ConversationMessage[] | undefined): ConversationMessage[] {
+    if (!input) return [];
+    if (Array.isArray(input)) return input;
+    return input.data ?? [];
+}
+
+function extractNextPageUrl(input: CursorPaginated<ConversationMessage> | ConversationMessage[] | undefined): string | null {
+    if (!input || Array.isArray(input)) return null;
+    return input.next_page_url ?? null;
+}
+
 // --- Context ---
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -64,7 +81,7 @@ export function useChat() {
 type ChatProviderProps = {
     conversation?: Conversation | null;
     agents: ProjectAgent[];
-    messages?: ConversationMessage[];
+    messages?: CursorPaginated<ConversationMessage> | ConversationMessage[];
     projectUlid: string;
     sendUrl: string;
     defaultSelectedAgentIds?: number[];
@@ -73,19 +90,23 @@ type ChatProviderProps = {
     children: React.ReactNode;
 };
 
-export function ChatProvider({ conversation = null, agents, messages: initialMessages = [], projectUlid, sendUrl, onConversationCreated, defaultSelectedAgentIds = [], initialProcessingAgents = [], children }: ChatProviderProps) {
+export function ChatProvider({ conversation = null, agents, messages: initialMessages, projectUlid, sendUrl, onConversationCreated, defaultSelectedAgentIds = [], initialProcessingAgents = [], children }: ChatProviderProps) {
     const [conversationId, setConversationId] = useState<string | null>(conversation?.id ?? null);
-    const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages);
+    const [messages, setMessages] = useState<ConversationMessage[]>(extractMessages(initialMessages));
     const [processingAgents, setProcessingAgents] = useState<ProcessingAgent[]>(initialProcessingAgents ?? []);
     const [poll, setPoll] = useState<PollState | null>(null);
     const [title, setTitle] = useState(conversation?.title ?? '');
     const [isRouting, setIsRouting] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>(defaultSelectedAgentIds);
+    const [error, setError] = useState<string | null>(null);
+    const [nextPageUrl, setNextPageUrl] = useState<string | null>(extractNextPageUrl(initialMessages));
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const routingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const turns = groupIntoTurns(messages);
     const isBusy = isRouting || isSending || processingAgents.length > 0 || poll !== null;
+    const hasMoreMessages = nextPageUrl !== null;
 
     function clearRoutingTimeout() {
         if (routingTimeoutRef.current) {
@@ -94,12 +115,31 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
         }
     }
 
+    function clearError() {
+        setError(null);
+    }
+
     function toggleAgent(id: number) {
         setSelectedAgentIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
     }
 
+    async function loadMoreMessages() {
+        if (!nextPageUrl || isLoadingMore) return;
+
+        setIsLoadingMore(true);
+        try {
+            const { data } = await axios.get<CursorPaginated<ConversationMessage>>(nextPageUrl);
+            setMessages((prev) => [...data.data, ...prev]);
+            setNextPageUrl(data.next_page_url ?? null);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }
+
     async function sendMessage(content: string) {
         const tempId = `temp-${Date.now()}`;
+
+        setError(null);
 
         // Optimistic UI — add a user message immediately
         setMessages((prev) => [...prev, { id: tempId, role: 'user', content } as ConversationMessage]);
@@ -124,8 +164,8 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
                 routingTimeoutRef.current = setTimeout(() => setIsRouting(false), 30_000);
             }
         } catch {
-            // Remove optimistic message on error
             setMessages((prev) => prev.filter((m) => m.id !== tempId));
+            toast.error('Failed to send message. Please try again.');
         } finally {
             setIsSending(false);
         }
@@ -140,15 +180,22 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
 
         const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
 
-        await axios.post(selectAgents.url({ project: projectUlid, conversation: conversationId }), {
-            agent_ids: agentIds,
-            message: lastUserMsg?.content ?? '',
-        });
+        try {
+            await axios.post(selectAgents.url({ project: projectUlid, conversation: conversationId }), {
+                agent_ids: agentIds,
+                message: lastUserMsg?.content ?? '',
+            });
+        } catch {
+            clearRoutingTimeout();
+            setIsRouting(false);
+            toast.error('Failed to submit agent selection. Please try again.');
+        }
     }
 
     // Sync with server-provided data on navigation
     useEffect(() => {
-        setMessages(initialMessages);
+        setMessages(extractMessages(initialMessages));
+        setNextPageUrl(extractNextPageUrl(initialMessages));
     }, [initialMessages]);
 
     useEffect(() => {
@@ -159,6 +206,17 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
     // Echo — connect/disconnect based on conversationId
     useEffect(() => {
         if (!conversationId) return;
+
+        // Safety timeout: clear stuck processing agents after 120s
+        const processingTimeout = setTimeout(() => {
+            setProcessingAgents((prev) => {
+                if (prev.length > 0) {
+                    toast.warning('Agent response timed out. Please try again.');
+                    return [];
+                }
+                return prev;
+            });
+        }, 120_000);
 
         const channel = window.Echo.private(`conversation.${conversationId}`);
 
@@ -184,11 +242,26 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
             setProcessingAgents((prev) => prev.filter((a) => Number(a.id) !== Number(e.message.project_agent_id)));
         });
 
+        channel.listen('.agent.processing.failed', (e: { agent_id: number; agent_name: string; error: string }) => {
+            setProcessingAgents((prev) => prev.filter((a) => Number(a.id) !== Number(e.agent_id)));
+            setError(e.error);
+            clearRoutingTimeout();
+            setIsRouting(false);
+        });
+
+        channel.listen('.routing.failed', (e: { error: string }) => {
+            clearRoutingTimeout();
+            setIsRouting(false);
+            setProcessingAgents([]);
+            setError(e.error);
+        });
+
         channel.listen('.title.updated', (e: { id: string; title: string }) => {
             setTitle(e.title);
         });
 
         return () => {
+            clearTimeout(processingTimeout);
             clearRoutingTimeout();
             window.Echo.leave(`conversation.${conversationId}`);
         };
@@ -207,10 +280,15 @@ export function ChatProvider({ conversation = null, agents, messages: initialMes
                 isBusy,
                 poll,
                 title,
+                error,
+                hasMoreMessages,
+                isLoadingMore,
                 selectedAgentIds,
                 toggleAgent,
                 sendMessage,
                 handleSelectAgents,
+                clearError,
+                loadMoreMessages,
             }}
         >
             {children}

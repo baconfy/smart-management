@@ -10,6 +10,8 @@ use App\Ai\Stores\ProjectConversationStore;
 use App\Enums\AgentType;
 use App\Jobs\ProcessAgentMessage;
 use App\Models\Conversation;
+use App\Models\Project;
+use App\Models\ProjectAgent;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -60,7 +62,7 @@ readonly class StartTaskConversation
     /**
      * Move the specified task to the "In Progress" status within the given project.
      */
-    private function moveTaskToInProgress(mixed $project, Task $task): void
+    private function moveTaskToInProgress(Project $project, Task $task): void
     {
         $inProgress = $project->statuses()->where('is_in_progress', true)->first();
         if ($inProgress) {
@@ -71,7 +73,7 @@ readonly class StartTaskConversation
     /**
      * Create a new message in the specified conversation and dispatch the processing of a technical agent message.
      */
-    private function createMessage(mixed $conversation, User $user, string $message, $technicalAgent): void
+    private function createMessage(Conversation $conversation, User $user, string $message, ?ProjectAgent $technicalAgent): void
     {
         ($this->createConversationMessage)($conversation, [
             'id' => (string) Str::ulid(),
@@ -80,6 +82,10 @@ readonly class StartTaskConversation
             'content' => $message,
             'meta' => ['hidden' => true],
         ]);
+
+        if (! $technicalAgent) {
+            return;
+        }
 
         ProcessAgentMessage::dispatch($conversation, $technicalAgent, $message);
     }

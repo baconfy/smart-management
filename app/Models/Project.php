@@ -25,30 +25,43 @@ class Project extends Model
             if ($project->isForceDeleting()) {
                 $project->members()->forceDelete();
                 $project->agents()->forceDelete();
-                $project->conversations->each->forceDelete();
+                $project->conversations()->chunkById(100, function ($conversations) {
+                    $conversations->each->forceDelete();
+                });
                 $project->decisions()->forceDelete();
                 $project->businessRules()->forceDelete();
-                $project->tasks->each->forceDelete();
+                $project->tasks()->chunkById(100, function ($tasks) {
+                    $tasks->each->forceDelete();
+                });
+                $project->statuses()->forceDelete();
             } else {
                 $project->members()->delete();
                 $project->agents()->delete();
-                $project->conversations->each->delete();
+                $project->conversations()->chunkById(100, function ($conversations) {
+                    $conversations->each->delete();
+                });
                 $project->decisions()->delete();
                 $project->businessRules()->delete();
-                $project->tasks->each->delete();
+                $project->tasks()->chunkById(100, function ($tasks) {
+                    $tasks->each->delete();
+                });
             }
         });
 
         static::restoring(function (Project $project) {
             $project->members()->onlyTrashed()->restore();
             $project->agents()->onlyTrashed()->restore();
-            $project->conversations()->onlyTrashed()->each(function (Conversation $conversation) {
-                $conversation->restore();
+            $project->conversations()->onlyTrashed()->chunkById(100, function ($conversations) {
+                $conversations->each(function (Conversation $conversation) {
+                    $conversation->restore();
+                });
             });
             $project->decisions()->onlyTrashed()->restore();
             $project->businessRules()->onlyTrashed()->restore();
-            $project->tasks()->onlyTrashed()->each(function (Task $task) {
-                $task->restore();
+            $project->tasks()->onlyTrashed()->chunkById(100, function ($tasks) {
+                $tasks->each(function (Task $task) {
+                    $task->restore();
+                });
             });
         });
     }

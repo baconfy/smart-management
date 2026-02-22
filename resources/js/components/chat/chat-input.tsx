@@ -107,7 +107,8 @@ function ChatInputSubmit() {
 function ChatInputFooter() {
     return (
         <InputGroupAddon align="block-end" className="flex items-center justify-between">
-            <ChatInputAttach />
+            {/* TODO: Enable when file upload backend is implemented */}
+            {/* <ChatInputAttach /> */}
             <div className="flex items-center gap-2">
                 <ChatInputAgents />
                 <ChatInputSubmit />
@@ -192,7 +193,8 @@ export function ChatInput() {
                         <ChatInputPoll />
                     ) : (
                         <>
-                            <ChatInputFiles />
+                            {/* TODO: Enable when file upload backend is implemented */}
+                            {/* <ChatInputFiles /> */}
                             <ChatInputTextarea />
                             <ChatInputFooter />
                         </>

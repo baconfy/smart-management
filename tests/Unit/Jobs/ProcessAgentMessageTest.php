@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Ai\Agents\GenericAgent;
 use App\Enums\AgentType;
 use App\Events\AgentMessageReceived;
+use App\Events\AgentProcessingFailed;
 use App\Jobs\ProcessAgentMessage;
 use App\Models\Conversation;
 use App\Models\Project;
@@ -54,4 +55,26 @@ test('it broadcasts AgentMessageReceived after saving', function () {
 test('it is queued', function () {
     expect(ProcessAgentMessage::class)
         ->toImplement(ShouldQueue::class);
+});
+
+test('it has retry and timeout configuration', function () {
+    $job = new ProcessAgentMessage(conversation: $this->conversation, projectAgent: $this->agent, message: 'test');
+
+    expect($job->tries)->toBe(2)
+        ->and($job->timeout)->toBe(120)
+        ->and($job->backoff)->toBe(5);
+});
+
+test('it broadcasts AgentProcessingFailed when all retries exhausted', function () {
+    Event::fake([AgentProcessingFailed::class]);
+
+    $job = new ProcessAgentMessage(conversation: $this->conversation, projectAgent: $this->agent, message: 'test');
+    $job->failed(new \RuntimeException('API timeout'));
+
+    Event::assertDispatched(AgentProcessingFailed::class, function ($event) {
+        return $event->conversation->id === $this->conversation->id
+            && $event->agentId === $this->agent->id
+            && $event->agentName === 'Architect'
+            && $event->error === 'The agent failed to respond. Please try again.';
+    });
 });

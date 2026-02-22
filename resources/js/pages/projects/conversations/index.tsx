@@ -13,7 +13,7 @@ type Props = {
     agents: ProjectAgent[];
     conversations: CursorPaginated<Conversation>;
     conversation?: Conversation | null;
-    messages?: ConversationMessage[];
+    messages?: CursorPaginated<ConversationMessage> | ConversationMessage[];
 };
 
 function ConversationInner({ project, conversations }: { project: Project; conversations: CursorPaginated<Conversation> }) {

@@ -42,6 +42,20 @@ test('update task tool only updates provided fields', function (): void {
     expect($task)->title->toBe('Keep')->description->toBe('Updated desc')->priority->toBe(TaskPriority::High);
 });
 
+test('update task tool ignores invalid priority values', function (): void {
+    $project = Project::factory()->create(['name' => 'Test']);
+    $task = $project->tasks()->create(['title' => 'My Task', 'description' => 'Desc', 'priority' => 'high']);
+
+    $result = (string) (app()->make(UpdateTask::class, ['project' => $project]))->handle(new Request([
+        'task_id' => $task->id,
+        'priority' => 'urgent',
+    ]));
+
+    $task->refresh();
+    expect($task->priority)->toBe(TaskPriority::High);
+    expect($result)->toContain('My Task');
+});
+
 test('update task tool scopes to project', function (): void {
     $projectA = Project::factory()->create(['name' => 'A']);
     $projectB = Project::factory()->create(['name' => 'B']);

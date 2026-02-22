@@ -18,6 +18,9 @@ class GenericAgent implements Agent, Conversational, HasTools
 {
     use Promptable, ReadsConversationHistory, RemembersConversations;
 
+    /** @var array<int, mixed>|null */
+    private ?array $cachedTools = null;
+
     /**
      * Initialize the Lucius application with the given ProjectAgent instance.
      *
@@ -49,10 +52,14 @@ class GenericAgent implements Agent, Conversational, HasTools
      */
     public function tools(): iterable
     {
+        if ($this->cachedTools !== null) {
+            return $this->cachedTools;
+        }
+
         $tools = $this->projectAgent->tools ?? [];
         $project = $this->project();
 
-        return collect($tools)->map(function (string $name) use ($project) {
+        return $this->cachedTools = collect($tools)->map(function (string $name) use ($project) {
             return app()->make("App\\Ai\\Tools\\{$name}", ['project' => $project]);
         })->all();
     }

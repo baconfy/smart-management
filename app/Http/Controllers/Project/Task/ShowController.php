@@ -34,12 +34,14 @@ class ShowController extends Controller
 
         return Inertia::render('projects/tasks/show', [
             'project' => $project,
-            'agents' => $project->agents()->orderBy('name')->get(),
+            'agents' => $project->agents()->visible()->orderBy('name')->get(),
             'task' => $task->load('status'),
             'subtasks' => $task->subtasks()->with('status')->get(),
             'implementationNotes' => $task->implementationNotes()->latest()->get(),
             'conversation' => $conversation,
-            'messages' => $conversation ? $conversation->messages()->whereNull('meta->hidden')->oldest()->get() : [],
+            'messages' => $conversation
+                ? $conversation->messages()->whereNull('meta->hidden')->oldest()->cursorPaginate(50)
+                : [],
             'defaultAgentIds' => $technicalAgent ? [$technicalAgent->id] : [],
             'processingAgents' => $isProcessing && $technicalAgent ? [['id' => $technicalAgent->id, 'name' => $technicalAgent->name]] : [],
         ]);

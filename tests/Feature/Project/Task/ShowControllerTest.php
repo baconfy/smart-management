@@ -69,7 +69,7 @@ test('show returns task with conversation and messages when started', function (
             ->component('projects/tasks/show')
             ->has('task')
             ->has('conversation')
-            ->has('messages', 1)
+            ->has('messages.data', 1)
         );
 });
 

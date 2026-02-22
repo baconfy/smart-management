@@ -6,6 +6,7 @@ use App\Ai\Agents\ModeratorAgent;
 use App\Enums\AgentType;
 use App\Events\AgentSelectionRequired;
 use App\Events\AgentsProcessing;
+use App\Events\RoutingFailed;
 use App\Jobs\ProcessAgentMessage;
 use App\Jobs\ProcessChatMessage;
 use App\Models\Conversation;
@@ -122,5 +123,41 @@ test('it broadcasts enquete when no agent has high confidence', function () {
 
     Event::assertDispatched(AgentSelectionRequired::class, function ($event) {
         return count($event->candidates) === 2;
+    });
+});
+
+test('it throws when moderator returns no agents', function () {
+    Queue::fake([ProcessAgentMessage::class]);
+    Event::fake([AgentsProcessing::class, AgentSelectionRequired::class]);
+
+    ModeratorAgent::fake([
+        json_encode([
+            'agents' => [],
+            'reasoning' => 'No idea.',
+        ]),
+    ]);
+
+    $job = new ProcessChatMessage($this->conversation, $this->project, 'Tell me something.', []);
+
+    expect(fn () => app()->call([$job, 'handle']))->toThrow(\RuntimeException::class, 'Moderator returned no agents for routing.');
+});
+
+test('it has retry and timeout configuration', function () {
+    $job = new ProcessChatMessage($this->conversation, $this->project, 'test');
+
+    expect($job->tries)->toBe(2)
+        ->and($job->timeout)->toBe(30)
+        ->and($job->backoff)->toBe(3);
+});
+
+test('it broadcasts RoutingFailed when all retries exhausted', function () {
+    Event::fake([RoutingFailed::class]);
+
+    $job = new ProcessChatMessage($this->conversation, $this->project, 'test');
+    $job->failed(new \RuntimeException('API timeout'));
+
+    Event::assertDispatched(RoutingFailed::class, function ($event) {
+        return $event->conversation->id === $this->conversation->id
+            && $event->error === 'Failed to route your message. Please try again.';
     });
 });

@@ -71,11 +71,24 @@ function AgentTabs({ assistantMessages, processingAgents, agents }: { assistantM
 // --- Main ---
 
 export function ChatMessages() {
-    const { turns, processingAgents, isRouting, agents } = useChat();
+    const { turns, processingAgents, isRouting, agents, error, clearError, hasMoreMessages, isLoadingMore, loadMoreMessages } = useChat();
 
     return (
         <div className="no-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4">
             <div className="mx-auto w-full max-w-5xl space-y-4">
+                {/* Load earlier messages */}
+                {hasMoreMessages && (
+                    <div className="flex justify-center">
+                        <button
+                            onClick={loadMoreMessages}
+                            disabled={isLoadingMore}
+                            className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        >
+                            {isLoadingMore ? 'Loading...' : 'Load earlier messages'}
+                        </button>
+                    </div>
+                )}
+
                 {/* Standalone processing — no turns yet (e.g. task auto-start) */}
                 {turns.length === 0 && processingAgents.length > 0 && (
                     <div className="space-y-4">
@@ -90,14 +103,26 @@ export function ChatMessages() {
                     </div>
                 )}
 
+                {error && (
+                    <div className="flex justify-start">
+                        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                            <span>{error}</span>
+                            <button onClick={clearError} className="ml-2 text-destructive/60 hover:text-destructive">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {turns.map((turn, i) => {
+                    const turnKey = turn.userMessage?.id ?? `orphan-${turn.assistantMessages[0]?.id ?? i}`;
                     const isLastTurn = i === turns.length - 1;
                     const turnProcessing = isLastTurn ? processingAgents : [];
                     const totalResponders = turn.assistantMessages.length + turnProcessing.length;
                     const isMultiAgent = totalResponders > 1;
 
                     return (
-                        <div key={i} className="space-y-4">
+                        <div key={turnKey} className="space-y-4">
                             {/* User message */}
                             {turn.userMessage && (
                                 <div className="flex justify-end">

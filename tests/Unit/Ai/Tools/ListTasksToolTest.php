@@ -47,6 +47,17 @@ test('list tasks tool filters by priority', function (): void {
     expect($result)->toContain('High Task')->not->toContain('Low Task');
 });
 
+test('list tasks tool ignores invalid priority values', function (): void {
+    $project = Project::factory()->create(['name' => 'Test']);
+
+    $project->tasks()->create(['title' => 'High Task', 'description' => 'D', 'priority' => 'high']);
+    $project->tasks()->create(['title' => 'Low Task', 'description' => 'D', 'priority' => 'low']);
+
+    $result = (string) (new ListTasks($project))->handle(new Request(['priority' => 'urgent']));
+
+    expect($result)->toContain('High Task')->toContain('Low Task');
+});
+
 test('list tasks tool returns message when empty', function (): void {
     $project = Project::factory()->create(['name' => 'Test']);
 

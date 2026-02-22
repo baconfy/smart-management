@@ -37,10 +37,6 @@ readonly class UpdateTask implements Tool
             return 'Task not found in this project.';
         }
 
-        if (isset($request['priority']) && ! TaskPriority::tryFrom($request['priority'])) {
-            unset($request['priority']);
-        }
-
         $data = array_filter([
             'title' => $request['title'] ?? null,
             'description' => $request['description'] ?? null,
@@ -49,6 +45,10 @@ readonly class UpdateTask implements Tool
             'priority' => $request['priority'] ?? null,
             'estimate' => $request['estimate'] ?? null,
         ], fn ($value) => $value !== null && $value !== '');
+
+        if (isset($data['priority']) && ! TaskPriority::tryFrom($data['priority'])) {
+            unset($data['priority']);
+        }
 
         if ($statusSlug = $request['status'] ?? null) {
             $status = $this->project->statuses()->where('slug', $statusSlug)->first();

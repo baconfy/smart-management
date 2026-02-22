@@ -102,6 +102,30 @@ test('it resolves project agents from routing result', function () {
         ->and($resolved[0]->id)->toBe($this->architect->id);
 });
 
+test('it returns safe fallback when AI returns malformed JSON', function () {
+    ModeratorAgent::fake(['this is not valid json {{{']);
+
+    $moderator = new ModeratorAgent($this->project);
+    $result = $moderator->route('any message');
+
+    expect($result)
+        ->toHaveKey('agents')
+        ->toHaveKey('reasoning')
+        ->and($result['agents'])->toBeArray()->toBeEmpty()
+        ->and($result['reasoning'])->not->toBeEmpty();
+});
+
+test('it returns safe fallback when AI returns JSON without agents key', function () {
+    ModeratorAgent::fake([json_encode(['response' => 'I think architect'])]);
+
+    $moderator = new ModeratorAgent($this->project);
+    $result = $moderator->route('any message');
+
+    expect($result)
+        ->toHaveKey('agents')
+        ->and($result['agents'])->toBeArray()->toBeEmpty();
+});
+
 test('it filters agents below confidence threshold', function () {
     ModeratorAgent::fake([
         json_encode([

@@ -18,6 +18,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->app->singleton(ConversationStore::class, ProjectConversationStore::class);
+        $this->app->bind(ConversationStore::class, ProjectConversationStore::class);
     }
 }

@@ -13,7 +13,7 @@ import { TaskDetails } from '@/pages/projects/tasks/partials/task-details';
 import { dashboard } from '@/routes';
 import { show } from '@/routes/projects';
 import { index as tasksIndex, send, start } from '@/routes/projects/tasks';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, CursorPaginated } from '@/types';
 import type { Conversation, ConversationMessage, ImplementationNote, Project, ProjectAgent, Task } from '@/types/models';
 
 function TaskBreadcrumbs(project: Project, task: Task): BreadcrumbItem[] {
@@ -101,7 +101,7 @@ type Props = {
     subtasks: Task[];
     implementationNotes: ImplementationNote[];
     conversation?: Conversation | null;
-    messages?: ConversationMessage[];
+    messages?: CursorPaginated<ConversationMessage> | ConversationMessage[];
     defaultAgentIds?: number[];
     processingAgents?: ProcessingAgent[];
 };
