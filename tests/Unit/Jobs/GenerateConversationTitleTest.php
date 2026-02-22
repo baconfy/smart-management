@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Ai\Agents\ModeratorAgent;
+use App\Ai\Agents\TitleGeneratorAgent;
 use App\Events\ConversationTitleUpdated;
 use App\Jobs\GenerateConversationTitle;
 use App\Models\Conversation;
@@ -25,7 +25,7 @@ beforeEach(function () {
     ]);
 });
 
-test('it generates a title from the first user message using ModeratorAgent', function () {
+test('it generates a title from the first user message using TitleGeneratorAgent', function () {
     Event::fake([ConversationTitleUpdated::class]);
 
     ConversationMessage::create([
@@ -36,7 +36,7 @@ test('it generates a title from the first user message using ModeratorAgent', fu
         'content' => 'Should I use PostgreSQL or MySQL for this payment gateway project?',
     ]);
 
-    ModeratorAgent::fake(['Payment Gateway DB Choice']);
+    TitleGeneratorAgent::fake(['Payment Gateway DB Choice']);
 
     $job = new GenerateConversationTitle($this->conversation);
     app()->call([$job, 'handle']);
@@ -57,7 +57,7 @@ test('it broadcasts ConversationTitleUpdated after saving', function () {
         'content' => 'Should I use PostgreSQL or MySQL?',
     ]);
 
-    ModeratorAgent::fake(['DB Choice']);
+    TitleGeneratorAgent::fake(['DB Choice']);
 
     $job = new GenerateConversationTitle($this->conversation);
     app()->call([$job, 'handle']);
@@ -91,7 +91,7 @@ test('it falls back gracefully when AI call fails', function () {
         'content' => 'Hello world',
     ]);
 
-    ModeratorAgent::fake(fn () => throw new \RuntimeException('API timeout'));
+    TitleGeneratorAgent::fake(fn () => throw new \RuntimeException('API timeout'));
 
     $job = new GenerateConversationTitle($this->conversation);
     app()->call([$job, 'handle']);

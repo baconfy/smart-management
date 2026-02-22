@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Ai\Agents\ModeratorAgent;
+use App\Ai\Agents\TitleGeneratorAgent;
 use App\Events\ConversationTitleUpdated;
 use App\Models\Conversation;
 use Illuminate\Bus\Queueable;
@@ -46,8 +46,7 @@ class GenerateConversationTitle implements ShouldQueue
         }
 
         try {
-            $moderator = new ModeratorAgent($this->conversation->project);
-            $response = $moderator->prompt("Generate a short, descriptive title (max 60 characters) for a conversation that starts with this message. Return ONLY the title, no quotes, no explanation:\n\n{$firstMessage}");
+            $response = (new TitleGeneratorAgent)->prompt($firstMessage);
         } catch (Throwable $e) {
             Log::warning('Failed to generate conversation title', ['conversation_id' => $this->conversation->id, 'error' => $e->getMessage()]);
 
