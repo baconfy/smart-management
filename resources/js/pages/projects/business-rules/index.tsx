@@ -41,10 +41,12 @@ export default function BusinessRulesIndex({ project, businessRules }: { project
                     {businessRules.map((rule) => (
                         <AccordionItem key={rule.id} value={String(rule.id)}>
                             <AccordionTrigger className="flex items-center gap-2">
-                                <div className="text-base font-bold">{rule.title}</div>
+                                <div className="text-lg font-bold tracking-tighter">{rule.title}</div>
                                 <Badge variant="secondary">{rule.category}</Badge>
                             </AccordionTrigger>
-                            <AccordionContent className="p-2 pb-6 font-mono text-muted-foreground">{rule.description}</AccordionContent>
+                            <AccordionContent>
+                                <div className="prose prose-base prose-invert opacity-75">{rule.description}</div>
+                            </AccordionContent>
                         </AccordionItem>
                     ))}
                 </Accordion>

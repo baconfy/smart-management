@@ -10,7 +10,6 @@ use App\Enums\AgentType;
 use App\Jobs\ProcessAgentMessage;
 use App\Models\Conversation;
 use App\Models\Task;
-use App\Models\TaskStatus;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -19,7 +18,7 @@ readonly class StartTaskConversation
     /**
      * Initialize a new instance of the class with dependencies.
      */
-    public function __construct(private ProjectConversationStore $store, private CreateConversationMessage $createConversationMessage, private UpdateTask $updateTask) {}
+    public function __construct(private ProjectConversationStore $store, private CreateConversationMessage $createConversationMessage) {}
 
     /**
      * Handle the invocation to either retrieve an existing conversation for the task
@@ -49,9 +48,6 @@ readonly class StartTaskConversation
         ProcessAgentMessage::dispatch($conversation, $technicalAgent, $message);
 
         $this->store->reset();
-
-        $status = TaskStatus::query()->whereSlug('in_progress')->first();
-        ($this->updateTask)($task, ['task_status_id' => $status->id]);
 
         return $conversation;
     }

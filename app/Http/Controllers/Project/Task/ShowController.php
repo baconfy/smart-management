@@ -31,6 +31,7 @@ class ShowController extends Controller
         $conversation = $task->conversation;
         $technicalAgent = $project->agents()->where('type', AgentType::Technical)->first();
         $isProcessing = $conversation && $conversation->messages()->where('role', 'assistant')->doesntExist();
+
         return Inertia::render('projects/tasks/show', [
             'project' => $project,
             'agents' => $project->agents()->orderBy('name')->get(),
