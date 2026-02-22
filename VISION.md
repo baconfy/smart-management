@@ -275,7 +275,7 @@ Moderator     → All (read-only)             → Delegates to appropriate agent
 ### Task Detail View
 - **No conversation:** Shows TaskDetails (metadata, subtasks, implementation notes) + "Start Task" button
 - **With conversation:** Chat is primary UI. TaskDetails accessible via floating button → Dialog overlay
-- `StartTaskConversation` creates hidden user message with task context, dispatches Technical agent with action plan prompt
+- `StartTaskConversationService` creates hidden user message with task context, dispatches Technical agent with action plan prompt, moves task to in-progress status
 - Technical agent pre-selected in chat input (`defaultSelectedAgentIds`)
 - Typing indicator shown immediately via `initialProcessingAgents` (before Echo connects)
 - Hidden messages (`meta->hidden`) keep AI context without cluttering user chat
@@ -400,6 +400,7 @@ task_statuses
 ├── position (int — column order)
 ├── is_default (bool — assigned to new tasks)
 ├── is_closed (bool — marks completion for metrics)
+├── is_in_progress (bool — assigned when task conversation starts)
 ├── timestamps
 ├── UNIQUE(project_id, slug)
 

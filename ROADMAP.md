@@ -76,6 +76,9 @@ These decisions were made during ideation and refined during implementation:
 65. **Agent CRUD with Sheet:** Agent create/edit uses Sheet (slide-in panel) instead of Dialog or separate page. Keeps list visible while editing. Uses Inertia `<Form>` with wayfinder routes.
 66. **Scoped route binding for agents:** Routes use `->scopeBindings()` to let Laravel scope `{agent}` to `{project}` via the `agents()` relationship. Eliminates manual `abort_unless($agent->project_id === $project->id, 404)` checks.
 67. **Reset agent from .md:** Default agents can reset name + instructions from `resources/instructions/{type}.md`. Name extracted from first line (`# Name`). Custom agents cannot be reset (403).
+68. **`is_in_progress` flag on task_statuses:** Same pattern as `is_default` and `is_closed`. `StartTaskConversation` moves task to in-progress status automatically. No hardcoded slugs.
+69. **`StartTaskConversation` as Service:** Renamed from Action to Service (`App\Services`). Orchestrates: create conversation, update task status, create hidden message, dispatch agent job. Follows project convention (Services orchestrate, Actions are single-responsibility).
+70. **Kanban column scroll:** Column uses `h-full` + droppable area uses `overflow-y-auto`. Prevents infinite column growth when many tasks exist.
 
 ---
 
@@ -213,7 +216,7 @@ These decisions were made during ideation and refined during implementation:
 - [ ] Token streaming (SSE or WebSocket, resolves Pusher payload too large)
 - [ ] Tool call optimization (batch inserts, reduce AI round-trips)
 - [ ] Chat messages top-to-bottom (replace `flex-col-reverse` — aligns with streaming)
-- [ ] Start Task → mark as "In Progress" automatically
+- [x] Start Task → mark as "In Progress" automatically (`is_in_progress` flag on `task_statuses`)
 - [ ] Task filtering (status, priority, phase, search)
 - [ ] Agent card design improvements
 - [ ] AI SDK Elements (Vercel) for chat UI polish
@@ -292,7 +295,7 @@ These decisions were made during ideation and refined during implementation:
 - **Tool call round-trips:** PM creating 16 tasks = 16 AI round-trips (~120s). Fix: batch optimization (Phase 4).
 - **Chat scroll direction:** `flex-col-reverse` starts messages at bottom. Fix: top-to-bottom with streaming (Phase 4).
 
-**Total: 426 tests, all passing.**
+**Total: 427 tests, all passing.**
 
 ---
 
