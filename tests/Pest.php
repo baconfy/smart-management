@@ -45,3 +45,22 @@ function something()
 {
     // ..
 }
+
+/**
+ * Stream a StreamedResponse and capture its output.
+ */
+function streamResponse(\Illuminate\Testing\TestResponse $response): string
+{
+    $captured = '';
+
+    ob_start(function (string $buffer) use (&$captured): string {
+        $captured .= $buffer;
+
+        return '';
+    });
+
+    $response->baseResponse->sendContent();
+    ob_end_clean();
+
+    return $captured;
+}

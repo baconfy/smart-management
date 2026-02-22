@@ -21,6 +21,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('p/{project}/c', Project\Conversation\SendMessageController::class)->name('projects.conversations.send');
     Route::post('p/{project}/c/{conversation}/s', Project\Conversation\SelectAgentsController::class)->name('projects.conversations.select-agents')->scopeBindings();
     Route::get('p/{project}/c/{conversation}/m', Project\Conversation\MessagesController::class)->name('projects.conversations.messages')->scopeBindings();
+    Route::post('p/{project}/c/stream', Project\Conversation\StreamController::class)->name('projects.conversations.stream');
+    Route::post('p/{project}/c/{conversation}/stream', Project\Conversation\StreamController::class)->name('projects.conversations.stream-continue')->scopeBindings();
+    Route::post('p/{project}/c/{conversation}/stream-agents', Project\Conversation\StreamAgentsController::class)->name('projects.conversations.stream-agents')->scopeBindings();
 
     /**
      * Decisions
@@ -40,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('p/{project}/t/{task}', Project\Task\UpdateController::class)->name('projects.tasks.update')->scopeBindings();
     Route::post('p/{project}/t/{task}/c', Project\Task\SendMessageController::class)->name('projects.tasks.send')->scopeBindings();
     Route::post('p/{project}/t/{task}/s', Project\Task\StartController::class)->name('projects.tasks.start')->scopeBindings();
+    Route::post('p/{project}/t/{task}/stream', Project\Task\StreamController::class)->name('projects.tasks.stream')->scopeBindings();
 
     /**
      * Settings

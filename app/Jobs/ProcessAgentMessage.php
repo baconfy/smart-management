@@ -48,7 +48,7 @@ class ProcessAgentMessage implements ShouldQueue
                 'id' => (string) Str::ulid(),
                 'user_id' => $this->conversation->user_id,
                 'project_agent_id' => $this->projectAgent->id,
-                'agent' => $agent::class,
+                'agent' => $this->projectAgent->name,
                 'role' => 'assistant',
                 'content' => $response->text,
             ]);
