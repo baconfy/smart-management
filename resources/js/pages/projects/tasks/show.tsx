@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { FileText } from 'lucide-react';
+import { FileText, PlayIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import type { ProcessingAgent } from '@/components/chat';
@@ -41,7 +41,7 @@ function TaskEmpty({ project, task, subtasks, implementationNotes }: { project: 
                 <TaskDetails task={task} subtasks={subtasks} implementationNotes={implementationNotes} />
 
                 <Button onClick={handleStart} disabled={starting} size="lg" className="self-start">
-                    {starting ? 'Starting...' : 'Start Task'}
+                    <PlayIcon /> {starting ? 'Starting...' : 'Start Task'}
                 </Button>
             </div>
         </AppLayout>
