@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-20 (Steps 1-15 complete, 395 tests)
+> **Last updated:** 2026-02-22 (Steps 1-16 complete, 410 tests)
 
 ---
 
@@ -65,6 +65,13 @@ These decisions were made during ideation and refined during implementation:
 54. **Custom task statuses replace enum:** `TaskStatus` PHP enum replaced by `task_statuses` database table with `project_id` FK. Each project has customizable statuses. Default 3: To Do, In Progress, Done. Columns: `name`, `slug`, `color`, `position`, `is_default`, `is_closed`. AI tools use slug-based status with dynamic schema describing available options. FK on tasks uses `restrictOnDelete` (must move tasks before deleting a status). `SeedProjectStatuses` action runs during project creation.
 55. **AI priority validation with tryFrom:** AI models may send invalid priority values (e.g. `"critical"`). Tools validate with `TaskPriority::tryFrom()` — invalid values are silently discarded instead of crashing with `ValueError`.
 56. **Kanban-only task view:** Task list view removed. Tasks displayed exclusively as kanban board with drag-and-drop via `@dnd-kit`. `pointerWithin` collision detection for accurate column targeting. `PointerSensor` with `distance: 8` distinguishes click (navigate) from drag.
+57. **Unified chat page:** Single Inertia page handles both empty state (centered input) and active conversation (messages + input at bottom). Nullable `$conversation` parameter. CSS transitions animate between states.
+58. **JSON chat responses:** `SendMessageController` returns `{ conversation_id }` JSON instead of redirect. Frontend uses axios POST with optimistic UI. Enables SPA-like experience without full page reloads.
+59. **Hidden messages via meta:** Auto-generated prompts (e.g. task start) stored with `meta->hidden = true`. Backend filters with `whereNull('meta->hidden')`. AI retains context, user doesn't see system prompts.
+60. **Invokable controller pattern:** Domain-driven folder structure (`Project/Conversation/`, `Project/Task/`). Each controller is single-action invokable (`__invoke`). Replaces multi-method controllers.
+61. **initialProcessingAgents prop:** Backend detects conversation with no assistant response yet, passes processing agents to frontend. Solves race condition where Echo event fires before frontend connects.
+62. **CSS animation for chat transition:** Flex spacers + `transition-[flex]` animate input from center to bottom. Title fades via `max-h-0 opacity-0`. No JavaScript animation library needed.
+63. **TaskDetails in floating Dialog:** When task has conversation, details shown in Dialog triggered by floating button (bottom-right). Keeps chat as primary UI, details accessible on demand.
 
 ---
 
@@ -146,16 +153,35 @@ These decisions were made during ideation and refined during implementation:
 - [x] Optimistic UI — state updates instantly, PATCH persists via `router.patch` + `back()`
 - [x] Empty state with CTA to start conversation with PM agent
 
-### 3.4 Task Detail & Technical Chat (TODO)
-- [ ] Task detail view redesign (show with status relationship)
-- [ ] Dedicated technical chat per task
-- [ ] Implementation Notes generated from task conversations
+### 3.4 Task Detail & Technical Chat ✅
+- [x] Task show page — two states: TaskDetails (no conversation) vs Chat (with conversation)
+- [x] `StartTaskConversation` action — creates hidden user message with task context + dispatches Technical agent
+- [x] `Task/SendMessageController` — JSON response (replaces redirect-based ChatController)
+- [x] `ChatProvider` reused across Conversation and Task pages
+- [x] `defaultSelectedAgentIds` — Technical agent pre-selected on task chat
+- [x] `initialProcessingAgents` — typing indicator on task start (before Echo connects)
+- [x] Hidden messages — `meta->hidden` on auto-generated prompt, filtered in backend query
+- [x] Orphan assistant turns — `groupIntoTurns` handles responses without visible user message
+- [x] Standalone processing indicator — shows agent typing when no turns exist yet
+- [x] Floating TaskDetails button — Dialog overlay with task info, subtasks, implementation notes
+- [x] Action plan prompt — Technical agent responds with step-by-step plan, decisions, risks, subtasks
+- [x] Language matching — agent responds in same language as task title/description
 
-### 3.5 Task Filtering (TODO)
+### 3.5 Unified Chat System ✅
+- [x] Invokable controllers — `Conversation/IndexController` (unified index+show), `Conversation/SendMessageController` (JSON)
+- [x] Nullable conversation — single page handles empty state and active conversation
+- [x] Optimistic UI — user message added immediately, removed on error
+- [x] Dynamic Echo — connects/disconnects based on conversationId
+- [x] URL update — `history.replaceState` after first message creates conversation
+- [x] CSS animation — input descends from center to bottom, title fades out, spacers collapse
+- [x] Scrollable sidebar — conversations list with overflow, "New Conversation" button at bottom
+- [x] `jsonb` meta column — migration updated from `text` to `jsonb` for PostgreSQL JSON queries
+
+### 3.6 Task Filtering (TODO)
 - [ ] Filter by status, priority, phase
 - [ ] Search tasks
 
-### Milestone (partial): Kanban board working with drag-and-drop. Tasks created by PM agent, status tracked visually. Detail view and technical chat pending.
+### Milestone (Phase 3): ✅ Kanban board with drag-and-drop. Task detail with dedicated Technical chat. Unified chat system with CSS animations, optimistic UI, and real-time updates. Auto-start creates action plan. Artifacts viewed in dedicated pages.
 
 ---
 
@@ -168,6 +194,9 @@ These decisions were made during ideation and refined during implementation:
 - [ ] React Compiler crash investigation (ConversationShow `useMemoCache` error)
 - [ ] Token streaming (SSE or WebSocket, resolves Pusher payload too large)
 - [ ] Tool call optimization (batch inserts, reduce AI round-trips)
+- [ ] Chat messages top-to-bottom (replace `flex-col-reverse` — aligns with streaming)
+- [ ] Start Task → mark as "In Progress" automatically
+- [ ] Task filtering (status, priority, phase, search)
 
 ---
 
@@ -210,12 +239,27 @@ These decisions were made during ideation and refined during implementation:
 | Kanban frontend (`@dnd-kit` DndContext + KanbanColumn + KanbanCard) | — |
 | `TaskStatus` enum removed | — |
 
+### Unified Chat + Task Chat (Step 16) ✅
+
+| What | Tests |
+|------|-------|
+| `Conversation/IndexController` unified (index+show, nullable conversation) | updated |
+| `Conversation/SendMessageController` (JSON response) | updated |
+| `Task/SendMessageController` (JSON response, replaces ChatController) | updated |
+| `StartTaskConversation` — hidden user message + action plan prompt | 1 |
+| `ChatProvider` — `defaultSelectedAgentIds`, `initialProcessingAgents` | — |
+| `ChatMessages` — orphan turns, standalone processing indicator | — |
+| Unified conversation page — CSS animation, optimistic UI, dynamic Echo | — |
+| Task show page — TaskEmpty vs TaskChat, floating Dialog | — |
+| `meta` column migration `text` → `jsonb` | — |
+
 ### Known Issues (deferred)
 - **Pusher payload too large:** Long AI responses exceed Pusher's 10KB limit. Fix: token streaming (Phase 4).
 - **React Compiler crash:** `useMemoCache` null error in ConversationShow. Fix: investigate in Phase 4.
 - **Tool call round-trips:** PM creating 16 tasks = 16 AI round-trips (~120s). Fix: batch optimization (Phase 4).
+- **Chat scroll direction:** `flex-col-reverse` starts messages at bottom. Fix: top-to-bottom with streaming (Phase 4).
 
-**Total: 395 tests, all passing.**
+**Total: 410 tests, all passing.**
 
 ---
 

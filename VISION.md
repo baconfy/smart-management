@@ -273,10 +273,13 @@ Moderator     → All (read-only)             → Delegates to appropriate agent
 5. Can browse artifacts (decisions, rules) as reference
 
 ### Task Detail View
-- Task metadata: title, status, priority, estimate, phase
-- Implementation Notes (accumulated from past chats)
-- Dedicated chat (Technical agent, scoped to this task)
-- The chat here is **on-demand** — not every task needs a conversation
+- **No conversation:** Shows TaskDetails (metadata, subtasks, implementation notes) + "Start Task" button
+- **With conversation:** Chat is primary UI. TaskDetails accessible via floating button → Dialog overlay
+- `StartTaskConversation` creates hidden user message with task context, dispatches Technical agent with action plan prompt
+- Technical agent pre-selected in chat input (`defaultSelectedAgentIds`)
+- Typing indicator shown immediately via `initialProcessingAgents` (before Echo connects)
+- Hidden messages (`meta->hidden`) keep AI context without cluttering user chat
+- Agent responds in same language as task title/description
 
 ### Layout Strategy
 
