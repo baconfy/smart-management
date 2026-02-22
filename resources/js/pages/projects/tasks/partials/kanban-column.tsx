@@ -2,7 +2,6 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { Task, TaskStatus } from '@/types';
 import { KanbanCard } from './kanban-card';
-import { Badge } from '@/components/ui/badge';
 
 type Props = {
     status: TaskStatus;
