@@ -16,7 +16,7 @@ class ProjectAgent extends Model
     use HasFactory, SoftDeletes;
 
     /**
-     * Define the attributes that should be type casted.
+     * Define the attributes that should be type cast.
      */
     protected function casts(): array
     {

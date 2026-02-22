@@ -14,6 +14,10 @@ readonly class CreateProjectAgent
      */
     public function __invoke(Project $project, array $data): ProjectAgent
     {
-        return $project->agents()->create($data);
+        return $project->agents()->create([
+            'is_default' => $data['is_default'] ?? false,
+            'type' => $data['type'] ?? 'custom',
+            ...$data,
+        ]);
     }
 }
