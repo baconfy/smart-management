@@ -33,13 +33,12 @@ readonly class UpdateTask implements Tool
     public function handle(Request $request): Stringable|string
     {
         $task = $this->project->tasks()->find($request['task_id']);
-
         if (! $task) {
             return 'Task not found in this project.';
         }
 
-        if (isset($data['priority']) && ! TaskPriority::tryFrom($data['priority'])) {
-            unset($data['priority']);
+        if (isset($request['priority']) && ! TaskPriority::tryFrom($request['priority'])) {
+            unset($request['priority']);
         }
 
         $data = array_filter([
