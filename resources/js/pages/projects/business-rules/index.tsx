@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpenIcon, GavelIcon, MessageCircleMore } from 'lucide-react';
+import { BookOpenIcon, MessageCircleMore } from 'lucide-react';
 import { ProjectNavPanel } from '@/components/navigation/project-nav-panel';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ export default function BusinessRulesIndex({ project, businessRules }: { project
                         <EmptyDescription>Chat with the Analyst agent to create new rules.</EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent className="flex-row justify-center gap-2">
-                        <Button size="lg" render={<Link href={conversations(project.ulid)} />}>
+                        <Button size="lg" render={<Link href={conversations({ project: project.ulid })} />}>
                             <MessageCircleMore /> Start a conversation
                         </Button>
                     </EmptyContent>
@@ -41,7 +41,7 @@ export default function BusinessRulesIndex({ project, businessRules }: { project
                     {businessRules.map((rule) => (
                         <AccordionItem key={rule.id} value={String(rule.id)}>
                             <AccordionTrigger className="flex items-center gap-2">
-                                <div className="font-bold text-base">{rule.title}</div>
+                                <div className="text-base font-bold">{rule.title}</div>
                                 <Badge variant="secondary">{rule.category}</Badge>
                             </AccordionTrigger>
                             <AccordionContent className="p-2 pb-6 font-mono text-muted-foreground">{rule.description}</AccordionContent>

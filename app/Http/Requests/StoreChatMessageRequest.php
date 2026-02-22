@@ -16,7 +16,7 @@ class StoreChatMessageRequest extends FormRequest
         $project = $this->route('project');
 
         return [
-            'message' => ['required', 'string', 'max:10000'],
+            'message' => ['required', 'string'],
             'agent_ids' => ['sometimes', 'array'],
             'agent_ids.*' => ['sometimes', "exists:project_agents,id,project_id,{$project->id}"],
             'conversation_id' => ['nullable', 'string', 'exists:agent_conversations,id'],
