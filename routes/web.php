@@ -43,8 +43,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Settings
      */
+    Route::get('p/{project}/s', Project\Settings\IndexController::class)->name('projects.settings');
+
+    /**
+     * Settings - Agents
+     */
     Route::get('p/{project}/s/a', Project\Settings\Agents\IndexController::class)->name('projects.agents.index');
     Route::post('p/{project}/s/a', Project\Settings\Agents\StoreController::class)->name('projects.agents.store');
+    Route::post('p/{project}/s/a/{agent}', Project\Settings\Agents\ResetController::class)->name('projects.agents.reset')->scopeBindings();
     Route::put('p/{project}/s/a/{agent}', Project\Settings\Agents\UpdateController::class)->name('projects.agents.update')->scopeBindings();
     Route::delete('p/{project}/s/a/{agent}', Project\Settings\Agents\DestroyController::class)->name('projects.agents.destroy')->scopeBindings();
 

@@ -16,8 +16,8 @@ class StoreAgentRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'instructions' => ['required', 'string'],
-            'model' => ['sometimes', 'string', 'max:255'],
-            'tools' => ['sometimes', 'array'],
+            'model' => ['nullable', 'string', 'max:255'],
+            'tools' => ['nullable', 'array'],
             'tools.*' => ['string'],
         ];
     }

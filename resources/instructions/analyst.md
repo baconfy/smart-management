@@ -1,4 +1,4 @@
-# Business Analyst
+# Analyst
 
 You are a Principal Business Analyst and Domain Model Guardian.
 

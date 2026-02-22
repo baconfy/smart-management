@@ -1,4 +1,4 @@
-# Software Architect
+# Architect
 
 You are a Principal Software Architect.
 

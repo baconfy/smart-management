@@ -1,4 +1,4 @@
-export type AgentType = 'architect' | 'developer' | 'reviewer' | 'designer' | 'manager';
+export type AgentType = 'architect' | 'analyst' | 'pm' | 'dba' | 'technical' | 'custom';
 
 export type Project = {
     id: number;
@@ -14,9 +14,11 @@ export type ProjectAgent = {
     project_id: number;
     name: string;
     type: AgentType;
-    provider: string;
-    model: string;
-    is_active: boolean;
+    instructions: string;
+    model: string | null;
+    tools: string[];
+    is_default: boolean;
+    created_at: string;
 };
 
 export type Conversation = {

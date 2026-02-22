@@ -3,6 +3,7 @@ import { BookOpen, ChevronsLeft, Gavel, ListTodo, MessageSquare, Settings } from
 import React from 'react';
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { settings } from '@/routes/projects';
 import { index as businessRules } from '@/routes/projects/business-rules';
 import { index as conversations } from '@/routes/projects/conversations';
 import { index as decisions } from '@/routes/projects/decisions';
@@ -24,7 +25,7 @@ export function ProjectNavPanel({ project }: { project: Project }) {
         { title: 'Tasks', icon: ListTodo, href: tasks(project.ulid).url, enabled: true },
         { title: 'Decisions', icon: Gavel, href: decisions(project.ulid).url, enabled: true },
         { title: 'Business Rules', icon: BookOpen, href: businessRules(project.ulid).url, enabled: true },
-        { title: 'Settings', icon: Settings, href: `/projects/${project.ulid}/settings`, enabled: false },
+        { title: 'Settings', icon: Settings, href: settings(project.ulid).url, enabled: true },
     ];
 
     return (
