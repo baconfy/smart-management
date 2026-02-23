@@ -27,8 +27,9 @@ readonly class MultiAgentStreamService
      * within a cooperative loop. Yields SSE event arrays.
      *
      * @param  Collection<int, ProjectAgent>  $agents
+     * @param  array<int, mixed>  $attachments
      */
-    public function stream(Collection $agents, Conversation $conversation, string $message): Generator
+    public function stream(Collection $agents, Conversation $conversation, string $message, array $attachments = []): Generator
     {
         // Send agent_start for all agents upfront
         foreach ($agents as $agent) {
@@ -45,7 +46,7 @@ readonly class MultiAgentStreamService
                 $genericAgent = GenericAgent::make(projectAgent: $agent);
                 $genericAgent->withConversationHistory($conversation->id);
 
-                $streamable = $genericAgent->stream($message, model: $agent->model);
+                $streamable = $genericAgent->stream($message, attachments: $attachments, model: $agent->model);
                 $iterator = $streamable->getIterator();
                 $iterator->rewind();
 

@@ -8,8 +8,10 @@ use App\Enums\AgentType;
 use App\Models\Conversation;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 // ============================================================================
@@ -325,6 +327,100 @@ test('stream routes via moderator when no agent_ids', function (): void {
     expect($content)->toContain('"type":"agent_done"');
     expect($content)->toContain('"type":"done"');
 });
+
+// ============================================================================
+// Attachments
+// ============================================================================
+
+test('stream stores attachments with user message', function (): void {
+    GenericAgent::fake(['Response']);
+    Queue::fake();
+    Storage::fake('public');
+
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+    $agent = $project->agents()->create([
+        'type' => AgentType::Architect->value,
+        'name' => 'Architect',
+        'instructions' => 'You are an architect.',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->post(route('projects.conversations.stream', $project), [
+            'message' => 'Check this file',
+            'agent_ids' => [$agent->id],
+            'attachments' => [
+                UploadedFile::fake()->create('document.pdf', 100, 'application/pdf'),
+            ],
+        ]);
+
+    streamResponse($response);
+
+    $conversation = Conversation::where('project_id', $project->id)->first();
+    $userMessage = DB::table('agent_conversation_messages')
+        ->where('conversation_id', $conversation->id)
+        ->where('role', 'user')
+        ->first();
+
+    $attachments = json_decode($userMessage->attachments, true);
+
+    expect($attachments)->toHaveCount(1)
+        ->and($attachments[0]['filename'])->toBe('document.pdf')
+        ->and($attachments[0]['mediaType'])->toBe('application/pdf');
+});
+
+test('stream rejects files exceeding max size', function (): void {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+
+    $this->actingAs($user)
+        ->postJson(route('projects.conversations.stream', $project), [
+            'message' => 'Hello',
+            'attachments' => [
+                UploadedFile::fake()->create('huge.pdf', 11000), // 11MB
+            ],
+        ])
+        ->assertJsonValidationErrors('attachments.0');
+});
+
+test('stream rejects invalid file types', function (): void {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+
+    $this->actingAs($user)
+        ->postJson(route('projects.conversations.stream', $project), [
+            'message' => 'Hello',
+            'attachments' => [
+                UploadedFile::fake()->create('malware.exe', 100),
+            ],
+        ])
+        ->assertJsonValidationErrors('attachments.0');
+});
+
+test('stream rejects more than 10 attachments', function (): void {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+
+    $files = array_map(
+        fn ($i) => UploadedFile::fake()->create("file{$i}.txt", 1, 'text/plain'),
+        range(1, 11),
+    );
+
+    $this->actingAs($user)
+        ->postJson(route('projects.conversations.stream', $project), [
+            'message' => 'Hello',
+            'attachments' => $files,
+        ])
+        ->assertJsonValidationErrors('attachments');
+});
+
+// ============================================================================
+// Moderator Routing
+// ============================================================================
 
 test('stream sends routing_poll on low moderator confidence', function (): void {
     ModeratorAgent::fake([

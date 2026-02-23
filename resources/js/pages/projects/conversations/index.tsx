@@ -29,6 +29,7 @@ function toInitialMessages(input: CursorPaginated<ConversationMessage> | Convers
         content: m.content,
         agentId: m.project_agent_id ?? undefined,
         agentName: m.agent ?? undefined,
+        attachments: m.attachments?.length ? m.attachments : undefined,
     }));
 }
 

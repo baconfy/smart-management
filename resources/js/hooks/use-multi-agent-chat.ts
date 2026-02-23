@@ -1,10 +1,11 @@
+import type { FileUIPart } from 'ai';
 import { useCallback, useRef, useState } from 'react';
 
 import { parseSseStream } from '@/lib/sse-parser';
 import type { SseEvent } from '@/lib/sse-parser';
-import type { AgentStream, ChatMessage, ChatStatus, RoutingPoll } from '@/types/chat';
 import { stream as conversationStream, streamAgents, streamContinue } from '@/routes/projects/conversations';
 import { stream as taskStream } from '@/routes/projects/tasks';
+import type { AgentStream, ChatAttachment, ChatMessage, ChatStatus, RoutingPoll } from '@/types/chat';
 
 export interface UseMultiAgentChatOptions {
     initialMessages?: ChatMessage[];
@@ -21,7 +22,7 @@ export interface UseMultiAgentChatReturn {
     status: ChatStatus;
     routingPoll: RoutingPoll | null;
     conversationId: string | null;
-    send: (content: string, agentIds?: number[]) => void;
+    send: (content: string, agentIds?: number[], files?: FileUIPart[]) => void;
     selectAgents: (agentIds: number[]) => void;
     abort: () => void;
     error: string | null;
@@ -191,12 +192,18 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
     );
 
     const send = useCallback(
-        (content: string, agentIds?: number[]) => {
+        (content: string, agentIds?: number[], files?: FileUIPart[]) => {
             const tempId = `temp-${Date.now()}`;
+
+            // Build optimistic attachments for the user message
+            const optimisticAttachments: ChatAttachment[] | undefined =
+                files && files.length > 0
+                    ? files.map((f) => ({ filename: f.filename ?? 'file', url: f.url, mediaType: f.mediaType ?? 'application/octet-stream' }))
+                    : undefined;
 
             setError(null);
             setRoutingPoll(null);
-            setMessages((prev) => [...prev, { id: tempId, role: 'user', content }]);
+            setMessages((prev) => [...prev, { id: tempId, role: 'user', content, attachments: optimisticAttachments }]);
             setStatus('routing');
 
             const controller = new AbortController();
@@ -214,19 +221,55 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                 url = conversationStream.url(options.projectUlid);
             }
 
-            fetch(url, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
+            // Build request body: use FormData when files are present, JSON otherwise
+            let headers: Record<string, string>;
+            let body: FormData | string;
+
+            if (files && files.length > 0) {
+                const formData = new FormData();
+                formData.append('message', content);
+
+                if (resolvedAgentIds && resolvedAgentIds.length > 0) {
+                    resolvedAgentIds.forEach((id) => formData.append('agent_ids[]', String(id)));
+                }
+
+                files.forEach((file) => {
+                    // Convert data URL to Blob
+                    const byteString = atob(file.url.split(',')[1]);
+                    const mimeType = file.mediaType ?? 'application/octet-stream';
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
+                    }
+                    const blob = new Blob([ab], { type: mimeType });
+                    formData.append('attachments[]', blob, file.filename ?? 'file');
+                });
+
+                headers = {
+                    Accept: 'text/event-stream',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                };
+                body = formData;
+            } else {
+                headers = {
                     'Content-Type': 'application/json',
                     Accept: 'text/event-stream',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-XSRF-TOKEN': getXsrfToken(),
-                },
-                body: JSON.stringify({
+                };
+                body = JSON.stringify({
                     message: content,
                     ...(resolvedAgentIds && resolvedAgentIds.length > 0 ? { agent_ids: resolvedAgentIds } : {}),
-                }),
+                });
+            }
+
+            fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers,
+                body,
                 signal: controller.signal,
             })
                 .then((response) => {

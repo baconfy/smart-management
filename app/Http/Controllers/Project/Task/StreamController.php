@@ -12,6 +12,8 @@ use App\Http\Responses\SseStream;
 use App\Models\Project;
 use App\Models\Task;
 use App\Services\MultiAgentStreamService;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -38,12 +40,42 @@ class StreamController extends Controller
         $message = $request->validated('message');
         $user = $request->user();
 
+        // Store uploaded files and prepare AI attachments
+        /** @var UploadedFile[] $uploadedFiles */
+        $uploadedFiles = $request->file('attachments', []);
+        $storedAttachments = [];
+        $aiAttachments = [];
+
+        foreach ($uploadedFiles as $file) {
+            $path = $file->store("conversations/{$conversation->id}", 'public');
+            $storedAttachments[] = [
+                'filename' => $file->getClientOriginalName(),
+                'url' => Storage::disk('public')->url($path),
+                'mediaType' => $file->getMimeType(),
+                'path' => $path,
+            ];
+
+            $mime = $file->getMimeType() ?? '';
+
+            if (str_starts_with($mime, 'image/') || $mime === 'application/pdf') {
+                $aiAttachments[] = $file;
+            } else {
+                // Inline text-based files into the message for the AI
+                $content = file_get_contents($file->getRealPath());
+                if ($content !== false) {
+                    $name = $file->getClientOriginalName();
+                    $message .= "\n\n---\n**File: {$name}**\n```\n{$content}\n```";
+                }
+            }
+        }
+
         // Save user message
         $createConversationMessage($conversation, [
             'id' => (string) Str::ulid(),
             'user_id' => $user->id,
             'role' => 'user',
-            'content' => $message,
+            'content' => $request->validated('message'),
+            ...($storedAttachments ? ['attachments' => $storedAttachments] : []),
         ]);
 
         // Pre-select Technical agent (or use provided agent_ids)
@@ -57,7 +89,7 @@ class StreamController extends Controller
         }
 
         return (new SseStream)
-            ->through(function () use ($agents, $conversation, $message, $streamService): \Generator {
+            ->through(function () use ($agents, $conversation, $message, $streamService, $aiAttachments): \Generator {
                 yield ['type' => 'conversation', 'id' => $conversation->id, 'isNew' => false];
 
                 if ($agents->isEmpty()) {
@@ -76,7 +108,7 @@ class StreamController extends Controller
                     'reasoning' => 'Technical agent selected for task.',
                 ];
 
-                yield from $streamService->stream($agents, $conversation, $message);
+                yield from $streamService->stream($agents, $conversation, $message, $aiAttachments);
             })
             ->toResponse();
     }

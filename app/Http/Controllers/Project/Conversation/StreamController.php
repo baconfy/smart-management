@@ -13,7 +13,9 @@ use App\Http\Responses\SseStream;
 use App\Models\Conversation;
 use App\Models\Project;
 use App\Services\MultiAgentStreamService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
@@ -47,16 +49,46 @@ class StreamController extends Controller
             ]);
         }
 
+        // Store uploaded files and prepare AI attachments
+        /** @var UploadedFile[] $uploadedFiles */
+        $uploadedFiles = $request->file('attachments', []);
+        $storedAttachments = [];
+        $aiAttachments = [];
+
+        foreach ($uploadedFiles as $file) {
+            $path = $file->store("conversations/{$conversation->id}", 'public');
+            $storedAttachments[] = [
+                'filename' => $file->getClientOriginalName(),
+                'url' => Storage::disk('public')->url($path),
+                'mediaType' => $file->getMimeType(),
+                'path' => $path,
+            ];
+
+            $mime = $file->getMimeType() ?? '';
+
+            if (str_starts_with($mime, 'image/') || $mime === 'application/pdf') {
+                $aiAttachments[] = $file;
+            } else {
+                // Inline text-based files into the message for the AI
+                $content = file_get_contents($file->getRealPath());
+                if ($content !== false) {
+                    $name = $file->getClientOriginalName();
+                    $message .= "\n\n---\n**File: {$name}**\n```\n{$content}\n```";
+                }
+            }
+        }
+
         // Save user message
         $createConversationMessage($conversation, [
             'id' => (string) Str::ulid(),
             'user_id' => $user->id,
             'role' => 'user',
-            'content' => $message,
+            'content' => $request->validated('message'),
+            ...($storedAttachments ? ['attachments' => $storedAttachments] : []),
         ]);
 
         return (new SseStream)
-            ->through(function () use ($project, $conversation, $message, $agentIds, $isNew, $streamService): \Generator {
+            ->through(function () use ($project, $conversation, $message, $agentIds, $isNew, $streamService, $aiAttachments): \Generator {
                 // 1. Conversation event
                 yield ['type' => 'conversation', 'id' => $conversation->id, 'isNew' => $isNew];
 
@@ -128,7 +160,7 @@ class StreamController extends Controller
                 }
 
                 // 3. Stream agent responses
-                yield from $streamService->stream($agents, $conversation, $message);
+                yield from $streamService->stream($agents, $conversation, $message, $aiAttachments);
             })
             ->toResponse();
     }

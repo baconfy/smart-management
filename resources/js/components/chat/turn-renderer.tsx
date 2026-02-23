@@ -1,3 +1,4 @@
+import { Attachment, AttachmentPreview, Attachments } from '@/components/ai-elements/attachments';
 import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
 import type { Turn } from '@/lib/chat-utils';
 
@@ -6,7 +7,18 @@ export function TurnRenderer({ turn }: { turn: Turn }) {
         <div className="space-y-4">
             {turn.userMessage && (
                 <Message from="user">
-                    <MessageContent>{turn.userMessage.content}</MessageContent>
+                    <MessageContent>
+                        {turn.userMessage.content}
+                        {turn.userMessage.attachments && turn.userMessage.attachments.length > 0 && (
+                            <Attachments variant="grid" className="mt-2 ml-0">
+                                {turn.userMessage.attachments.map((att, i) => (
+                                    <Attachment key={i} data={{ id: String(i), type: 'file', url: att.url, filename: att.filename, mediaType: att.mediaType }}>
+                                        <AttachmentPreview />
+                                    </Attachment>
+                                ))}
+                            </Attachments>
+                        )}
+                    </MessageContent>
                 </Message>
             )}
 

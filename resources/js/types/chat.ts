@@ -1,3 +1,9 @@
+export interface ChatAttachment {
+    filename: string;
+    url: string;
+    mediaType: string;
+}
+
 export interface ChatMessage {
     id: number | string;
     role: 'user' | 'assistant';
@@ -6,6 +12,7 @@ export interface ChatMessage {
     agentName?: string;
     agentType?: string;
     meta?: Record<string, unknown>;
+    attachments?: ChatAttachment[];
 }
 
 export interface AgentStream {

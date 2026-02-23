@@ -19,6 +19,8 @@ class StreamChatMessageRequest extends FormRequest
             'message' => ['required', 'string', 'max:10000'],
             'agent_ids' => ['sometimes', 'array'],
             'agent_ids.*' => ['sometimes', 'integer', "exists:project_agents,id,project_id,{$project->id}"],
+            'attachments' => ['sometimes', 'array', 'max:10'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,svg,pdf,txt,md,csv,doc,docx,xls,xlsx,json,xml,yaml,yml'],
         ];
     }
 }

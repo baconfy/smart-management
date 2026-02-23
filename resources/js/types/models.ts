@@ -59,6 +59,7 @@ export type ConversationMessage = {
     agent: string;
     role: 'user' | 'assistant';
     content: string;
+    attachments?: { filename: string; url: string; mediaType: string }[];
     created_at: string;
 };
 

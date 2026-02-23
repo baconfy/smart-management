@@ -17,8 +17,8 @@ import { dashboard } from '@/routes';
 import { show } from '@/routes/projects';
 import { index as tasksIndex, start } from '@/routes/projects/tasks';
 import type { BreadcrumbItem, CursorPaginated } from '@/types';
-import type { Conversation as ConversationType, ConversationMessage, ImplementationNote, Project, ProjectAgent, Task } from '@/types/models';
 import type { ChatMessage } from '@/types/chat';
+import type { Conversation as ConversationType, ConversationMessage, ImplementationNote, Project, ProjectAgent, Task } from '@/types/models';
 
 function TaskBreadcrumbs(project: Project, task: Task): BreadcrumbItem[] {
     return [
@@ -37,6 +37,7 @@ function toInitialMessages(input: CursorPaginated<ConversationMessage> | Convers
         content: m.content,
         agentId: m.project_agent_id ?? undefined,
         agentName: m.agent ?? undefined,
+        attachments: m.attachments?.length ? m.attachments : undefined,
     }));
 }
 
