@@ -9,11 +9,11 @@ import { cn } from '@/lib/utils';
 
 export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
-export const Conversation = ({ className, ...props }: ConversationProps) => <StickToBottom className={cn('relative no-scrollbar flex-1 overflow-y-hidden', className)} initial="smooth" resize="smooth" role="log" {...props} />;
+export const Conversation = ({ className, ...props }: ConversationProps) => <StickToBottom className={cn('relative pill-scrollbar flex-1 overflow-y-auto', className)} initial="smooth" resize="smooth" role="log" {...props} />;
 
 export type ConversationContentProps = ComponentProps<typeof StickToBottom.Content>;
 
-export const ConversationContent = ({ className, ...props }: ConversationContentProps) => <StickToBottom.Content className={cn('no-scrollbar flex flex-col gap-8 p-4', className)} {...props} />;
+export const ConversationContent = ({ className, ...props }: ConversationContentProps) => <StickToBottom.Content className={cn('pill-scrollbar flex flex-col gap-8 p-4', className)} {...props} />;
 
 export type ConversationEmptyStateProps = ComponentProps<'div'> & { title?: string; description?: string; icon?: React.ReactNode };
 
