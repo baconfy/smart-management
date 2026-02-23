@@ -1,8 +1,20 @@
+import { useState } from 'react';
+
 import { Attachment, AttachmentPreview, Attachments } from '@/components/ai-elements/attachments';
 import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
 import type { Turn } from '@/lib/chat-utils';
+import { AgentTabSelector } from './agent-tab-selector';
 
-export function TurnRenderer({ turn }: { turn: Turn }) {
+interface TurnRendererProps {
+    turn: Turn;
+    initialActiveIndex?: number;
+}
+
+export function TurnRenderer({ turn, initialActiveIndex = 0 }: TurnRendererProps) {
+    const [activeIndex, setActiveIndex] = useState(initialActiveIndex);
+    const isMultiAgent = turn.agentMessages.length > 1;
+    const activeMessage = turn.agentMessages[activeIndex] ?? turn.agentMessages[0];
+
     return (
         <div className="space-y-4">
             {turn.userMessage && (
@@ -22,14 +34,27 @@ export function TurnRenderer({ turn }: { turn: Turn }) {
                 </Message>
             )}
 
-            {turn.agentMessages.map((msg) => (
-                <Message key={msg.id} from="assistant" className="max-w-3xl">
+            {turn.agentMessages.length > 0 && (
+                <Message from="assistant">
                     <MessageContent>
-                        {msg.agentName && <span className="text-sm font-medium tracking-tight text-primary">{msg.agentName}</span>}
-                        <MessageResponse>{msg.content}</MessageResponse>
+                        {isMultiAgent ? (
+                            <>
+                                <AgentTabSelector agents={turn.agentMessages.map((msg) => ({ agentId: msg.agentId ?? 0, name: msg.agentName ?? 'Agent', type: msg.agentType ?? 'custom' }))} activeIndex={activeIndex} onSelect={setActiveIndex} />
+                                {activeMessage && (
+                                    <div id={`agent-panel-${activeMessage.agentId}`} role="tabpanel">
+                                        <MessageResponse>{activeMessage.content}</MessageResponse>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {turn.agentMessages[0].agentName && <span className="text-sm font-medium tracking-tight text-primary">{turn.agentMessages[0].agentName}</span>}
+                                <MessageResponse>{turn.agentMessages[0].content}</MessageResponse>
+                            </>
+                        )}
                     </MessageContent>
                 </Message>
-            ))}
+            )}
         </div>
     );
 }

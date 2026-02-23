@@ -1,6 +1,6 @@
 import { Form, router, usePoll } from '@inertiajs/react';
 import { FileText, PencilIcon, PlayIcon, Trash2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Shimmer } from '@/components/ai-elements/shimmer';
@@ -118,7 +118,7 @@ function TaskChatView({
     // Poll while the Technical agent's background job is still running
     usePoll(2000, { only: ['messages', 'processingAgents'] }, { autoStart: isProcessing });
 
-    const { messages, agentStreams, status, routingPoll, send, selectAgents, abort, error } = useMultiAgentChat({
+    const { messages, agentStreams, status, routingPoll, send, selectAgents, abort, error, lastActiveAgentId, lastRespondedAgentIds } = useMultiAgentChat({
         initialMessages,
         conversationId: conversation.id,
         projectUlid: project.ulid,
@@ -126,6 +126,7 @@ function TaskChatView({
         defaultAgentIds,
     });
 
+    const streamingActiveIndexRef = useRef(0);
     const turns = groupIntoTurns(messages);
     const hasActivity = isProcessing || messages.length > 0 || agentStreams.size > 0 || status !== 'idle';
 
@@ -157,7 +158,13 @@ function TaskChatView({
                                         </div>
                                     ))}
 
-                                {agentStreams.size > 0 && <StreamingTurnRenderer agentStreams={agentStreams} />}
+                                {agentStreams.size > 0 && (
+                                    <StreamingTurnRenderer
+                                        agentStreams={agentStreams}
+                                        lastActiveAgentId={lastActiveAgentId}
+                                        onActiveIndexChange={(idx) => { streamingActiveIndexRef.current = idx; }}
+                                    />
+                                )}
 
                                 {status === 'routing' && agentStreams.size === 0 && <Shimmer className="text-sm">Routing your message...</Shimmer>}
 
@@ -174,7 +181,7 @@ function TaskChatView({
                 {/* Input */}
                 {status !== 'polling' && (
                     <div className={cn('mx-auto w-full shrink-0 pb-4 transition-all duration-500 ease-in-out', hasActivity ? 'max-w-5xl px-12' : 'max-w-3xl px-4')}>
-                        <ChatPromptInput onSend={send} isDisabled={isProcessing || status === 'streaming' || status === 'routing'} onAbort={status === 'streaming' ? abort : undefined} agents={agents} defaultSelectedAgentIds={defaultAgentIds} />
+                        <ChatPromptInput onSend={send} isDisabled={isProcessing || status === 'streaming' || status === 'routing'} onAbort={status === 'streaming' ? abort : undefined} agents={agents} defaultSelectedAgentIds={defaultAgentIds} lastRespondedAgentIds={lastRespondedAgentIds} />
                     </div>
                 )}
 

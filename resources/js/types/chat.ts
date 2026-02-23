@@ -18,6 +18,7 @@ export interface ChatMessage {
 export interface AgentStream {
     agentId: number;
     name: string;
+    type: string;
     text: string;
     isStreaming: boolean;
     isDone: boolean;

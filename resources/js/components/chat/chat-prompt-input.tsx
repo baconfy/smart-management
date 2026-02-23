@@ -44,7 +44,7 @@ function AttachmentPreviews() {
     );
 }
 
-export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSelectedAgentIds = [] }: { onSend: (content: string, agentIds?: number[], files?: FileUIPart[]) => void; isDisabled: boolean; onAbort?: () => void; agents: ProjectAgent[]; defaultSelectedAgentIds?: number[] }) {
+export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSelectedAgentIds = [], lastRespondedAgentIds = [] }: { onSend: (content: string, agentIds?: number[], files?: FileUIPart[]) => void; isDisabled: boolean; onAbort?: () => void; agents: ProjectAgent[]; defaultSelectedAgentIds?: number[]; lastRespondedAgentIds?: number[] }) {
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>(defaultSelectedAgentIds);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -79,10 +79,32 @@ export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSe
                 <div className="flex items-center gap-2">
                     <div className={cn('flex items-center gap-2', { 'cursor-not-allowed opacity-50': isDisabled })}>
                         {agents.map((agent) => (
-                            <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className={cn('font-bold select-none text-shadow-2xs', { 'cursor-pointer': !isDisabled })} onClick={() => !isDisabled && toggleAgent(agent.id)}>
+                            <Badge
+                                key={agent.id}
+                                variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'}
+                                className={cn(
+                                    'font-bold select-none text-shadow-2xs',
+                                    { 'cursor-pointer': !isDisabled },
+                                    lastRespondedAgentIds.includes(agent.id) && !selectedAgentIds.includes(agent.id) && 'border-primary/30',
+                                )}
+                                onClick={() => !isDisabled && toggleAgent(agent.id)}
+                            >
                                 {agent.name}
                             </Badge>
                         ))}
+                        {selectedAgentIds.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedAgentIds([]);
+                                    textareaRef.current?.focus();
+                                }}
+                                className="text-xs text-muted-foreground hover:text-foreground"
+                                disabled={isDisabled}
+                            >
+                                Clear
+                            </button>
+                        )}
                     </div>
 
                     {onAbort ? (

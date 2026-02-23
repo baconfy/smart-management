@@ -1,6 +1,6 @@
 import { Form, router } from '@inertiajs/react';
 import { PencilIcon, Trash2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { ChatPromptInput, RoutingPollInput, StreamingTurnRenderer, TurnRenderer } from '@/components/chat';
@@ -41,7 +41,7 @@ function toInitialMessages(input: CursorPaginated<ConversationMessage> | Convers
 }
 
 export default function ConversationIndex({ project, agents, conversations, conversation = null, messages: initialMessages = [] }: Props) {
-    const { messages, agentStreams, status, routingPoll, send, selectAgents, abort, error } = useMultiAgentChat({
+    const { messages, agentStreams, status, routingPoll, send, selectAgents, abort, error, lastActiveAgentId, lastRespondedAgentIds } = useMultiAgentChat({
         initialMessages: toInitialMessages(initialMessages),
         conversationId: conversation?.id ?? null,
         projectUlid: project.ulid,
@@ -49,6 +49,8 @@ export default function ConversationIndex({ project, agents, conversations, conv
             history.replaceState(null, '', index({ project: project.ulid, conversation: id }).url);
         },
     });
+
+    const streamingActiveIndexRef = useRef(0);
 
     const [renameOpen, setRenameOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -59,12 +61,12 @@ export default function ConversationIndex({ project, agents, conversations, conv
     const menu: BreadcrumbMenuAction[] | undefined = conversation
         ? [
               {
-                  title: 'Renomear conversa',
+                  title: 'Rename conversation',
                   icon: PencilIcon,
                   onClick: () => setRenameOpen(true),
               },
               {
-                  title: 'Deletar conversa',
+                  title: 'Remove conversation',
                   icon: Trash2Icon,
                   variant: 'destructive',
                   onClick: () => setDeleteOpen(true),
@@ -91,26 +93,33 @@ export default function ConversationIndex({ project, agents, conversations, conv
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} sidebar={<ConversationsNavPanel project={project} conversations={conversations} />}>
-            <div className="flex min-h-0 w-full flex-1 flex-col">
-                {/* Top spacer */}
+            <div className="no-scrollbar flex min-h-0 w-full flex-1 flex-col">
                 <div className={cn('transition-[flex] duration-500 ease-in-out', hasActivity ? 'flex-none' : 'flex-1')} />
 
-                {/* Title */}
                 <div className={cn('flex justify-center overflow-hidden transition-all duration-500 ease-in-out', hasActivity ? 'max-h-0 opacity-0' : 'max-h-20 pb-4 opacity-100')}>
                     <h1 className="text-2xl font-bold">What can I help with?</h1>
                 </div>
 
-                {/* Messages */}
                 <div className={cn('flex flex-col overflow-hidden transition-[flex] duration-500 ease-in-out', hasActivity ? 'min-h-0 flex-1' : 'flex-none')}>
                     {hasActivity && (
                         <Conversation>
-                            <ConversationContent className="mx-auto w-full max-w-4xl">
+                            <ConversationContent className="mx-auto w-full max-w-3xl">
                                 {turns.map((turn) => (
                                     <TurnRenderer key={turn.id} turn={turn} />
                                 ))}
 
-                                {agentStreams.size > 0 && <StreamingTurnRenderer agentStreams={agentStreams} />}
+                                {agentStreams.size > 0 && (
+                                    <StreamingTurnRenderer
+                                        agentStreams={agentStreams}
+                                        lastActiveAgentId={lastActiveAgentId}
+                                        onActiveIndexChange={(idx) => {
+                                            streamingActiveIndexRef.current = idx;
+                                        }}
+                                    />
+                                )}
+
                                 {status === 'routing' && agentStreams.size === 0 && <Shimmer className="text-sm">Routing your message...</Shimmer>}
+
                                 {error && <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
                             </ConversationContent>
                             <ConversationScrollButton />
@@ -118,37 +127,33 @@ export default function ConversationIndex({ project, agents, conversations, conv
                     )}
                 </div>
 
-                {/* Poll UI */}
                 {status === 'polling' && routingPoll && <RoutingPollInput poll={routingPoll} onSelect={selectAgents} />}
 
-                {/* Input */}
                 {status !== 'polling' && (
-                    <div className={cn('mx-auto w-full shrink-0 pb-4 transition-all duration-500 ease-in-out', hasActivity ? 'max-w-4xl' : 'max-w-3xl px-4')}>
-                        <ChatPromptInput onSend={send} isDisabled={status === 'streaming' || status === 'routing'} onAbort={status === 'streaming' ? abort : undefined} agents={agents} />
+                    <div className={cn('mx-auto w-full max-w-3xl shrink-0 pb-4 transition-all duration-500 ease-in-out', { 'px-4': !hasActivity })}>
+                        <ChatPromptInput onSend={send} isDisabled={status === 'streaming' || status === 'routing'} onAbort={status === 'streaming' ? abort : undefined} agents={agents} lastRespondedAgentIds={lastRespondedAgentIds} />
                     </div>
                 )}
 
-                {/* Bottom spacer */}
                 <div className={cn('transition-[flex] duration-500 ease-in-out', hasActivity ? 'flex-none' : 'flex-1')} />
             </div>
 
-            {/* Rename Dialog */}
             {conversation && (
                 <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Renomear conversa</DialogTitle>
-                            <DialogDescription>Digite o novo nome para esta conversa.</DialogDescription>
+                            <DialogTitle>Rename conversation</DialogTitle>
+                            <DialogDescription>Enter the new name for this conversation.</DialogDescription>
                         </DialogHeader>
                         <Form {...rename.form({ project: project.ulid, conversation: conversation.id })} onSuccess={() => setRenameOpen(false)}>
                             {({ processing, errors }) => (
                                 <>
-                                    <Input name="title" defaultValue={conversation.title ?? ''} placeholder="Nome da conversa" autoFocus />
+                                    <Input name="title" defaultValue={conversation.title ?? ''} placeholder="New conversation" autoFocus />
                                     {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
                                     <DialogFooter className="mt-4">
-                                        <DialogClose render={<Button variant="outline" />}>Cancelar</DialogClose>
+                                        <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
                                         <Button type="submit" disabled={processing}>
-                                            {processing && <Spinner />} Salvar
+                                            {processing && <Spinner />} Save
                                         </Button>
                                     </DialogFooter>
                                 </>
@@ -158,17 +163,16 @@ export default function ConversationIndex({ project, agents, conversations, conv
                 </Dialog>
             )}
 
-            {/* Delete AlertDialog */}
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <AlertDialogContent size="sm">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Deletar conversa</AlertDialogTitle>
-                        <AlertDialogDescription>Tem certeza que deseja deletar esta conversa? Esta ação não pode ser desfeita.</AlertDialogDescription>
+                        <AlertDialogTitle>Remove conversation</AlertDialogTitle>
+                        <AlertDialogDescription>Are you sure you want to delete this conversation? This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction variant="destructive" onClick={handleDelete}>
-                            Deletar
+                            Remove
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

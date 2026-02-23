@@ -1,7 +1,8 @@
 import type { FileUIPart } from 'ai';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { parseSseStream } from '@/lib/sse-parser';
+import type { RoutedAgent } from '@/lib/sse-parser';
 import { stream as conversationStream, streamAgents, streamContinue } from '@/routes/projects/conversations';
 import { stream as taskStream } from '@/routes/projects/tasks';
 import type { AgentStream, ChatAttachment, ChatMessage, ChatStatus, RoutingPoll } from '@/types/chat';
@@ -25,6 +26,10 @@ export interface UseMultiAgentChatReturn {
     selectAgents: (agentIds: number[]) => void;
     abort: () => void;
     error: string | null;
+    /** ID of the agent that most recently received a chunk */
+    lastActiveAgentId: number | null;
+    /** Agent IDs that responded in the most recent turn */
+    lastRespondedAgentIds: number[];
 }
 
 function getXsrfToken(): string {
@@ -42,6 +47,10 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
 
     const abortRef = useRef<AbortController | null>(null);
     const conversationIdRef = useRef<string | null>(options.conversationId ?? null);
+
+    // Track agent order and types from routing events
+    const agentOrderRef = useRef<RoutedAgent[]>([]);
+    const [lastActiveAgentId, setLastActiveAgentId] = useState<number | null>(null);
 
     // Synchronous accumulators — updated immediately, never deferred by React
     const agentFullTextRef = useRef<Map<number, string>>(new Map());
@@ -95,20 +104,25 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                         break;
 
                     case 'routing':
+                        agentOrderRef.current = event.agents;
                         setStatus('streaming');
                         break;
 
-                    case 'agent_start':
+                    case 'agent_start': {
                         // Initialize synchronous accumulators
                         agentFullTextRef.current.set(event.agentId, '');
                         agentNameRef.current.set(event.agentId, event.name);
                         streamBufferRef.current.set(event.agentId, '');
+
+                        // Look up agent type from routing data
+                        const routedAgent = agentOrderRef.current.find((a) => a.id === event.agentId);
 
                         setAgentStreams((prev) => {
                             const next = new Map(prev);
                             next.set(event.agentId, {
                                 agentId: event.agentId,
                                 name: event.name,
+                                type: routedAgent?.type ?? 'custom',
                                 text: '',
                                 isStreaming: true,
                                 isDone: false,
@@ -116,8 +130,10 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                             return next;
                         });
                         break;
+                    }
 
                     case 'chunk':
+                        setLastActiveAgentId(event.agentId);
                         handleChunk(event.agentId, event.text);
                         break;
 
@@ -137,6 +153,9 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                         agentNameRef.current.delete(event.agentId);
                         streamBufferRef.current.delete(event.agentId);
 
+                        // Look up agent type for the promoted message
+                        const doneAgentType = agentOrderRef.current.find((a) => a.id === event.agentId)?.type;
+
                         // Promote finished stream into a persisted message
                         if (fullText) {
                             setMessages((msgs) => [
@@ -147,6 +166,7 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                                     content: fullText,
                                     agentId: event.agentId,
                                     agentName,
+                                    agentType: doneAgentType,
                                 },
                             ]);
                         }
@@ -202,6 +222,7 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
 
             setError(null);
             setRoutingPoll(null);
+            setLastActiveAgentId(null);
             setMessages((prev) => [...prev, { id: tempId, role: 'user', content, attachments: optimisticAttachments }]);
             setStatus('routing');
 
@@ -348,6 +369,24 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
         setAgentStreams(new Map());
     }, []);
 
+    // Compute agent IDs that responded in the most recent turn
+    const lastRespondedAgentIds = useMemo(() => {
+        // Walk messages backwards to find the last user message, then collect agent IDs after it
+        const ids: number[] = [];
+        let foundUser = false;
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const msg = messages[i];
+            if (msg.role === 'user') {
+                foundUser = true;
+                break;
+            }
+            if (msg.agentId) {
+                ids.push(msg.agentId);
+            }
+        }
+        return foundUser ? ids : [];
+    }, [messages]);
+
     return {
         messages,
         agentStreams,
@@ -358,5 +397,7 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
         selectAgents: selectAgentsAction,
         abort,
         error,
+        lastActiveAgentId,
+        lastRespondedAgentIds,
     };
 }

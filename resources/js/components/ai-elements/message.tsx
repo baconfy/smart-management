@@ -139,7 +139,6 @@ export const MessageBranchContent = ({ children, ...props }: MessageBranchConten
     const { currentBranch, setBranches, branches } = useMessageBranch();
     const childrenArray = useMemo(() => (Array.isArray(children) ? children : [children]), [children]);
 
-    // Use useEffect to update branches when they change
     useEffect(() => {
         if (branches.length !== childrenArray.length) {
             setBranches(childrenArray);
@@ -157,8 +156,6 @@ export type MessageBranchSelectorProps = ComponentProps<typeof ButtonGroup>;
 
 export const MessageBranchSelector = ({ className, ...props }: MessageBranchSelectorProps) => {
     const { totalBranches } = useMessageBranch();
-
-    // Don't render if there's only one branch
     if (totalBranches <= 1) {
         return null;
     }
@@ -207,7 +204,7 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 const streamdownPlugins = { cjk, code, math, mermaid };
 
 export const MessageResponse = memo(
-    ({ className, ...props }: MessageResponseProps) => <Streamdown className={cn('size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)} plugins={streamdownPlugins} {...props} />,
+    ({ className, ...props }: MessageResponseProps) => <Streamdown className={cn('size-full text-base [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)} plugins={streamdownPlugins} {...props} />,
     (prevProps, nextProps) => prevProps.children === nextProps.children,
 );
 
