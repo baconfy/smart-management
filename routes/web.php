@@ -53,6 +53,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Settings
      */
     Route::get('p/{project}/s', Project\Settings\IndexController::class)->name('projects.settings');
+    Route::patch('p/{project}/s', Project\Settings\UpdateController::class)->name('projects.settings.update');
+    Route::delete('p/{project}/s', Project\Settings\DestroyController::class)->name('projects.settings.destroy');
 
     /**
      * Settings - Agents

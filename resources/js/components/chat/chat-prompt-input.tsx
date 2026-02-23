@@ -71,7 +71,7 @@ export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSe
         <PromptInput onSubmit={handleSubmit} multiple maxFiles={MAX_FILES} maxFileSize={MAX_FILE_SIZE}>
             <AttachmentPreviews />
 
-            <PromptInputTextarea ref={textareaRef} placeholder="Send a message..." disabled={isDisabled} className="px-4 py-3.5" autoFocus={true} />
+            <PromptInputTextarea ref={textareaRef} placeholder="Send a message..." disabled={isDisabled} className="text-base px-4 py-3.5" autoFocus={true} />
 
             <PromptInputFooter>
                 <AttachButton disabled={isDisabled} />
@@ -79,32 +79,10 @@ export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSe
                 <div className="flex items-center gap-2">
                     <div className={cn('flex items-center gap-2', { 'cursor-not-allowed opacity-50': isDisabled })}>
                         {agents.map((agent) => (
-                            <Badge
-                                key={agent.id}
-                                variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'}
-                                className={cn(
-                                    'font-bold select-none text-shadow-2xs',
-                                    { 'cursor-pointer': !isDisabled },
-                                    lastRespondedAgentIds.includes(agent.id) && !selectedAgentIds.includes(agent.id) && 'border-primary/30',
-                                )}
-                                onClick={() => !isDisabled && toggleAgent(agent.id)}
-                            >
+                            <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className={cn('clickable rounded px-3 py-2.5 font-bold select-none text-shadow-2xs', { 'cursor-pointer': !isDisabled }, lastRespondedAgentIds.includes(agent.id) && !selectedAgentIds.includes(agent.id) && 'border-primary/30')} onClick={() => !isDisabled && toggleAgent(agent.id)}>
                                 {agent.name}
                             </Badge>
                         ))}
-                        {selectedAgentIds.length > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedAgentIds([]);
-                                    textareaRef.current?.focus();
-                                }}
-                                className="text-xs text-muted-foreground hover:text-foreground"
-                                disabled={isDisabled}
-                            >
-                                Clear
-                            </button>
-                        )}
                     </div>
 
                     {onAbort ? (

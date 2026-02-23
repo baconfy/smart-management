@@ -459,7 +459,7 @@ export const PromptInput = ({ className, accept, multiple, globalDrop, syncHidde
         clearReferencedSources();
     }, [clearAttachments, clearReferencedSources]);
 
-    // Let provider know about our hidden file input so external menus can call openFileDialog()
+    // Let the provider know about our hidden file input so external menus can call openFileDialog()
     useEffect(() => {
         if (!usingProvider) {
             return;
@@ -692,7 +692,7 @@ export const PromptInputTextarea = ({ onChange, onKeyDown, className, placeholde
                 }
                 e.preventDefault();
 
-                // Check if the submit button is disabled before submitting
+                // Check if the Submit button is disabled before submitting
                 const { form } = e.currentTarget;
                 const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
                 if (submitButton?.disabled) {
@@ -702,10 +702,12 @@ export const PromptInputTextarea = ({ onChange, onKeyDown, className, placeholde
                 form?.requestSubmit();
             }
 
-            // Remove last attachment when Backspace is pressed and textarea is empty
+            // Remove the last attachment when Backspace is pressed and the textarea is empty
             if (e.key === 'Backspace' && e.currentTarget.value === '' && attachments.files.length > 0) {
                 e.preventDefault();
+
                 const lastAttachment = attachments.files.at(-1);
+
                 if (lastAttachment) {
                     attachments.remove(lastAttachment.id);
                 }
@@ -820,7 +822,7 @@ export const PromptInputActionMenuContent = ({ className, ...props }: PromptInpu
 export type PromptInputActionMenuItemProps = ComponentProps<typeof DropdownMenuItem>;
 export const PromptInputActionMenuItem = ({ className, ...props }: PromptInputActionMenuItemProps) => <DropdownMenuItem className={cn(className)} {...props} />;
 
-// Note: Actions that perform side-effects (like opening a file dialog)
+// Note: Actions that perform side effects (like opening a file dialog)
 // are provided in opt-in modules (e.g., prompt-input-attachments).
 
 export type PromptInputSubmitProps = ComponentProps<typeof InputGroupButton> & {
