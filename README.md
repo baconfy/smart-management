@@ -10,7 +10,7 @@ You describe your project. AI agents organize everything behind the scenes.
 ![License](https://img.shields.io/badge/license-Non--Commercial-red)
 ![Laravel 12](https://img.shields.io/badge/laravel-12-FF2D20?logo=laravel)
 ![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react)
-![Tests](https://img.shields.io/badge/tests-427-brightgreen)
+[![Tests](https://github.com/baconfy/smart-management/actions/workflows/tests.yml/badge.svg)](https://github.com/baconfy/smart-management/actions/workflows/tests.yml)
 ![Multi-provider AI](https://img.shields.io/badge/AI-multi--provider-blueviolet)
 
 ---
