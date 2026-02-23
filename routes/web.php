@@ -17,8 +17,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Conversations
      */
-    Route::get('p/{project}/c/{conversation?}', Project\Conversation\IndexController::class)->name('projects.conversations.index')->scopeBindings();
     Route::post('p/{project}/c', Project\Conversation\SendMessageController::class)->name('projects.conversations.send');
+    Route::get('p/{project}/c/{conversation?}', Project\Conversation\IndexController::class)->name('projects.conversations.index')->scopeBindings();
+    Route::patch('p/{project}/c/{conversation}', Project\Conversation\RenameController::class)->name('projects.conversations.rename')->scopeBindings();
+    Route::delete('p/{project}/c/{conversation}', Project\Conversation\DestroyController::class)->name('projects.conversations.destroy')->scopeBindings();
     Route::post('p/{project}/c/{conversation}/s', Project\Conversation\SelectAgentsController::class)->name('projects.conversations.select-agents')->scopeBindings();
     Route::get('p/{project}/c/{conversation}/m', Project\Conversation\MessagesController::class)->name('projects.conversations.messages')->scopeBindings();
     Route::post('p/{project}/c/stream', Project\Conversation\StreamController::class)->name('projects.conversations.stream');
@@ -41,6 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('p/{project}/t', Project\Task\IndexController::class)->name('projects.tasks.index');
     Route::get('p/{project}/t/{task}', Project\Task\ShowController::class)->name('projects.tasks.show')->scopeBindings();
     Route::patch('p/{project}/t/{task}', Project\Task\UpdateController::class)->name('projects.tasks.update')->scopeBindings();
+    Route::patch('p/{project}/t/{task}/rename', Project\Task\RenameController::class)->name('projects.tasks.rename')->scopeBindings();
+    Route::delete('p/{project}/t/{task}', Project\Task\DestroyController::class)->name('projects.tasks.destroy')->scopeBindings();
     Route::post('p/{project}/t/{task}/c', Project\Task\SendMessageController::class)->name('projects.tasks.send')->scopeBindings();
     Route::post('p/{project}/t/{task}/s', Project\Task\StartController::class)->name('projects.tasks.start')->scopeBindings();
     Route::post('p/{project}/t/{task}/stream', Project\Task\StreamController::class)->name('projects.tasks.stream')->scopeBindings();

@@ -1,13 +1,25 @@
-import { router, usePoll } from '@inertiajs/react';
-import { FileText, PlayIcon } from 'lucide-react';
+import { Form, router, usePoll } from '@inertiajs/react';
+import { FileText, PencilIcon, PlayIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { ChatPromptInput, RoutingPollInput, StreamingTurnRenderer, TurnRenderer } from '@/components/chat';
 import { ProjectNavPanel } from '@/components/navigation/project-nav-panel';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { useMultiAgentChat } from '@/hooks/use-multi-agent-chat';
 import AppLayout from '@/layouts/app-layout';
 import { groupIntoTurns } from '@/lib/chat-utils';
@@ -15,17 +27,17 @@ import { cn } from '@/lib/utils';
 import { TaskDetails } from '@/pages/projects/tasks/partials/task-details';
 import { dashboard } from '@/routes';
 import { show } from '@/routes/projects';
-import { index as tasksIndex, start } from '@/routes/projects/tasks';
-import type { BreadcrumbItem, CursorPaginated } from '@/types';
+import { destroy, index as tasksIndex, rename, start } from '@/routes/projects/tasks';
+import type { BreadcrumbItem, BreadcrumbMenuAction, CursorPaginated } from '@/types';
 import type { ChatMessage } from '@/types/chat';
 import type { Conversation as ConversationType, ConversationMessage, ImplementationNote, Project, ProjectAgent, Task } from '@/types/models';
 
-function TaskBreadcrumbs(project: Project, task: Task): BreadcrumbItem[] {
+function useTaskBreadcrumbs(project: Project, task: Task, menu?: BreadcrumbMenuAction[]): BreadcrumbItem[] {
     return [
         { title: 'Dashboard', href: dashboard().url },
         { title: project.name, href: show(project.ulid).url },
         { title: 'Tasks', href: tasksIndex(project.ulid).url },
-        { title: task.title, href: '#' },
+        { title: task.title, href: '#', menu },
     ];
 }
 
@@ -43,7 +55,19 @@ function toInitialMessages(input: CursorPaginated<ConversationMessage> | Convers
 
 // --- No Conversation: TaskDetails + Start Button ---
 
-function TaskEmpty({ project, task, subtasks, implementationNotes }: { project: Project; task: Task; subtasks: Task[]; implementationNotes: ImplementationNote[] }) {
+function TaskEmpty({
+    project,
+    task,
+    subtasks,
+    implementationNotes,
+    menu,
+}: {
+    project: Project;
+    task: Task;
+    subtasks: Task[];
+    implementationNotes: ImplementationNote[];
+    menu: BreadcrumbMenuAction[];
+}) {
     const [starting, setStarting] = useState(false);
 
     function handleStart() {
@@ -52,7 +76,7 @@ function TaskEmpty({ project, task, subtasks, implementationNotes }: { project: 
     }
 
     return (
-        <AppLayout breadcrumbs={TaskBreadcrumbs(project, task)} sidebar={<ProjectNavPanel project={project} />}>
+        <AppLayout breadcrumbs={useTaskBreadcrumbs(project, task, menu)} sidebar={<ProjectNavPanel project={project} />}>
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-8">
                 <TaskDetails task={task} subtasks={subtasks} implementationNotes={implementationNotes} />
 
@@ -66,7 +90,29 @@ function TaskEmpty({ project, task, subtasks, implementationNotes }: { project: 
 
 // --- With Conversation: Chat + Floating Details Button ---
 
-function TaskChatView({ project, task, agents, subtasks, implementationNotes, initialMessages, conversation, defaultAgentIds, processingAgents = [] }: { project: Project; task: Task; agents: ProjectAgent[]; subtasks: Task[]; implementationNotes: ImplementationNote[]; initialMessages: ChatMessage[]; conversation: ConversationType; defaultAgentIds: number[]; processingAgents?: { id: number; name: string }[]; }) {
+function TaskChatView({
+    project,
+    task,
+    agents,
+    subtasks,
+    implementationNotes,
+    initialMessages,
+    conversation,
+    defaultAgentIds,
+    processingAgents = [],
+    menu,
+}: {
+    project: Project;
+    task: Task;
+    agents: ProjectAgent[];
+    subtasks: Task[];
+    implementationNotes: ImplementationNote[];
+    initialMessages: ChatMessage[];
+    conversation: ConversationType;
+    defaultAgentIds: number[];
+    processingAgents?: { id: number; name: string }[];
+    menu: BreadcrumbMenuAction[];
+}) {
     const isProcessing = processingAgents.length > 0;
 
     // Poll while the Technical agent's background job is still running
@@ -84,7 +130,7 @@ function TaskChatView({ project, task, agents, subtasks, implementationNotes, in
     const hasActivity = isProcessing || messages.length > 0 || agentStreams.size > 0 || status !== 'idle';
 
     return (
-        <AppLayout breadcrumbs={TaskBreadcrumbs(project, task)} sidebar={<ProjectNavPanel project={project} />}>
+        <AppLayout breadcrumbs={useTaskBreadcrumbs(project, task, menu)} sidebar={<ProjectNavPanel project={project} />}>
             <div className="relative flex min-h-0 w-full flex-1 flex-col">
                 {/* Top spacer */}
                 <div className={cn('transition-[flex] duration-500 ease-in-out', hasActivity ? 'flex-none' : 'flex-1')} />
@@ -166,22 +212,86 @@ type Props = {
 };
 
 export default function TaskShow({ project, agents, task, subtasks = [], implementationNotes = [], conversation = null, messages = [], defaultAgentIds = [], processingAgents = [] }: Props) {
-    if (!conversation) {
-        return <TaskEmpty project={project} task={task} subtasks={subtasks} implementationNotes={implementationNotes} />;
+    const [renameOpen, setRenameOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+
+    const menu: BreadcrumbMenuAction[] = [
+        {
+            title: 'Renomear task',
+            icon: PencilIcon,
+            onClick: () => setRenameOpen(true),
+        },
+        {
+            title: 'Deletar task',
+            icon: Trash2Icon,
+            variant: 'destructive',
+            onClick: () => setDeleteOpen(true),
+        },
+    ];
+
+    function handleDelete() {
+        router.delete(destroy.url({ project: project.ulid, task: task.ulid }));
     }
 
     return (
-        <TaskChatView
-            key={processingAgents.length > 0 ? 'processing' : 'ready'}
-            project={project}
-            task={task}
-            agents={agents}
-            subtasks={subtasks}
-            implementationNotes={implementationNotes}
-            initialMessages={toInitialMessages(messages)}
-            conversation={conversation}
-            defaultAgentIds={defaultAgentIds ?? []}
-            processingAgents={processingAgents}
-        />
+        <>
+            {!conversation ? (
+                <TaskEmpty project={project} task={task} subtasks={subtasks} implementationNotes={implementationNotes} menu={menu} />
+            ) : (
+                <TaskChatView
+                    key={processingAgents.length > 0 ? 'processing' : 'ready'}
+                    project={project}
+                    task={task}
+                    agents={agents}
+                    subtasks={subtasks}
+                    implementationNotes={implementationNotes}
+                    initialMessages={toInitialMessages(messages)}
+                    conversation={conversation}
+                    defaultAgentIds={defaultAgentIds ?? []}
+                    processingAgents={processingAgents}
+                    menu={menu}
+                />
+            )}
+
+            {/* Rename Dialog */}
+            <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Renomear task</DialogTitle>
+                        <DialogDescription>Digite o novo nome para esta task.</DialogDescription>
+                    </DialogHeader>
+                    <Form {...rename.form({ project: project.ulid, task: task.ulid })} onSuccess={() => setRenameOpen(false)}>
+                        {({ processing, errors }) => (
+                            <>
+                                <Input name="title" defaultValue={task.title} placeholder="Nome da task" autoFocus />
+                                {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                                <DialogFooter className="mt-4">
+                                    <DialogClose render={<Button variant="outline" />}>Cancelar</DialogClose>
+                                    <Button type="submit" disabled={processing}>
+                                        {processing && <Spinner />} Salvar
+                                    </Button>
+                                </DialogFooter>
+                            </>
+                        )}
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete AlertDialog */}
+            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Deletar task</AlertDialogTitle>
+                        <AlertDialogDescription>Tem certeza que deseja deletar esta task? Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction variant="destructive" onClick={handleDelete}>
+                            Deletar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

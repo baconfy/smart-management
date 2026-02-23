@@ -11,19 +11,16 @@ use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-class UpdateController extends Controller
+class RenameController extends Controller
 {
     /**
-     * Update a task's status or sort order (kanban drag and drop).
+     * Rename a task.
      */
     public function __invoke(Request $request, Project $project, Task $task, UpdateTask $updateTask): RedirectResponse
     {
         $this->authorize('view', $project);
 
-        $updateTask($task, $request->validate([
-            'task_status_id' => ['sometimes', 'exists:task_statuses,id'],
-            'sort_order' => ['sometimes', 'integer', 'min:0'],
-        ]));
+        $updateTask($task, $request->validate(['title' => ['required', 'string', 'max:255']]));
 
         return back();
     }
