@@ -1,5 +1,5 @@
 import { SquareIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from '@/components/ai-elements/prompt-input';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +9,11 @@ import type { ProjectAgent } from '@/types';
 
 export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSelectedAgentIds = [] }: { onSend: (content: string, agentIds?: number[]) => void; isDisabled: boolean; onAbort?: () => void; agents: ProjectAgent[]; defaultSelectedAgentIds?: number[] }) {
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>(defaultSelectedAgentIds);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     function toggleAgent(id: number) {
         setSelectedAgentIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+        textareaRef.current?.focus();
     }
 
     function handleSubmit({ text }: { text: string }) {
@@ -24,7 +26,7 @@ export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSe
 
     return (
         <PromptInput onSubmit={handleSubmit}>
-            <PromptInputTextarea placeholder="Send a message..." disabled={isDisabled} className="px-4 py-3.5" autoFocus={true} />
+            <PromptInputTextarea ref={textareaRef} placeholder="Send a message..." disabled={isDisabled} className="px-4 py-3.5" autoFocus={true} />
 
             <PromptInputFooter>
                 <div className={cn('flex items-center gap-2', { 'cursor-not-allowed opacity-50': isDisabled })}>

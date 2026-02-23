@@ -42,22 +42,25 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
 
     const abortRef = useRef<AbortController | null>(null);
     const conversationIdRef = useRef<string | null>(options.conversationId ?? null);
-    const agentStreamsRef = useRef<Map<number, AgentStream>>(new Map());
 
-    // rAF-throttled chunk accumulation
+    // Synchronous accumulators — updated immediately, never deferred by React
+    const agentFullTextRef = useRef<Map<number, string>>(new Map());
+    const agentNameRef = useRef<Map<number, string>>(new Map());
+
+    // rAF-throttled buffer for UI display updates only
     const streamBufferRef = useRef<Map<number, string>>(new Map());
     const rafRef = useRef<number | null>(null);
 
     const flushStreamBuffer = useCallback(() => {
         setAgentStreams((prev) => {
             const next = new Map(prev);
-            for (const [id, accumulated] of streamBufferRef.current.entries()) {
+            for (const [id] of streamBufferRef.current.entries()) {
                 const stream = next.get(id);
                 if (stream) {
-                    next.set(id, { ...stream, text: stream.text + accumulated });
+                    // Use the synchronous accumulator as source of truth for display
+                    next.set(id, { ...stream, text: agentFullTextRef.current.get(id) ?? '' });
                 }
             }
-            agentStreamsRef.current = next;
             return next;
         });
         streamBufferRef.current.clear();
@@ -66,8 +69,11 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
 
     const handleChunk = useCallback(
         (agentId: number, text: string) => {
-            const buffer = streamBufferRef.current;
-            buffer.set(agentId, (buffer.get(agentId) ?? '') + text);
+            // Synchronous accumulator — always up to date
+            agentFullTextRef.current.set(agentId, (agentFullTextRef.current.get(agentId) ?? '') + text);
+
+            // Mark this agent as dirty for the next rAF flush
+            streamBufferRef.current.set(agentId, '');
 
             if (!rafRef.current) {
                 rafRef.current = requestAnimationFrame(flushStreamBuffer);
@@ -93,6 +99,11 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                         break;
 
                     case 'agent_start':
+                        // Initialize synchronous accumulators
+                        agentFullTextRef.current.set(event.agentId, '');
+                        agentNameRef.current.set(event.agentId, event.name);
+                        streamBufferRef.current.set(event.agentId, '');
+
                         setAgentStreams((prev) => {
                             const next = new Map(prev);
                             next.set(event.agentId, {
@@ -102,11 +113,8 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                                 isStreaming: true,
                                 isDone: false,
                             });
-                            agentStreamsRef.current = next;
                             return next;
                         });
-                        // Initialize buffer for this agent
-                        streamBufferRef.current.set(event.agentId, '');
                         break;
 
                     case 'chunk':
@@ -114,18 +122,20 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                         break;
 
                     case 'agent_done': {
-                        // Flush any pending buffer for this agent
+                        // Cancel any pending rAF flush
                         if (rafRef.current) {
                             cancelAnimationFrame(rafRef.current);
                             rafRef.current = null;
                         }
-                        const pendingBuffer = streamBufferRef.current.get(event.agentId) ?? '';
-                        streamBufferRef.current.delete(event.agentId);
 
-                        // Read accumulated text + name from the ref (synchronous, no updater)
-                        const stream = agentStreamsRef.current.get(event.agentId);
-                        const fullText = (stream?.text ?? '') + pendingBuffer;
-                        const agentName = stream?.name;
+                        // Read from synchronous refs — always accurate, no React timing issues
+                        const fullText = agentFullTextRef.current.get(event.agentId) ?? '';
+                        const agentName = agentNameRef.current.get(event.agentId);
+
+                        // Clean up refs
+                        agentFullTextRef.current.delete(event.agentId);
+                        agentNameRef.current.delete(event.agentId);
+                        streamBufferRef.current.delete(event.agentId);
 
                         // Promote finished stream into a persisted message
                         if (fullText) {
@@ -145,7 +155,6 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                         setAgentStreams((prev) => {
                             const next = new Map(prev);
                             next.delete(event.agentId);
-                            agentStreamsRef.current = next;
                             return next;
                         });
                         break;
@@ -163,7 +172,6 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
                             if (stream) {
                                 next.set(event.agentId, { ...stream, error: event.message, isStreaming: false });
                             }
-                            agentStreamsRef.current = next;
                             return next;
                         });
                         break;
@@ -291,6 +299,8 @@ export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAg
             cancelAnimationFrame(rafRef.current);
             rafRef.current = null;
         }
+        agentFullTextRef.current.clear();
+        agentNameRef.current.clear();
         streamBufferRef.current.clear();
         setStatus('idle');
         setAgentStreams(new Map());
