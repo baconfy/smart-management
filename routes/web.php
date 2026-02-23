@@ -1,11 +1,23 @@
 <?php
 
+use App\Http\Controllers\Profile;
 use App\Http\Controllers\Project;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
+    /**
+     * Dashboard
+     */
     Route::inertia('/', 'dashboard')->name('dashboard');
+
+    /**
+     * Profile
+     */
+    Route::get('profile', Profile\IndexController::class)->name('profile');
+    Route::delete('profile', Profile\DestroyController::class)->name('profile.destroy');
+    Route::get('profile/preferences', Profile\TwoFactorController::class)->name('profile.preferences');
+    Route::inertia('profile/password', 'profile/password')->name('profile.password');
 
     /**
      * Projects

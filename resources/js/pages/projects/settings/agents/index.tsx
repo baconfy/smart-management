@@ -91,7 +91,7 @@ export default function AgentsPage({ project, agents, availableTools }: PageProp
             </div>
 
             <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-                <DialogContent className="flex w-full flex-col sm:max-w-lg md:max-w-5xl">
+                <DialogContent className="flex w-full flex-col sm:max-w-lg md:max-w-5xl" showCloseButton={false}>
                     <AgentForm key={editingAgent?.id ?? 'new'} project={project} agent={editingAgent} availableTools={availableTools} onClose={handleClose} onDelete={() => handleDelete(editingAgent!)} />
                 </DialogContent>
             </Dialog>

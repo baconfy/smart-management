@@ -66,7 +66,7 @@ export default function DecisionIndex({ project, decisions }: { project: Project
 
             <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
                 {selected && (
-                    <DialogContent className="w-full max-w-3xl">
+                    <DialogContent className="w-full max-w-3xl" showCloseButton={false}>
                         <DialogHeader>
                             <DialogTitle>{selected.title}</DialogTitle>
                             <DialogDescription>{selected.choice}</DialogDescription>

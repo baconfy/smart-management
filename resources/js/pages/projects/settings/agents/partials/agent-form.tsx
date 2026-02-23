@@ -31,89 +31,81 @@ export function AgentForm({ project, agent, availableTools, onClose, onDelete }:
                 <>
                     <div className="flex-1 space-y-6 overflow-y-auto p-4">
                         <FieldSet>
-                            <FieldLegend>{isEditing ? 'Edit Agent' : 'Create Agent'}</FieldLegend>
-                            <FieldDescription>{isEditing ? `Editing ${agent.name}` : 'Add a new custom agent to your project.'}</FieldDescription>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <FieldLegend>{isEditing ? 'Edit Agent' : 'Create Agent'}</FieldLegend>
+                                    <FieldDescription>{isEditing ? `Editing ${agent.name}` : 'Add a new custom agent to your project.'}</FieldDescription>
+                                </div>
 
-                            <FieldGroup>
-                                <Field>
-                                    <FieldLabel htmlFor="name">Name</FieldLabel>
-                                    <Input id="name" name="name" defaultValue={agent?.name ?? ''} placeholder="e.g. DevOps, QA, Designer" autoFocus />
-                                    {errors.name && <FieldError>{errors.name}</FieldError>}
-                                </Field>
+                                <div className="space-x-2">
+                                    {isEditing && agent.is_default && (
+                                        <Button type="button" size="sm" variant="outline" onClick={() => router.post(reset({ project: project.ulid, agent: agent?.id }).url, {}, { onSuccess: onClose })}>
+                                            <RotateCcw /> Reset to Default
+                                        </Button>
+                                    )}
 
-                                <Field>
-                                    <FieldLabel htmlFor="model">Model</FieldLabel>
-                                    <Input id="model" name="model" defaultValue={agent?.model ?? ''} placeholder="e.g. gpt-4o, claude-sonnet-4-20250514" />
-                                    <FieldDescription>Leave empty to use the project default.</FieldDescription>
-                                    {errors.model && <FieldError>{errors.model}</FieldError>}
-                                </Field>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger render={<Button size="sm" variant="destructive" />}>
+                                            <Trash2 /> Remove Agent
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>{`Delete "${agent?.name}"? This action cannot be undone.`}</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </div>
 
-                                <Field>
-                                    <FieldLabel htmlFor="instructions">Instructions</FieldLabel>
-                                    <Textarea id="instructions" name="instructions" defaultValue={agent?.instructions ?? ''} placeholder="Describe the agent's role and behavior..." className="max-h-96 min-h-48" />
-                                    {errors.instructions && <FieldError>{errors.instructions}</FieldError>}
-                                </Field>
+                            <FieldGroup className="flex-row gap-8">
+                                <div className="space-y-4">
+                                    <Field>
+                                        <FieldLabel htmlFor="name">Name</FieldLabel>
+                                        <Input id="name" name="name" defaultValue={agent?.name ?? ''} placeholder="e.g. DevOps, QA, Designer" autoFocus />
+                                        {errors.name && <FieldError>{errors.name}</FieldError>}
+                                    </Field>
 
-                                <Field>
-                                    <FieldLabel>Tools</FieldLabel>
-                                    <div className="mt-2 grid grid-cols-3 gap-2">
+                                    <Field>
+                                        <FieldLabel htmlFor="model">
+                                            Model <span className="opacity-65">(Leave empty to use the project default.)</span>
+                                        </FieldLabel>
+                                        <Input id="model" name="model" defaultValue={agent?.model ?? ''} placeholder="e.g. gpt-4o, claude-sonnet-4-20250514" />
+                                        {errors.model && <FieldError>{errors.model}</FieldError>}
+                                    </Field>
+
+                                    <Field>
+                                        <FieldLabel htmlFor="instructions">Instructions</FieldLabel>
+                                        <Textarea id="instructions" name="instructions" defaultValue={agent?.instructions ?? ''} placeholder="Describe the agent's role and behavior..." className="max-h-118 min-h-12" />
+                                        {errors.instructions && <FieldError>{errors.instructions}</FieldError>}
+                                    </Field>
+                                </div>
+
+                                <Field className="basis-1/2 rounded-xl bg-muted p-4">
+                                    <FieldLabel className="text-xl font-bold text-muted-foreground">Tools</FieldLabel>
+                                    <div className="mt-2 grid grid-cols-1 gap-4">
                                         {availableTools.map((tool) => (
-                                            <label key={tool} className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted">
+                                            <label key={tool} className="flex cursor-pointer items-center gap-2 text-sm transition-colors hover:bg-muted">
                                                 <Checkbox checked={selectedTools.includes(tool)} onCheckedChange={() => toggleTool(tool)} />
                                                 <span>{formatToolName(tool)}</span>
                                             </label>
                                         ))}
                                     </div>
+
                                     {selectedTools.map((tool) => (
                                         <input key={tool} type="hidden" name="tools[]" value={tool} />
                                     ))}
                                 </Field>
                             </FieldGroup>
 
-                            <div className="space-y-2">
+                            <div className="flex items-center justify-end gap-4">
                                 <Button type="submit" disabled={processing} className="w-full">
-                                    <SaveIcon />
-                                    {processing && <Spinner />} {isEditing ? 'Save Changes' : 'Create Agent'}
+                                    <SaveIcon /> {processing && <Spinner />} {isEditing ? 'Save Changes' : 'Create Agent'}
                                 </Button>
-
-                                {isEditing && (
-                                    <>
-                                        {agent.is_default && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="w-full"
-                                                onClick={() => {
-                                                    router.post(reset({ project: project.ulid, agent: agent?.id }).url, {}, { onSuccess: onClose });
-                                                }}
-                                            >
-                                                <RotateCcw />
-                                                Reset to Default
-                                            </Button>
-                                        )}
-
-                                        <AlertDialog>
-                                            <AlertDialogTrigger
-                                                render={
-                                                    <Button variant="destructive" className="w-full">
-                                                        <Trash2 />
-                                                        Remove agent
-                                                    </Button>
-                                                }
-                                            />
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>{`Delete "${agent.name}"? This action cannot be undone.`}</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </>
-                                )}
                             </div>
                         </FieldSet>
                     </div>
