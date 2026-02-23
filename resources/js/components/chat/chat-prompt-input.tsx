@@ -74,9 +74,9 @@ export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSe
             <PromptInputTextarea ref={textareaRef} placeholder="Send a message..." disabled={isDisabled} className="px-4 py-3.5" autoFocus={true} />
 
             <PromptInputFooter>
-                <div className="flex items-center gap-2">
-                    <AttachButton disabled={isDisabled} />
+                <AttachButton disabled={isDisabled} />
 
+                <div className="flex items-center gap-2">
                     <div className={cn('flex items-center gap-2', { 'cursor-not-allowed opacity-50': isDisabled })}>
                         {agents.map((agent) => (
                             <Badge key={agent.id} variant={selectedAgentIds.includes(agent.id) ? 'default' : 'outline'} className={cn('font-bold select-none text-shadow-2xs', { 'cursor-pointer': !isDisabled })} onClick={() => !isDisabled && toggleAgent(agent.id)}>
@@ -84,14 +84,15 @@ export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSe
                             </Badge>
                         ))}
                     </div>
+
+                    {onAbort ? (
+                        <InputGroupButton size="icon-sm" type="button" onClick={onAbort} aria-label="Stop">
+                            <SquareIcon className="size-4" />
+                        </InputGroupButton>
+                    ) : (
+                        <PromptInputSubmit disabled={isDisabled} />
+                    )}
                 </div>
-                {onAbort ? (
-                    <InputGroupButton size="icon-sm" type="button" onClick={onAbort} aria-label="Stop">
-                        <SquareIcon className="size-4" />
-                    </InputGroupButton>
-                ) : (
-                    <PromptInputSubmit disabled={isDisabled} />
-                )}
             </PromptInputFooter>
         </PromptInput>
     );

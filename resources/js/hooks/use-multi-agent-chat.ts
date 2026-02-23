@@ -2,7 +2,6 @@ import type { FileUIPart } from 'ai';
 import { useCallback, useRef, useState } from 'react';
 
 import { parseSseStream } from '@/lib/sse-parser';
-import type { SseEvent } from '@/lib/sse-parser';
 import { stream as conversationStream, streamAgents, streamContinue } from '@/routes/projects/conversations';
 import { stream as taskStream } from '@/routes/projects/tasks';
 import type { AgentStream, ChatAttachment, ChatMessage, ChatStatus, RoutingPoll } from '@/types/chat';
