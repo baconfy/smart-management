@@ -18,7 +18,6 @@ interface SpeechRecognition extends EventTarget {
     onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
 
     start(): void;
-
     stop(): void;
 }
 
@@ -104,7 +103,7 @@ export const SpeechInput = ({ className, onTranscriptionChange, onAudioRecorded,
     onTranscriptionChangeRef.current = onTranscriptionChange;
     onAudioRecordedRef.current = onAudioRecorded;
 
-    // Initialize Speech Recognition when mode is speech-recognition
+    // Initialize Speech Recognition when the mode is speech-recognition
     useEffect(() => {
         if (mode !== 'speech-recognition') {
             return;
@@ -164,7 +163,7 @@ export const SpeechInput = ({ className, onTranscriptionChange, onAudioRecorded,
         };
     }, [mode, lang]);
 
-    // Cleanup MediaRecorder and stream on unmount
+    // Clean up MediaRecorder and stream on unmounting
     useEffect(
         () => () => {
             if (mediaRecorderRef.current?.state === 'recording') {
@@ -261,12 +260,12 @@ export const SpeechInput = ({ className, onTranscriptionChange, onAudioRecorded,
             if (isListening) {
                 stopMediaRecorder();
             } else {
-                startMediaRecorder();
+                void startMediaRecorder();
             }
         }
     }, [mode, isListening, startMediaRecorder, stopMediaRecorder]);
 
-    // Determine if button should be disabled
+    // Determine if the button should be disabled
     const isDisabled = mode === 'none' || (mode === 'speech-recognition' && !isRecognitionReady) || (mode === 'media-recorder' && !onAudioRecorded) || isProcessing;
 
     return (

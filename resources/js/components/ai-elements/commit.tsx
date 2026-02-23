@@ -93,7 +93,8 @@ const relativeTimeFormat = new Intl.RelativeTimeFormat('en', {
 });
 
 export const CommitTimestamp = ({ date, className, children, ...props }: CommitTimestampProps) => {
-    const formatted = relativeTimeFormat.format(Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)), 'day');
+    const [now] = useState(() => Date.now());
+    const formatted = relativeTimeFormat.format(Math.round((date.getTime() - now) / (1000 * 60 * 60 * 24)), 'day');
 
     return (
         <time className={cn('text-xs', className)} dateTime={date.toISOString()} {...props}>

@@ -4,7 +4,7 @@ import { ChevronsUpDownIcon } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { createContext, useContext } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -81,10 +81,10 @@ export type PlanFooterProps = ComponentProps<'div'>;
 
 export const PlanFooter = (props: PlanFooterProps) => <CardFooter data-slot="plan-footer" {...props} />;
 
-export type PlanTriggerProps = ComponentProps<typeof CollapsibleTrigger>;
+export type PlanTriggerProps = Omit<ComponentProps<typeof CollapsibleTrigger>, 'render'>;
 
 export const PlanTrigger = ({ className, ...props }: PlanTriggerProps) => (
-    <CollapsibleTrigger render={<Button className={cn('size-8', className)} data-slot="plan-trigger" size="icon" variant="ghost" {...props} />}>
+    <CollapsibleTrigger {...props} render={<button type="button" className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-8', className)} data-slot="plan-trigger" />}>
         <ChevronsUpDownIcon className="size-4" />
         <span className="sr-only">Toggle plan</span>
     </CollapsibleTrigger>

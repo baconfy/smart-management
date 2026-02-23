@@ -20,7 +20,7 @@ export const InlineCitationText = ({ className, ...props }: InlineCitationTextPr
 
 export type InlineCitationCardProps = ComponentProps<typeof HoverCard>;
 
-export const InlineCitationCard = (props: InlineCitationCardProps) => <HoverCard closeDelay={0} openDelay={0} {...props} />;
+export const InlineCitationCard = (props: InlineCitationCardProps) => <HoverCard {...props} />;
 
 export type InlineCitationCardTriggerProps = ComponentProps<typeof Badge> & {
     sources: string[];
@@ -79,16 +79,15 @@ export type InlineCitationCarouselIndexProps = ComponentProps<'div'>;
 
 export const InlineCitationCarouselIndex = ({ children, className, ...props }: InlineCitationCarouselIndexProps) => {
     const api = useCarouselApi();
-    const [current, setCurrent] = useState(0);
-    const [count, setCount] = useState(0);
+
+    // Derive count and current from the API during render (pure)
+    const count = api?.scrollSnapList().length ?? 0;
+    const [current, setCurrent] = useState(() => (api ? api.selectedScrollSnap() + 1 : 0));
 
     useEffect(() => {
         if (!api) {
             return;
         }
-
-        setCount(api.scrollSnapList().length);
-        setCurrent(api.selectedScrollSnap() + 1);
 
         const handleSelect = () => {
             setCurrent(api.selectedScrollSnap() + 1);

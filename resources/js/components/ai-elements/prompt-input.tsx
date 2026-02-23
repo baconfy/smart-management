@@ -3,7 +3,7 @@
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from 'ai';
 import { CornerDownLeftIcon, ImageIcon, PlusIcon, SquareIcon, XIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import type { ChangeEvent, ChangeEventHandler, ClipboardEventHandler, ComponentProps, FormEvent, FormEventHandler, HTMLAttributes, KeyboardEventHandler, PropsWithChildren, ReactNode, RefObject } from 'react';
+import type { ChangeEvent, ChangeEventHandler, ClipboardEventHandler, ComponentProps, HTMLAttributes, KeyboardEventHandler, PropsWithChildren, ReactNode, RefObject, SyntheticEvent } from 'react';
 import { Children, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -251,7 +251,7 @@ export const PromptInputActionAddAttachments = ({ label = 'Add photos or files',
     const attachments = usePromptInputAttachments();
 
     const handleSelect = useCallback(
-        (e: Event) => {
+        (e: SyntheticEvent) => {
             e.preventDefault();
             attachments.openFileDialog();
         },
@@ -283,7 +283,7 @@ export type PromptInputProps = Omit<HTMLAttributes<HTMLFormElement>, 'onSubmit' 
     // bytes
     maxFileSize?: number;
     onError?: (err: { code: 'max_files' | 'max_file_size' | 'accept'; message: string }) => void;
-    onSubmit: (message: PromptInputMessage, event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+    onSubmit: (message: PromptInputMessage, event: SyntheticEvent<HTMLFormElement>) => void | Promise<void>;
 };
 
 export const PromptInput = ({ className, accept, multiple, globalDrop, syncHiddenInput, maxFiles, maxFileSize, onError, onSubmit, children, ...props }: PromptInputProps) => {
@@ -585,8 +585,8 @@ export const PromptInput = ({ className, accept, multiple, globalDrop, syncHidde
         [referencedSources, clearReferencedSources],
     );
 
-    const handleSubmit: FormEventHandler<HTMLFormElement> = useCallback(
-        async (event) => {
+    const handleSubmit = useCallback(
+        async (event: SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
 
             const form = event.currentTarget;
@@ -841,8 +841,8 @@ export const PromptInputSubmit = ({ className, variant = 'default', size = 'icon
         Icon = <XIcon className="size-4" />;
     }
 
-    const handleClick = useCallback(
-        (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleClick: NonNullable<typeof onClick> = useCallback(
+        (e: Parameters<NonNullable<typeof onClick>>[0]) => {
             if (isGenerating && onStop) {
                 e.preventDefault();
                 onStop();
@@ -882,7 +882,7 @@ export const PromptInputSelectValue = ({ className, ...props }: PromptInputSelec
 
 export type PromptInputHoverCardProps = ComponentProps<typeof HoverCard>;
 
-export const PromptInputHoverCard = ({ openDelay = 0, closeDelay = 0, ...props }: PromptInputHoverCardProps) => <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...props} />;
+export const PromptInputHoverCard = (props: PromptInputHoverCardProps) => <HoverCard {...props} />;
 
 export type PromptInputHoverCardTriggerProps = ComponentProps<typeof HoverCardTrigger>;
 

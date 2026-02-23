@@ -109,7 +109,7 @@ const parseStackTrace = (trace: string): ParsedStackTrace => {
     let errorType: string | null = null;
     let errorMessage = firstLine;
 
-    // Try to extract error type from "ErrorType: message" format
+    // Try to extract an error type from the "ErrorType: message" format
     const errorMatch = firstLine.match(ERROR_TYPE_REGEX);
     if (errorMatch) {
         const [, type, msg] = errorMatch;
