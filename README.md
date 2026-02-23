@@ -212,15 +212,15 @@ resources/
 
 ## 🐳 Docker Services
 
-| Service | Description | Host Port |
-|---------|-------------|-----------|
-| **app** | Laravel + Nginx | `80` |
-| **horizon** | Queue worker | — |
-| **reverb** | WebSocket server | `9012` |
-| **postgres** | PostgreSQL 18 | `5432` |
-| **redis** | Cache + Queue + Sessions | `6379` |
-| **minio** | S3-compatible storage | `9000` (API) / `8900` (Console) |
-| **mailpit** | Email testing | `8025` |
+| Service | Description |
+|---------|-------------|
+| **app** | Laravel + Nginx |
+| **horizon** | Queue worker |
+| **reverb** | WebSocket server |
+| **postgres** | PostgreSQL 18 |
+| **redis** | Cache + Queue + Sessions |
+| **minio** | S3-compatible storage |
+| **mailpit** | Email testing |
 
 ---
 
