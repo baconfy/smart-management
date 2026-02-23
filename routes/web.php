@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Profile;
 use App\Http\Controllers\Project;
 use Illuminate\Support\Facades\Route;
@@ -9,7 +10,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Dashboard
      */
-    Route::inertia('/', 'dashboard')->name('dashboard');
+    Route::get('/', DashboardController::class)->name('dashboard');
 
     /**
      * Profile

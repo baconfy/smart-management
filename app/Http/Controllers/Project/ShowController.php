@@ -18,8 +18,22 @@ class ShowController extends Controller
     {
         $this->authorize('view', $project);
 
+        $project->loadCount([
+            'tasks',
+            'tasks as tasks_open_count' => fn ($q) => $q->open(),
+            'tasks as tasks_closed_count' => fn ($q) => $q->closed(),
+            'decisions as decisions_count' => fn ($q) => $q->active(),
+            'businessRules as business_rules_count' => fn ($q) => $q->active(),
+            'conversations',
+        ]);
+
+        $project->load([
+            'tasks' => fn ($q) => $q->with('status')->latest('updated_at')->limit(5),
+            'decisions' => fn ($q) => $q->active()->latest()->limit(5),
+        ]);
+
         return Inertia::render('projects/show', [
-            'project' => $project->only('id', 'ulid', 'name', 'description', 'created_at'),
+            'project' => $project,
         ]);
     }
 }

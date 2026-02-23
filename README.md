@@ -1,171 +1,328 @@
-# Docker Starter Kit
+# Smart Management
 
-A production-ready **Laravel 12 + React 19 + Inertia v2** starter kit, fully Dockerized with [ServerSideUp PHP](https://serversideup.net/open-source/docker-php/) images. Everything you need to build modern, AI-powered web applications — batteries included.
+### Talk to AI. Project management happens.
 
-## What's Included
+An open-source, AI-powered project manager where conversations replace forms, kanbans, and dashboards.
+You describe your project. AI agents organize everything behind the scenes.
 
-### Backend
+[Quick Start](#-quick-start) • [Features](#-features) • [How It Works](#%EF%B8%8F-how-it-works) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing)
 
-- **[Laravel 12](https://laravel.com/)** — PHP framework
-- **[Laravel Fortify](https://laravel.com/docs/fortify)** — Headless authentication (login, register, password reset, email verification, two-factor auth)
-- **[Laravel Horizon](https://laravel.com/docs/horizon)** — Queue management with dashboard
-- **[Laravel Reverb](https://laravel.com/docs/reverb)** — Real-time WebSocket broadcasting
-- **[Laravel AI SDK](https://laravel.com/docs/ai-sdk)** — Unified API for OpenAI, Anthropic, Gemini, and 10+ AI providers (agents, tools, structured output, embeddings, images, audio)
-- **[Laravel MCP](https://laravel.com/docs/mcp)** — Model Context Protocol server for AI client integrations
-- **[Laravel Wayfinder](https://laravel.com/docs/wayfinder)** — Type-safe route generation for TypeScript
-- **[Pest 4](https://pestphp.com/)** — Testing framework
-- **[Laravel Pint](https://laravel.com/docs/pint)** — Code style fixer
+![License](https://img.shields.io/badge/license-Non--Commercial-red)
+![Laravel 12](https://img.shields.io/badge/laravel-12-FF2D20?logo=laravel)
+![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react)
+![Tests](https://img.shields.io/badge/tests-427-brightgreen)
+![Multi-provider AI](https://img.shields.io/badge/AI-multi--provider-blueviolet)
 
-### Frontend
+---
 
-- **[React 19](https://react.dev/)** with React Compiler
-- **[Inertia.js v2](https://inertiajs.com/)** — SPA without the complexity (deferred props, prefetching, polling, infinite scroll)
-- **[Tailwind CSS v4](https://tailwindcss.com/)** — Utility-first CSS
-- **[Vite 7](https://vite.dev/)** — Lightning-fast HMR
-- **[Lucide Icons](https://lucide.dev/)** — Icon library
-- **[Base UI](https://base-ui.com/)** — Accessible, unstyled UI primitives
-- **[Laravel Echo](https://laravel.com/docs/broadcasting#client-side-installation)** — Real-time event listening
+## The Problem
 
-### Infrastructure (Docker)
+Project management tools treat management as **bureaucracy** — you feed the system so it can work. It's work to generate work.
 
-| Service                     | Image                            | Port            |
-|-----------------------------|----------------------------------|-----------------|
-| **App** (Nginx + PHP-FPM)   | `serversideup/php:8.5-fpm-nginx` | `80`            |
-| **Horizon** (Queue Worker)  | `serversideup/php:8.5-fpm-nginx` | —               |
-| **Scheduler** (Cron)        | `serversideup/php:8.5-fpm-nginx` | —               |
-| **Reverb** (WebSocket)      | `serversideup/php:8.5-fpm-nginx` | `9001`          |
-| **PostgreSQL 18**           | `postgres:18-alpine`             | `5432`          |
-| **Redis**                   | `redis:alpine`                   | `6379`          |
-| **MinIO** (S3 Storage)      | `minio/minio`                    | `9000` / `8900` |
-| **Mailpit** (Email Testing) | `axllent/mailpit`                | `8025` / `1025` |
+Using an AI chat as a project manager works surprisingly well — it's conversational, natural, zero friction. Until the chat hits its limits and dies. The conversation is lost, and with it, all the context, decisions, and structure that had been built.
 
-### AI Providers (pre-configured)
+**Smart Management fixes this.** The conversational approach works. What was missing is **persistence**, **structure**, and **scoped context**.
 
-All providers are ready to use — just add your API key:
+---
 
-Anthropic, OpenAI, Gemini, Groq, DeepSeek, Mistral, Cohere, xAI, ElevenLabs, Jina, VoyageAI, OpenRouter, Ollama
+## ✨ Features
 
-## Prerequisites
+### 💬 Chat-First Interface
+The primary interface is a **conversation**, not a dashboard. Describe your project, discuss decisions, define rules — AI agents organize everything behind the scenes. Traditional views (kanban, decisions, business rules) exist as **read-only visualizations** of what the AI has already organized.
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose)
-- [Node.js](https://nodejs.org/) >= 20
-- [Composer](https://getcomposer.org/)
+### 🤖 Multi-Agent System
+A team of specialized AI agents, each with a distinct role:
 
-## Getting Started
+| Agent | Purpose | Creates |
+|-------|---------|---------|
+| **Architect** | Stack choices, patterns, tradeoffs | Decisions (ADRs) |
+| **Project Manager** | Tasks, roadmap, estimates, progress | Tasks & Roadmap |
+| **Business Analyst** | Domain rules, requirements, acceptance criteria | Business Rules |
+| **Technical** | Implementation help, code review, debugging | Implementation Notes |
 
-**1. Clone the repository:**
+You never pick which agent responds — an **invisible Moderator** (running on a cheap model) classifies your message and routes it to the right specialist. When it's unsure, it asks you.
 
-```bash
-git clone https://github.com/baconfy/docker-starter-kit.git
-cd docker-starter-kit
+### 📚 Knowledge That Outlives Conversations
+Agents don't share chat history. They read and write **structured artifacts**: Decisions, Business Rules, Tasks, and Implementation Notes. Conversations can be deleted without losing project knowledge. Your artifacts _are_ your project's brain.
+
+### 📋 Kanban Board
+Drag-and-drop task board with **customizable statuses per project**. Tasks are created by the PM agent during conversations, but you can also view and reorganize them visually.
+
+### ⚙️ Per-Project Agent Customization
+Each project gets its own set of agents. Edit instructions to fine-tune behavior:
+- Make the Architect emphasize security for a crypto project
+- Make the PM more aggressive on deadlines for a tight sprint
+- **Reset to default** anytime — you can't permanently break an agent
+
+### 🔑 Bring Your Own API Keys
+Multi-provider support via [Laravel AI SDK](https://github.com/laravel/ai). Use **Anthropic**, **OpenAI**, **Gemini**, **Groq**, **DeepSeek**, **Mistral**, **xAI**, **Ollama** (local), and more. You own your keys, your data, your infrastructure.
+
+### 🧪 427+ Tests
+Comprehensive test suite covering the entire backend: models, actions, services, controllers, AI tools, and real-time events.
+
+---
+
+## ⚙️ How It Works
+
+```
+📁 Project
+├── 💬 Conversations (the meeting room)
+│   ├── "Defining stack and approach"
+│   ├── "Payment split rules"
+│   └── "Replanning phase 2"
+├── 📚 Artifacts (generated from conversations)
+│   ├── Decisions: "Use AdonisJS", "Non-custodial"
+│   ├── Business Rules: "Immediate split", "0.5% fee"
+│   └── Tasks & Roadmap
+└── 📋 Kanban Board
+    └── Drag-and-drop task management
 ```
 
-**2. Install dependencies:**
+**The Meeting Room model:** You open a conversation and start talking. The Moderator classifies your message and routes it to the right agent (or multiple agents). Each agent reads relevant artifacts for context and writes new ones as output.
 
-```bash
-composer install
-npm install
+```
+You:        "Should the payment split happen on-chain or off-chain?"
+
+Moderator:  → Business + Architecture question → routes to Analyst + Architect
+
+You see:    A tabbed response from both agents,
+            each covering their perspective.
 ```
 
-**3. Set up environment:**
+**Task Technical Chat:** Click a task, start a conversation, and a Technical agent joins with full context about the task, related decisions, and business rules — ready to help you implement.
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Laravel 12, PHP 8.5 |
+| Frontend | React 19, Inertia.js v2, Tailwind CSS v4 |
+| AI | Laravel AI SDK (multi-provider) |
+| Real-time | Laravel Reverb (WebSockets) |
+| Queue | Laravel Horizon + Redis |
+| Database | PostgreSQL 18 |
+| Storage | MinIO (S3-compatible) |
+| Auth | Laravel Fortify (with 2FA) |
+| Testing | Pest 4 |
+| Infrastructure | Docker (serversideup/php) |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+- At least one AI API key (Anthropic, OpenAI, Gemini, etc.)
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/smart-management.git
+cd smart-management
+```
+
+### 2. Copy the environment file
 
 ```bash
 cp .env.example .env
-php artisan key:generate
 ```
 
-**4. Start everything:**
+### 3. Configure your AI provider(s)
+
+Open `.env` and add at least one API key:
+
+```env
+# Add one or more AI provider keys
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=...
+
+# All supported providers:
+# ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY,
+# GROQ_API_KEY, DEEPSEEK_API_KEY, MISTRAL_API_KEY,
+# XAI_API_KEY, OLLAMA_API_KEY, OPENROUTER_API_KEY,
+# COHERE_API_KEY, VOYAGEAI_API_KEY, JINA_API_KEY
+```
+
+### 4. Start the development environment
 
 ```bash
 composer dev
 ```
 
-This single command will:
+This single command boots **everything**: PHP, PostgreSQL, Redis, Horizon, Reverb, MinIO, Mailpit, and Vite with hot-reload.
 
-- Start all Docker containers (PostgreSQL, Redis, MinIO, Mailpit, etc.)
-- Wait for all services to be healthy
-- Create the MinIO storage bucket
-- Run `migrate:fresh --seed` (reset and re-seed the database)
-- Start Vite dev server with HMR
+### 5. Install dependencies and setup
 
-> **Note:** Every time you run `composer dev`, the database is completely reset via `migrate:fresh`. This means all data is dropped and recreated from your seeders. Make sure your seeders are well-configured to recreate any data you need for development.
-
-**5. Open the app:**
-
-- **App:** [http://localhost](http://localhost)
-- **Horizon Dashboard:** [http://localhost/horizon](http://localhost/horizon)
-- **Mailpit:** [http://localhost:8025](http://localhost:8025)
-- **MinIO Console:** [http://localhost:8900](http://localhost:8900)
-
-### Default Credentials
-
-| Service               | Username       | Password    |
-|-----------------------|----------------|-------------|
-| **App** (seeded user) | `root@app.com` | `password`  |
-| **PostgreSQL**        | `baconfy`      | `secret`    |
-| **MinIO**             | `baconfy`      | `secret123` |
-
-## Commands
-
-| Command              | Description                                          |
-|----------------------|------------------------------------------------------|
-| `composer dev`       | Start all services + Vite (fresh database each time) |
-| `composer dev:stop`  | Stop all services                                    |
-| `composer dev:reset` | Destroy all containers and volumes, then start fresh |
-| `composer dev:fresh` | Same as `dev` with `migrate:fresh --seed`            |
-| `composer test`      | Run lint + tests                                     |
-| `composer lint`      | Fix code style with Pint                             |
-
-## Port Customization
-
-All ports are configurable via environment variables to avoid conflicts:
-
-```env
-FORWARD_APP_PORT=80
-FORWARD_DB_PORT=5432
-FORWARD_REDIS_PORT=6379
-FORWARD_REVERB_PORT=9001
-FORWARD_MINIO_PORT=9000
-FORWARD_MINIO_CONSOLE_PORT=8900
-FORWARD_MAILPIT_PORT=8025
-FORWARD_MAILPIT_SMTP_PORT=1025
-```
-
-## Architecture
-
-The project uses a **two-file Docker Compose pattern**:
-
-- **`docker-compose.yml`** — Production base with multi-stage Dockerfile build, OPcache enabled, healthchecks, and auto-migrations.
-- **`docker-compose.dev.yml`** — Dev overrides that mount your local code, disable OPcache, expose database/Redis ports, and add Mailpit.
-
-### Dockerfile (Multi-Stage)
-
-```
-Stage 1: node:22-alpine           → Build frontend assets (Vite)
-Stage 2: serversideup/php:8.5-cli → Install Composer dependencies
-Stage 3: serversideup/php:8.5-fpm-nginx → Production image
-```
-
-### Healthchecks
-
-All services have healthchecks configured. The `composer dev` command uses `--wait` to ensure everything is healthy before running migrations.
-
-## Production
-
-Build and deploy with the production compose file:
+In another terminal:
 
 ```bash
-docker compose up -d --build --wait
+# Install PHP dependencies
+docker compose exec app composer install
+
+# Generate application key
+docker compose exec app php artisan key:generate
+
+# Run migrations
+docker compose exec app php artisan migrate
+
+# Install frontend dependencies and build
+docker compose exec app npm install
+docker compose exec app npm run build
 ```
 
-The production image includes:
+### 6. Open the app
 
-- OPcache enabled
-- Auto-migrations on startup
-- Auto storage link creation
-- Optimized Composer autoloader
-- Pre-built frontend assets
+Visit **http://localhost** (or the port configured in `FORWARD_APP_PORT`).
 
-## License
+Register an account, create your first project, and start chatting!
 
-[MIT](LICENSE)
+---
+
+## 📁 Project Structure
+
+```
+app/
+├── Actions/            # Single-responsibility invokable classes
+├── Ai/
+│   ├── Agents/         # GenericAgent (unified for all types)
+│   ├── Stores/         # ProjectConversationStore
+│   └── Tools/          # 16 AI tools (CRUD for each artifact type)
+├── Enums/              # AgentType, DecisionStatus, TaskPriority, etc.
+├── Events/             # AgentMessageReceived, AgentsProcessing, etc.
+├── Models/             # Eloquent models
+└── Services/           # Orchestrators (CreateProjectService, etc.)
+
+resources/
+├── instructions/       # Default agent instructions (.md files)
+└── js/
+    └── pages/
+        └── projects/
+            ├── conversations/   # Chat interface
+            ├── tasks/           # Kanban board + task detail
+            ├── decisions/       # Post-it grid view
+            ├── business-rules/  # Accordion view
+            └── settings/        # Agent management
+```
+
+---
+
+## 🐳 Docker Services
+
+| Service | Description | Host Port |
+|---------|-------------|-----------|
+| **app** | Laravel + Nginx | `80` |
+| **horizon** | Queue worker | — |
+| **reverb** | WebSocket server | `9012` |
+| **postgres** | PostgreSQL 18 | `5432` |
+| **redis** | Cache + Queue + Sessions | `6379` |
+| **minio** | S3-compatible storage | `9000` (API) / `8900` (Console) |
+| **mailpit** | Email testing | `8025` |
+
+---
+
+## 🔧 Configuration
+
+### AI Provider
+
+The default AI provider and model are configured in `config/ai.php`. You can override the model **per agent** in the project settings UI.
+
+**Cost tip:** The invisible Moderator uses the cheapest available model automatically (e.g., Claude Haiku, GPT-4o-mini) since it only classifies messages. Your budget goes to the agents that matter.
+
+### WebSockets (Reverb)
+
+The default configuration works out of the box with Docker. If deploying to production, update the Reverb variables in `.env`:
+
+```env
+REVERB_HOST=your-domain.com
+REVERB_PORT=443
+REVERB_SCHEME=https
+
+VITE_REVERB_HOST="${REVERB_HOST}"
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
+```
+
+### Running Tests
+
+```bash
+docker compose exec app php artisan test --compact
+```
+
+---
+
+## 🗺 Roadmap
+
+See [ROADMAP.md](./ROADMAP.md) for the full phased execution plan.
+
+**Completed:**
+- ✅ Phase 1 — Foundation (projects, agents, chat, decisions)
+- ✅ Phase 1.5 — Real-time chat (WebSockets, parallel agents)
+- ✅ Phase 2 — Full agent system (all 4 agents + all artifact types)
+- ✅ Phase 3 — Task system (kanban, technical chat, unified chat)
+- ✅ Phase 4.1 — Settings & agent management
+
+**Coming next:**
+- 🔄 Token streaming (SSE)
+- 🔄 Custom agent creation with AI-assisted instructions
+- 🔄 Project dashboard & overview
+- 🔄 Context window management
+- 🔄 Integrations (GitHub, Slack)
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! This is a community-driven project.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for your changes (we maintain 427+ tests — keep it that way)
+4. Run the test suite (`php artisan test --compact`)
+5. Run the code formatter (`vendor/bin/pint --dirty`)
+6. Commit and push
+7. Open a Pull Request
+
+Please read [VISION.md](./VISION.md) to understand the architectural decisions before contributing.
+
+---
+
+## ☕ Support the Project
+
+If Smart Management is useful to you, consider buying me a coffee! It helps keep the project alive and motivated.
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/rawnato)
+
+---
+
+## 📄 License
+
+**Smart Management** is open-source software released under a **non-commercial license**.
+
+You are free to:
+- ✅ Use it for personal projects
+- ✅ Self-host for your own use
+- ✅ Study, modify, and learn from the code
+- ✅ Contribute to the project
+
+You may **not**:
+- ❌ Use it for commercial purposes
+- ❌ Sell it or offer it as a paid service (SaaS)
+- ❌ Redistribute modified versions for commercial gain
+
+---
+
+## ⭐ Star History
+
+If Smart Management helped you manage a project (or just sparked an idea), consider giving it a ⭐ on GitHub. It helps others discover the project.
+
+---
+
+---
+
+Built with ❤️ by the community.
+
+_"The user talks to the AI, and project management happens as a consequence."_

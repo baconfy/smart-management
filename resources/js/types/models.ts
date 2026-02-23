@@ -92,6 +92,30 @@ export type Task = {
     updated_at: string;
 };
 
+export type DashboardProject = {
+    ulid: string;
+    name: string;
+    color: string;
+    tasks_count: number;
+    tasks_open_count: number;
+    tasks_closed_count: number;
+    decisions_count: number;
+    business_rules_count: number;
+    conversations_count: number;
+    tasks: { title: string; status: TaskStatus | null }[];
+};
+
+export type ProjectDashboard = Project & {
+    tasks_count: number;
+    tasks_open_count: number;
+    tasks_closed_count: number;
+    decisions_count: number;
+    business_rules_count: number;
+    conversations_count: number;
+    tasks: { title: string; status: TaskStatus | null; updated_at: string }[];
+    decisions: { title: string; status: string; created_at: string }[];
+};
+
 export type ImplementationNote = {
     id: number;
     task_id: number;
