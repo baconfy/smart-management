@@ -205,6 +205,8 @@ export const Persona: FC<PersonaProps> = memo(({ variant = 'obsidian', state = '
     const asleepInput = useStateMachineInput(rive, stateMachine, 'asleep');
 
     useEffect(() => {
+        // Rive state machine inputs are mutable external system references — setting .value is the intended API
+        /* eslint-disable react-hooks/immutability */
         if (listeningInput) {
             listeningInput.value = state === 'listening';
         }
@@ -217,6 +219,7 @@ export const Persona: FC<PersonaProps> = memo(({ variant = 'obsidian', state = '
         if (asleepInput) {
             asleepInput.value = state === 'asleep';
         }
+        /* eslint-enable react-hooks/immutability */
     }, [state, listeningInput, thinkingInput, speakingInput, asleepInput]);
 
     const Component = source.hasModel ? PersonaWithModel : PersonaWithoutModel;

@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { show } from '@/routes/projects';
-import { index as tasksIndex } from '@/routes/projects/tasks';
 import { index as decisionsIndex } from '@/routes/projects/decisions';
+import { index as tasksIndex } from '@/routes/projects/tasks';
 import type { BreadcrumbItem } from '@/types';
 import type { ProjectDashboard } from '@/types/models';
 
