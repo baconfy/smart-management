@@ -1,7 +1,7 @@
 # Roadmap: AI-Powered Project Manager
 
 > **Reference:** See [VISION.md](./VISION.md) for full project vision, architecture, and data model.
-> **Last updated:** 2026-02-22 (Steps 1-17 complete, 426 tests)
+> **Last updated:** 2026-02-25 (Steps 1-18 complete, 544 tests)
 
 ---
 
@@ -32,13 +32,13 @@ These decisions were made during ideation and refined during implementation:
 21. **Multi-agent chat:** `agent_ids` array, not single `agent_id`. User message stored once, each agent responds independently. Controller manages conversation lifecycle manually (not SDK middleware) to avoid duplicate user messages.
 22. **Agent resolution (unified):** All agents use `GenericAgent`. No dedicated agent classes. Tools and model resolved from `project_agents` database columns. `SeedProjectAgents` assigns tools per agent type.
 23. **Contextual sidebar:** Three-level drill-down: `ProjectsPanel` (project list) → `ProjectNavPanel` (Conversations, Tasks, etc.) → `ConversationsNavPanel` (conversation list + New Conversation). Sidebar panel determined by page via `sidebar` prop in AppLayout.
-24. **flex-col-reverse for chat scroll:** Chat message container uses `flex-col-reverse` for automatic scroll-to-bottom without useEffect or refs. Browser natively starts scroll at the end.
+24. **~~flex-col-reverse for chat scroll~~ (superseded by SSE streaming):** Chat now uses top-to-bottom rendering with `streaming-turn-renderer.tsx` and `use-multi-agent-chat.ts` hook.
 25. **SidebarProvider h-svh:** Changed from `min-h-svh` (allows infinite growth) to `h-svh` (fixed viewport height) to enable internal scroll in nested flex containers.
 26. **Cursor pagination for conversations:** Sidebar conversation list uses `cursorPaginate(20)` for stable pagination with new conversations appearing. Frontend type `CursorPaginated<T>`.
 27. **Agent column nullable:** `agent_conversation_messages.agent` is nullable — user messages don't have an agent class, only assistant messages do.
 28. **ULID string casting:** `Str::ulid()` returns Symfony ULID object, must be cast to `(string)` when storing in DB via Eloquent.
-29. **Conversation title deferred:** Title auto-generation via AI deferred to Reverb streaming step. For now, uses first ~100 chars of user message.
-30. **Async agent responses via Reverb:** ChatController dispatches `ProcessAgentMessage` Jobs (1 per agent, parallel via Redis). Jobs call AI, save response, broadcast `AgentMessageReceived`. Frontend Echo listeners append messages in real-time.
+29. **Conversation title via AI:** `GenerateConversationTitle` job dispatched after first agent finishes streaming. `TitleGeneratorAgent` uses cheap model. Initial title uses first ~100 chars of user message as fallback.
+30. **~~Async agent responses via Reverb~~ (superseded by SSE):** Replaced by `SseStream` + `MultiAgentStreamService`. No WebSocket dependency. `StreamController` runs moderator inline, streams agent responses directly to frontend via EventSource.
 31. **ChatController invokable:** Single `__invoke` method with private helpers: `resolveConversation()` (create or find), `dispatchAgentJobs()` (loop agents + dispatch). Clean separation of concerns.
 32. **Docker Reverb networking:** Backend uses `REVERB_HOST=reverb` + `REVERB_PORT=9001` (Docker internal). Frontend uses `VITE_REVERB_HOST=localhost` + `VITE_REVERB_PORT=9012` (host-forwarded). Three contexts: container→container, browser→host, config→env.
 33. **Per-agent processing state replaces derived loading:** Original `waitingForResponse` (derived from last message role) replaced by `processingAgents` state driven by `AgentsProcessing` event. Each agent gets named thinking bubble, removed individually as responses arrive.
@@ -79,6 +79,13 @@ These decisions were made during ideation and refined during implementation:
 68. **`is_in_progress` flag on task_statuses:** Same pattern as `is_default` and `is_closed`. `StartTaskConversation` moves task to in-progress status automatically. No hardcoded slugs.
 69. **`StartTaskConversation` as Service:** Renamed from Action to Service (`App\Services`). Orchestrates: create conversation, update task status, create hidden message, dispatch agent job. Follows project convention (Services orchestrate, Actions are single-responsibility).
 70. **Kanban column scroll:** Column uses `h-full` + droppable area uses `overflow-y-auto`. Prevents infinite column growth when many tasks exist.
+71. **SSE streaming replaces Reverb:** `SseStream` response class with `StreamedResponse`. `StreamController` runs moderator inline, streams agent responses via `MultiAgentStreamService`. Reverb removed entirely. No WebSocket dependency.
+72. **Multi-agent round-robin streaming:** `MultiAgentStreamService` builds generator per agent, polls round-robin. Yields `agent_start`, `chunk`, `agent_done`, `agent_error` events. Saves response on stream completion. Dispatches title generation after first agent finishes.
+73. **File attachments in chat:** Upload via `StreamChatMessageRequest`. Images/PDFs sent to AI as attachments. Text files inlined into message. Stored in `conversations/{id}/` on public disk. `attachments` JSON column on messages.
+74. **`GenerateConversationTitle` job:** AI generates title from conversation content. Dispatched after first agent response. `TitleGeneratorAgent` uses cheap model.
+75. **Prompt tuning — behavior rules first:** All agent instructions rewritten with `BEHAVIOR RULES` as first section. Response cap ("2-5 paragraphs"), artifact guard ("never create unless asked"), ONE question rule, agent boundaries. ~75% size reduction across all 5 prompts.
+76. **Moderator returns ALL agents:** Prompt requires moderator to return every available agent with a confidence score. Poll UI shows all agents sorted by confidence. Users can select any agent, not just high-confidence ones.
+77. **Dashboard with project stats:** `DashboardController` returns project cards with `withCount` for tasks (open/closed), decisions, business rules, conversations. Global totals bar. `ProjectDashboard` type for project detail page.
 
 ---
 
@@ -210,27 +217,56 @@ These decisions were made during ideation and refined during implementation:
 - [x] AlertDialog for delete confirmation
 - [x] Settings enabled in sidebar navigation
 
-### 4.2 Polish (TODO)
-- [ ] Prompt tuning (agents too verbose, create artifacts without asking)
+### 4.2 SSE Streaming ✅
+- [x] `SseStream` response class — SSE headers, flush, connection abort detection
+- [x] `StreamController` (conversations) — creates conversation, runs moderator inline, streams responses
+- [x] `StreamAgentsController` — streams after user selects agents from poll
+- [x] `Task/StreamController` — SSE streaming for task chat
+- [x] `MultiAgentStreamService` — round-robin polling of agent generators, saves responses, dispatches title generation
+- [x] `use-multi-agent-chat.ts` hook — EventSource-based frontend streaming
+- [x] `streaming-turn-renderer.tsx` — real-time rendering of agent responses
+- [x] File attachments — upload, storage, inline text files, image/PDF for AI
+- [x] Reverb removed — replaced by SSE streaming
+- [x] Chat messages top-to-bottom — replaced `flex-col-reverse`
+
+### 4.3 Dashboard & CRUD ✅
+- [x] Global dashboard — project cards with task/decision/rule counts, totals bar
+- [x] Project dashboard — counts + last 5 tasks/decisions
+- [x] Profile pages — index, password change, 2FA/preferences, account deletion
+- [x] Conversation rename/delete — `RenameController`, `DestroyController`
+- [x] Task rename/delete — `RenameController`, `DestroyController`
+- [x] Project update/delete — `Settings/UpdateController`, `Settings/DestroyController`
+- [x] Conversation messages endpoint — `MessagesController`
+- [x] Title generation via AI — `GenerateConversationTitle` job + `TitleGeneratorAgent`
+- [x] Full CRUD Actions — Delete/Update for Project, Conversation, ConversationMessage, ProjectAgent, Task
+- [x] Services refactor — `DispatchAgentsService`, `SendChatMessageService`
+
+### 4.4 Prompt Tuning ✅
+- [x] All 5 agent prompts rewritten — behavior rules first, ~75% size reduction
+- [x] Artifact guard — agents never create artifacts unless user explicitly asks
+- [x] Response cap — "2-5 short paragraphs" default for all agents
+- [x] ONE question rule — agents ask one question at a time, wait before continuing
+- [x] Boundary rules — each agent knows what it doesn't do (references other agents)
+- [x] Moderator prompt optimized — must return ALL agents with confidence, one-sentence reasoning
+- [x] Routing poll shows all agents — users can select any agent regardless of confidence
+
+### 4.5 Polish (TODO)
 - [ ] React Compiler crash investigation (ConversationShow `useMemoCache` error)
-- [ ] Token streaming (SSE or WebSocket, resolves Pusher payload too large)
 - [ ] Tool call optimization (batch inserts, reduce AI round-trips)
-- [ ] Chat messages top-to-bottom (replace `flex-col-reverse` — aligns with streaming)
-- [x] Start Task → mark as "In Progress" automatically (`is_in_progress` flag on `task_statuses`)
 - [ ] Task filtering (status, priority, phase, search)
 - [ ] Agent card design improvements
 - [ ] AI SDK Elements (Vercel) for chat UI polish
 
 ---
 
-## Phase 5 — Custom Agents & Extensibility
+## Phase 5 — Extensibility
 
-> Goal: User-created agents and advanced features.
+> Goal: Advanced features and cross-referencing.
 
-- [ ] Custom agent creation (name + AI-assisted instructions)
+- [x] Custom agent creation (name + instructions, model, tools) — done in Phase 4.1
+- [x] Project dashboard / overview — done in Phase 4.3
 - [ ] Artifact cross-references
 - [ ] Conversation search
-- [ ] Project dashboard / overview
 - [ ] Context window management strategy
 
 ---
@@ -289,13 +325,36 @@ These decisions were made during ideation and refined during implementation:
 | Settings layout with tab links (General / Agents) | — |
 | Agent list page with cards + Sheet form | — |
 
-### Known Issues (deferred)
-- **Pusher payload too large:** Long AI responses exceed Pusher's 10KB limit. Fix: token streaming (Phase 4).
-- **React Compiler crash:** `useMemoCache` null error in ConversationShow. Fix: investigate in Phase 4.
-- **Tool call round-trips:** PM creating 16 tasks = 16 AI round-trips (~120s). Fix: batch optimization (Phase 4).
-- **Chat scroll direction:** `flex-col-reverse` starts messages at bottom. Fix: top-to-bottom with streaming (Phase 4).
+### SSE Streaming + Dashboard + CRUD + Prompt Tuning (Step 18) ✅
 
-**Total: 427 tests, all passing.**
+| What | Tests |
+|------|-------|
+| `SseStream` response class | — |
+| `StreamController` (conversations) — SSE with moderator routing | new |
+| `StreamAgentsController` — SSE after agent selection | new |
+| `Task/StreamController` — SSE for task chat | new |
+| `MultiAgentStreamService` — round-robin agent streaming | new |
+| `use-multi-agent-chat.ts` — EventSource frontend hook | — |
+| File attachments (upload, storage, AI integration) | new |
+| `GenerateConversationTitle` job | new |
+| Dashboard + Project dashboard | new |
+| Profile pages (index, password, 2FA, destroy) | new |
+| Conversation rename/delete | new |
+| Task rename/delete | new |
+| Project update/delete (Settings) | new |
+| Full CRUD Actions (all entities) | new |
+| `DispatchAgentsService`, `SendChatMessageService` | new |
+| All 5 agent prompts rewritten (behavior-first) | — |
+| Moderator prompt optimized (all agents returned) | — |
+| Routing poll shows all agents | — |
+| `StartTaskConversation` → Service + in-progress status | updated |
+| Kanban column scroll fix | — |
+
+### Known Issues (deferred)
+- **React Compiler crash:** `useMemoCache` null error in ConversationShow. Fix: investigate.
+- **Tool call round-trips:** PM creating 16 tasks = 16 AI round-trips (~120s). Fix: batch optimization.
+
+**Total: 544 tests, all passing.**
 
 ---
 
@@ -312,14 +371,14 @@ Key architectural patterns:
 - Per-agent model override: `project_agents.model` → `$agent->prompt(model: ...)` at runtime
 - Instructions stored in DB, defaults from `resources/instructions/*.md`
 - `ProjectConversationStore` extends SDK's `DatabaseConversationStore`, bound in `boot()`
-- Multi-agent chat: controller dispatches `ProcessChatMessage` job → Moderator → `ProcessAgentMessage` per agent
-- ModeratorAgent: invisible router with confidence-based multi-agent routing
+- SSE streaming: `SseStream` → `StreamController` runs moderator inline → `MultiAgentStreamService` round-robin streams
+- `use-multi-agent-chat.ts` hook: EventSource-based frontend, handles routing/polling/streaming/errors
+- ModeratorAgent: invisible router, returns ALL agents with confidence, one-sentence reasoning
 - Artifacts as structured data in separate tables (not conversation history)
 - String columns in DB + PHP Enums for validation (exception: TaskStatus is a model/table)
 - ULID for public URLs + `(string)` cast on `Str::ulid()`
 - Contextual sidebar: 3-level drill-down via `sidebar` prop
-- Chat uses `flex-col-reverse` for auto scroll-to-bottom
-- Reverb broadcasting: `AgentMessageReceived` + `ConversationTitleUpdated` + `AgentsProcessing` events
 - AI input sanitization: `($request['field'] ?? null) ?: null`, priority validated with `TaskPriority::tryFrom()`
-- Task statuses: `task_statuses` table per project, AI tools use slug, `restrictOnDelete` FK, `SeedProjectStatuses` in `CreateProjectService`
+- Task statuses: `task_statuses` table per project, `is_default`/`is_in_progress`/`is_closed` flags
 - Kanban: `@dnd-kit` with `pointerWithin` collision, `PointerSensor` distance:8, optimistic state + PATCH persist
+- Agent prompts: behavior rules first, artifact guard, response cap, ONE question rule, agent boundaries

@@ -113,6 +113,8 @@ function TaskChatView({
     processingAgents?: { id: number; name: string }[];
     menu: BreadcrumbMenuAction[];
 }) {
+    'use no memo';
+
     const isProcessing = processingAgents.length > 0;
 
     // Poll while the Technical agent's background job is still running

@@ -41,6 +41,8 @@ function toInitialMessages(input: CursorPaginated<ConversationMessage> | Convers
 }
 
 export default function ConversationIndex({ project, agents, conversations, conversation = null, messages: initialMessages = [] }: Props) {
+    'use no memo';
+
     const { messages, agentStreams, status, routingPoll, send, selectAgents, abort, error, lastActiveAgentId, lastRespondedAgentIds } = useMultiAgentChat({
         initialMessages: toInitialMessages(initialMessages),
         conversationId: conversation?.id ?? null,

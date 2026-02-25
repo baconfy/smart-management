@@ -38,6 +38,8 @@ function getXsrfToken(): string {
 }
 
 export function useMultiAgentChat(options: UseMultiAgentChatOptions): UseMultiAgentChatReturn {
+    'use no memo';
+
     const [messages, setMessages] = useState<ChatMessage[]>(options.initialMessages ?? []);
     const [agentStreams, setAgentStreams] = useState<Map<number, AgentStream>>(new Map());
     const [status, setStatus] = useState<ChatStatus>('idle');

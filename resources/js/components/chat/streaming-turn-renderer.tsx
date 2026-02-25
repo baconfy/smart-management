@@ -12,6 +12,8 @@ interface StreamingTurnRendererProps {
 }
 
 export function StreamingTurnRenderer({ agentStreams, lastActiveAgentId, onActiveIndexChange }: StreamingTurnRendererProps) {
+    'use no memo';
+
     const streams = Array.from(agentStreams.values());
     const [manualIndex, setManualIndex] = useState<number | null>(null);
     const isMultiAgent = streams.length > 1;

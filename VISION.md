@@ -292,6 +292,31 @@ Moderator     → All (read-only)             → Delegates to appropriate agent
 - AlertDialog confirmation for destructive actions
 - Available tools discovered dynamically from `app/Ai/Tools/` directory
 
+### SSE Streaming
+- `SseStream` response class — `StreamedResponse` with SSE headers, flush, abort detection
+- `StreamController` runs moderator inline (not queued), determines agents, streams responses
+- `MultiAgentStreamService` — round-robin polling of agent generators, yields `agent_start`, `chunk`, `agent_done` events
+- `use-multi-agent-chat.ts` — EventSource-based hook, manages routing/polling/streaming/error states
+- `streaming-turn-renderer.tsx` — renders agent responses in real-time as chunks arrive
+- File attachments: images/PDFs sent to AI, text files inlined into message
+- `GenerateConversationTitle` job dispatched after first agent finishes streaming
+- Reverb/WebSocket removed entirely — SSE is simpler, no infrastructure dependency
+
+### Dashboard
+- Global dashboard: project cards with task/decision/rule counts, open/closed tasks, totals bar
+- Project dashboard: counts + last 5 tasks and decisions
+- `DashboardProject` and `ProjectDashboard` TypeScript types
+
+### Prompt Tuning
+- All 5 agent prompts follow same structure: `BEHAVIOR RULES` → `ROLE` → `HOW YOU RESPOND` → `WHAT YOU DON'T DO`
+- `BEHAVIOR RULES` is always the first section — LLM gives disproportionate weight to early instructions
+- Response cap: "2-5 short paragraphs by default"
+- Artifact guard: "never create artifacts unless the user explicitly asks"
+- ONE question rule: "ask ONE question at a time, wait before continuing"
+- Agent boundaries: each agent lists what other agents handle, preventing role overlap
+- Moderator returns ALL agents with confidence scores — poll UI shows every agent
+- ~75% size reduction across all prompts (154-198 lines → 45-55 lines)
+
 ### Layout Strategy
 
 - Desktop-first (no mobile — complex PM tool with AI chat, agents, kanban, artifacts)
@@ -649,7 +674,7 @@ Docker starter kit (baconfy/docker-starter-kit) provides:
 - Laravel 12 + React 19 + Inertia v2 + Tailwind v4
 - Laravel Fortify (auth with 2FA)
 - Laravel Horizon (queue management — needed for agent processing)
-- Laravel Reverb (WebSockets — needed for streaming responses)
+- SSE Streaming (`SseStream` + `MultiAgentStreamService` — real-time agent responses without WebSockets)
 - Laravel AI SDK (multi-provider AI)
 - Laravel MCP (Model Context Protocol)
 - PostgreSQL 18, Redis, MinIO (S3), Mailpit
