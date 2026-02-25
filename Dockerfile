@@ -3,6 +3,7 @@
 ############################################
 FROM serversideup/php:8.5-cli AS composer-build
 
+USER root
 WORKDIR /var/www/html
 
 COPY composer.json composer.lock ./
