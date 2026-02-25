@@ -1,38 +1,39 @@
 ############################################
-# Build: PHP dependencies + Frontend assets
+# Node: Build frontend assets
 ############################################
-FROM serversideup/php:8.5-cli AS build
+FROM node:22-alpine AS node-build
 
-USER root
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit
+
+COPY vite.config.ts tsconfig.json tailwind.config.* ./
+COPY resources ./resources
+
+# Copy PHP files needed by Vite (blade templates, etc.)
+COPY app ./app
+COPY routes ./routes
+
+RUN npm run build
+
+############################################
+# Composer: Install PHP dependencies
+############################################
+FROM serversideup/php:8.5-cli AS composer-build
+
 WORKDIR /var/www/html
 
-# Install Node.js 22
-RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# PHP dependencies
 COPY composer.json composer.lock ./
 RUN composer install \
     --no-dev \
     --no-interaction \
     --no-autoloader \
     --no-scripts \
-    --prefer-dist \
-    --ignore-platform-req=ext-gettext
+    --prefer-dist
 
 COPY . .
-
-RUN mkdir -p storage/logs bootstrap/cache \
-    && chmod -R 777 storage bootstrap/cache
-
 RUN composer dump-autoload --optimize --no-dev
-
-# Frontend assets
-RUN npm ci --no-audit \
-    && npm run build \
-    && rm -rf node_modules
 
 ############################################
 # Production: Final image
@@ -50,8 +51,13 @@ ENV SSL_MODE=off
 
 WORKDIR /var/www/html
 
-COPY --chown=www-data:www-data --from=build /var/www/html /var/www/html
+# Copy application code from composer build stage
+COPY --chown=www-data:www-data --from=composer-build /var/www/html /var/www/html
 
+# Copy built frontend assets from node build stage
+COPY --chown=www-data:www-data --from=node-build /app/public/build /var/www/html/public/build
+
+# Ensure storage and cache directories exist with correct permissions
 RUN mkdir -p \
     storage/app/public \
     storage/framework/cache/data \
