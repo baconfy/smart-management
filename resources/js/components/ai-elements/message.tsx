@@ -1,9 +1,7 @@
 'use client';
 
 import { cjk } from '@streamdown/cjk';
-import { code } from '@streamdown/code';
 import { math } from '@streamdown/math';
-import { mermaid } from '@streamdown/mermaid';
 import type { UIMessage } from 'ai';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import type { ComponentProps, HTMLAttributes, ReactElement } from 'react';
@@ -13,6 +11,7 @@ import { Streamdown } from 'streamdown';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { code } from '@/lib/streamdown-code-plugin';
 import { cn } from '@/lib/utils';
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -201,7 +200,7 @@ export const MessageBranchPage = ({ className, ...props }: MessageBranchPageProp
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
-const streamdownPlugins = { cjk, code, math, mermaid };
+const streamdownPlugins = { cjk, code, math };
 
 export const MessageResponse = memo(
     ({ className, ...props }: MessageResponseProps) => <Streamdown className={cn('size-full text-base [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)} plugins={streamdownPlugins} {...props} />,

@@ -3,8 +3,9 @@
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import type { ComponentProps, CSSProperties, HTMLAttributes } from 'react';
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { BundledLanguage, BundledTheme, HighlighterGeneric, ThemedToken } from 'shiki';
-import { createHighlighter } from 'shiki'; // Shiki uses bitflags for font styles: 1=italic, 2=bold, 4=underline
+import type { HighlighterGeneric, ThemedToken } from 'shiki/core';
+import { createHighlighterCore } from 'shiki/core';
+import { createOnigurumaEngine } from 'shiki/engine/oniguruma';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -66,7 +67,7 @@ const LineSpan = ({ keyedLine, showLineNumbers }: { keyedLine: KeyedLine; showLi
 // Types
 type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
     code: string;
-    language: BundledLanguage;
+    language: string;
     showLineNumbers?: boolean;
 };
 
@@ -85,8 +86,36 @@ const CodeBlockContext = createContext<CodeBlockContextType>({
     code: '',
 });
 
+// Map of supported languages to their dynamic imports.
+// Plaintext/text are handled as fallback (no grammar needed).
+const LANGUAGE_IMPORTS: Record<string, () => Promise<unknown>> = {
+    php: () => import('shiki/langs/php'),
+    javascript: () => import('shiki/langs/javascript'),
+    js: () => import('shiki/langs/javascript'),
+    typescript: () => import('shiki/langs/typescript'),
+    ts: () => import('shiki/langs/typescript'),
+    json: () => import('shiki/langs/json'),
+    bash: () => import('shiki/langs/bash'),
+    shell: () => import('shiki/langs/shell'),
+    sh: () => import('shiki/langs/bash'),
+    sql: () => import('shiki/langs/sql'),
+    html: () => import('shiki/langs/html'),
+    css: () => import('shiki/langs/css'),
+    yaml: () => import('shiki/langs/yaml'),
+    yml: () => import('shiki/langs/yaml'),
+    markdown: () => import('shiki/langs/markdown'),
+    md: () => import('shiki/langs/markdown'),
+    diff: () => import('shiki/langs/diff'),
+    xml: () => import('shiki/langs/xml'),
+    python: () => import('shiki/langs/python'),
+    py: () => import('shiki/langs/python'),
+};
+
+// Theme imports (only 2 themes)
+const THEME_IMPORTS = [import('shiki/themes/github-light'), import('shiki/themes/github-dark')];
+
 // Highlighter cache (singleton per language)
-const highlighterCache = new Map<string, Promise<HighlighterGeneric<BundledLanguage, BundledTheme>>>();
+const highlighterCache = new Map<string, Promise<HighlighterGeneric<string, string>>>();
 
 // Token cache
 const tokensCache = new Map<string, TokenizedCode>();
@@ -94,24 +123,33 @@ const tokensCache = new Map<string, TokenizedCode>();
 // Subscribers for async token updates
 const subscribers = new Map<string, Set<(result: TokenizedCode) => void>>();
 
-const getTokensCacheKey = (code: string, language: BundledLanguage) => {
+const getTokensCacheKey = (code: string, language: string) => {
     const start = code.slice(0, 100);
     const end = code.length > 100 ? code.slice(-100) : '';
     return `${language}:${code.length}:${start}:${end}`;
 };
 
-const getHighlighter = (language: BundledLanguage): Promise<HighlighterGeneric<BundledLanguage, BundledTheme>> => {
-    const cached = highlighterCache.get(language);
+const getHighlighter = (language: string): Promise<HighlighterGeneric<string, string>> | null => {
+    const langKey = language.toLowerCase();
+
+    const cached = highlighterCache.get(langKey);
     if (cached) {
         return cached;
     }
 
-    const highlighterPromise = createHighlighter({
-        langs: [language],
-        themes: ['github-light', 'github-dark'],
+    const langImport = LANGUAGE_IMPORTS[langKey];
+    if (!langImport) {
+        // Unsupported language — return null, component will show plain text
+        return null;
+    }
+
+    const highlighterPromise = createHighlighterCore({
+        langs: [langImport()],
+        themes: THEME_IMPORTS,
+        engine: createOnigurumaEngine(import('shiki/wasm')),
     });
 
-    highlighterCache.set(language, highlighterPromise);
+    highlighterCache.set(langKey, highlighterPromise);
     return highlighterPromise;
 };
 
@@ -134,7 +172,7 @@ const createRawTokens = (code: string): TokenizedCode => ({
 // Synchronous highlight with callback for async results
 export const highlightCode = (
     code: string,
-    language: BundledLanguage,
+    language: string,
     // oxlint-disable-next-line eslint-plugin-promise(prefer-await-to-callbacks)
     callback?: (result: TokenizedCode) => void,
 ): TokenizedCode | null => {
@@ -146,6 +184,12 @@ export const highlightCode = (
         return cached;
     }
 
+    // Unsupported language — no highlighting available
+    const highlighterPromise = getHighlighter(language);
+    if (!highlighterPromise) {
+        return null;
+    }
+
     // Subscribe callback if provided
     if (callback) {
         if (!subscribers.has(tokensCacheKey)) {
@@ -155,7 +199,7 @@ export const highlightCode = (
     }
 
     // Start highlighting in background - fire-and-forget async pattern
-    getHighlighter(language)
+    highlighterPromise
         // oxlint-disable-next-line eslint-plugin-promise(prefer-await-to-then)
         .then((highlighter) => {
             const availableLangs = highlighter.getLoadedLanguages();
@@ -212,7 +256,7 @@ const CodeBlockBody = memo(
         const keyedLines = useMemo(() => addKeysToTokens(tokenized.tokens), [tokenized.tokens]);
 
         return (
-            <pre className={cn('m-0 p-4 text-sm dark:!bg-[var(--shiki-dark-bg)] dark:!text-[var(--shiki-dark)]', className)} style={preStyle}>
+            <pre className={cn('m-0 p-4 text-sm dark:bg-(--shiki-dark-bg)! dark:text-(--shiki-dark)!', className)} style={preStyle}>
                 <code className={cn('font-mono text-sm', showLineNumbers && '[counter-increment:line_0] [counter-reset:line]')}>
                     {keyedLines.map((keyedLine) => (
                         <LineSpan key={keyedLine.key} keyedLine={keyedLine} showLineNumbers={showLineNumbers} />
@@ -263,7 +307,7 @@ export const CodeBlockActions = ({ children, className, ...props }: HTMLAttribut
     </div>
 );
 
-export const CodeBlockContent = ({ code, language, showLineNumbers = false }: { code: string; language: BundledLanguage; showLineNumbers?: boolean }) => {
+export const CodeBlockContent = ({ code, language, showLineNumbers = false }: { code: string; language: string; showLineNumbers?: boolean }) => {
     // Memoized raw tokens for immediate display
     const rawTokens = useMemo(() => createRawTokens(code), [code]);
 
