@@ -88,28 +88,23 @@ class StreamController extends Controller
             $agents = $project->agents()->whereIn('id', $agentIds)->get();
         }
 
-        return (new SseStream)
-            ->through(function () use ($agents, $conversation, $message, $streamService, $aiAttachments): \Generator {
-                yield ['type' => 'conversation', 'id' => $conversation->id, 'isNew' => false];
+        return (new SseStream)->through(function () use ($agents, $conversation, $message, $streamService, $aiAttachments): \Generator {
+            yield ['type' => 'conversation', 'id' => $conversation->id, 'isNew' => false];
 
-                if ($agents->isEmpty()) {
-                    yield ['type' => 'error', 'message' => 'No agent available for this task.'];
+            if ($agents->isEmpty()) {
+                yield ['type' => 'error', 'message' => __('No agent available for this task.')];
 
-                    return;
-                }
+                return;
+            }
 
-                yield [
-                    'type' => 'routing',
-                    'agents' => $agents->map(fn ($a) => [
-                        'id' => $a->id,
-                        'name' => $a->name,
-                        'type' => $a->type->value,
-                    ])->values()->toArray(),
-                    'reasoning' => 'Technical agent selected for task.',
-                ];
+            yield [
+                'type' => 'routing',
+                'agents' => $agents->map(fn ($a) => ['id' => $a->id, 'name' => $a->name, 'type' => $a->type->value])->values()->toArray(),
+                'reasoning' => __('Technical agent selected for task.'),
+            ];
 
-                yield from $streamService->stream($agents, $conversation, $message, $aiAttachments);
-            })
+            yield from $streamService->stream($agents, $conversation, $message, $aiAttachments);
+        })
             ->toResponse();
     }
 }

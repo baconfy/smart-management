@@ -131,17 +131,17 @@ class StreamController extends Controller
 
                             yield [
                                 'type' => 'routing_poll',
-                                'reasoning' => $result['reasoning'] ?? "I'm not sure which agent should handle this.",
-                                'candidates' => collect($result['agents'])->map(function ($agentData) use ($allAgents) {
-                                    $resolved = $allAgents->first(fn ($a) => $a->type->value === $agentData['type']);
+                                'reasoning' => $result['reasoning'] ?? __("I'm not sure which agent should handle this."),
+                                'candidates' => $project->agents()->visible()->get()->map(function ($agent) use ($result) {
+                                    $match = collect($result['agents'])->first(fn ($a) => $a['type'] === $agent->type->value);
 
-                                    return $resolved ? [
-                                        'id' => $resolved->id,
-                                        'name' => $resolved->name,
-                                        'type' => $agentData['type'],
-                                        'confidence' => $agentData['confidence'],
-                                    ] : null;
-                                })->filter()->values()->toArray(),
+                                    return [
+                                        'id' => $agent->id,
+                                        'name' => $agent->name,
+                                        'type' => $agent->type->value,
+                                        'confidence' => $match['confidence'] ?? 0.00,
+                                    ];
+                                })->sortByDesc('confidence')->values()->toArray(),
                             ];
 
                             return;
