@@ -30,7 +30,8 @@ RUN composer install \
     --no-interaction \
     --no-autoloader \
     --no-scripts \
-    --prefer-dist
+    --prefer-dist \
+    --ignore-platform-req=ext-gettext
 
 COPY . .
 RUN composer dump-autoload --optimize --no-dev
