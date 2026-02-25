@@ -1,11 +1,17 @@
 ############################################
-# Composer: Install PHP dependencies
+# Build: PHP dependencies + Frontend assets
 ############################################
-FROM serversideup/php:8.5-cli AS composer-build
+FROM serversideup/php:8.5-cli AS build
 
 USER root
 WORKDIR /var/www/html
 
+# Install Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Composer ---
 COPY composer.json composer.lock ./
 RUN composer install \
     --no-dev \
@@ -22,37 +28,15 @@ RUN mkdir -p storage/logs bootstrap/cache \
 
 RUN composer dump-autoload --optimize --no-dev
 
-############################################
-# Node: Build frontend assets
-############################################
-FROM node:22-alpine AS node-build
-
-WORKDIR /app
-
-# Copy PHP 8.5 from composer stage (Wayfinder plugin needs PHP >= 8.4)
-COPY --from=composer-build /usr/local/bin/php /usr/local/bin/php
-COPY --from=composer-build /usr/local/lib/php /usr/local/lib/php
-COPY --from=composer-build /usr/local/etc/php /usr/local/etc/php
-
-# Vite build args (injected at build-time for JS bundle)
+# --- Vite build args ---
 ARG VITE_APP_NAME
 ARG VITE_REVERB_APP_KEY
 ARG VITE_REVERB_HOST
 ARG VITE_REVERB_PORT
 ARG VITE_REVERB_SCHEME
 
-COPY package.json package-lock.json ./
+# --- NPM ---
 RUN npm ci --no-audit
-
-COPY vite.config.ts tsconfig.json tailwind.config.* ./
-COPY resources ./resources
-COPY app ./app
-COPY routes ./routes
-COPY artisan composer.json ./
-COPY bootstrap ./bootstrap
-COPY config ./config
-COPY --from=composer-build /var/www/html/vendor ./vendor
-
 RUN npm run build
 
 ############################################
@@ -71,11 +55,8 @@ ENV SSL_MODE=off
 
 WORKDIR /var/www/html
 
-# Copy application code from composer build stage
-COPY --chown=www-data:www-data --from=composer-build /var/www/html /var/www/html
-
-# Copy built frontend assets from node build stage
-COPY --chown=www-data:www-data --from=node-build /app/public/build /var/www/html/public/build
+# Copy application code from build stage
+COPY --chown=www-data:www-data --from=build /var/www/html /var/www/html
 
 # Ensure storage and cache directories exist with correct permissions
 RUN mkdir -p \
