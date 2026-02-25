@@ -15,6 +15,10 @@ RUN composer install \
     --ignore-platform-req=ext-gettext
 
 COPY . .
+
+RUN mkdir -p storage/logs bootstrap/cache \
+    && chmod -R 777 storage bootstrap/cache
+
 RUN composer dump-autoload --optimize --no-dev
 
 ############################################
