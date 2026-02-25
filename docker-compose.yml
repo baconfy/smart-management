@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
+    image: smart-management:local
     ports:
       - "${FORWARD_APP_PORT:-80}:8080"
     environment:
@@ -33,10 +34,7 @@ services:
 
   # ── Horizon (Queue Manager + Dashboard) ────────────────────────────
   horizon:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: smart-management:local
     command: [ "php", "/var/www/html/artisan", "horizon" ]
     stop_signal: SIGTERM
     environment:
@@ -59,10 +57,7 @@ services:
 
   # ── Task Scheduler ────────────────────────────────────────────────
   scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: smart-management:local
     command: [ "php", "/var/www/html/artisan", "schedule:work" ]
     stop_signal: SIGTERM
     environment:
@@ -85,10 +80,7 @@ services:
 
   # ── Reverb (WebSocket Server) ─────────────────────────────────────
   reverb:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: smart-management:local
     command: [ "php", "/var/www/html/artisan", "reverb:start", "--host=0.0.0.0", "--port=9001" ]
     ports:
       - "${FORWARD_REVERB_PORT:-9001}:9001"
