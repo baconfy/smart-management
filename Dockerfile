@@ -1,23 +1,4 @@
 ############################################
-# Node: Build frontend assets
-############################################
-FROM node:22-alpine AS node-build
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit
-
-COPY vite.config.ts tsconfig.json tailwind.config.* ./
-COPY resources ./resources
-
-# Copy PHP files needed by Vite (blade templates, etc.)
-COPY app ./app
-COPY routes ./routes
-
-RUN npm run build
-
-############################################
 # Composer: Install PHP dependencies
 ############################################
 FROM serversideup/php:8.5-cli AS composer-build
@@ -37,6 +18,30 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev
 
 ############################################
+# Node: Build frontend assets
+############################################
+FROM node:22-alpine AS node-build
+
+WORKDIR /app
+
+RUN apk add --no-cache php83 php83-tokenizer php83-mbstring php83-ctype php83-phar \
+    && ln -sf /usr/bin/php83 /usr/bin/php
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit
+
+COPY vite.config.ts tsconfig.json tailwind.config.* ./
+COPY resources ./resources
+COPY app ./app
+COPY routes ./routes
+COPY artisan composer.json ./
+COPY bootstrap ./bootstrap
+COPY config ./config
+COPY --from=composer-build /var/www/html/vendor ./vendor
+
+RUN npm run build
+
+############################################
 # Production: Final image
 ############################################
 FROM serversideup/php:8.5-fpm-nginx AS production
@@ -52,13 +57,9 @@ ENV SSL_MODE=off
 
 WORKDIR /var/www/html
 
-# Copy application code from composer build stage
 COPY --chown=www-data:www-data --from=composer-build /var/www/html /var/www/html
-
-# Copy built frontend assets from node build stage
 COPY --chown=www-data:www-data --from=node-build /app/public/build /var/www/html/public/build
 
-# Ensure storage and cache directories exist with correct permissions
 RUN mkdir -p \
     storage/app/public \
     storage/framework/cache/data \
