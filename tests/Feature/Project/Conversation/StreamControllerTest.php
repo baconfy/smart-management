@@ -370,6 +370,37 @@ test('stream stores attachments with user message', function (): void {
         ->and($attachments[0]['mediaType'])->toBe('application/pdf');
 });
 
+test('stream routes to selected agents when attachments are present', function (): void {
+    GenericAgent::fake(['Response with attachment']);
+    Queue::fake();
+    Storage::fake('public');
+
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+    $project->members()->create(['user_id' => $user->id, 'role' => 'owner']);
+    $agent = $project->agents()->create([
+        'type' => AgentType::Architect->value,
+        'name' => 'Architect',
+        'instructions' => 'You are an architect.',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->post(route('projects.conversations.stream', $project), [
+            'message' => 'Check this diagram',
+            'agent_ids' => [$agent->id],
+            'attachments' => [
+                UploadedFile::fake()->image('diagram.png', 200, 200),
+            ],
+        ]);
+
+    $content = streamResponse($response);
+
+    expect($content)->toContain('"type":"routing"')
+        ->and($content)->toContain('"reasoning":"Agents selected by user."')
+        ->and($content)->toContain('"type":"agent_start"')
+        ->and($content)->not->toContain('"type":"routing_poll"');
+});
+
 test('stream rejects files exceeding max size', function (): void {
     $user = User::factory()->create();
     $project = Project::factory()->create();

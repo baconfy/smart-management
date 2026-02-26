@@ -35,6 +35,7 @@ readonly class CreateBusinessRule implements Tool
             'title' => $request['title'],
             'description' => $request['description'],
             'category' => $request['category'],
+            'status' => $request['status'],
         ]);
 
         return "Business rule recorded: \"{$rule->title}\" (ID: {$rule->id})";
@@ -52,6 +53,7 @@ readonly class CreateBusinessRule implements Tool
             'title' => $schema->string()->description('Short title for the rule.')->required(),
             'description' => $schema->string()->description('Full description of the business rule.')->required(),
             'category' => $schema->string()->description('Category (e.g. billing, security, compliance, operations).')->required(),
+            'status' => $schema->string()->description('Status (e.g. active, ideia, deprecated, etc).')->required(),
         ];
     }
 }

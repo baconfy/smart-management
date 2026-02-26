@@ -46,6 +46,10 @@ function AttachmentPreviews() {
 
 export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSelectedAgentIds = [], lastRespondedAgentIds = [] }: { onSend: (content: string, agentIds?: number[], files?: FileUIPart[]) => void; isDisabled: boolean; onAbort?: () => void; agents: ProjectAgent[]; defaultSelectedAgentIds?: number[]; lastRespondedAgentIds?: number[] }) {
     const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>(defaultSelectedAgentIds);
+    const selectedAgentIdsRef = useRef(selectedAgentIds);
+    selectedAgentIdsRef.current = selectedAgentIds;
+    const onSendRef = useRef(onSend);
+    onSendRef.current = onSend;
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
@@ -64,7 +68,8 @@ export function ChatPromptInput({ onSend, isDisabled, onAbort, agents, defaultSe
             return;
         }
 
-        onSend(text.trim(), selectedAgentIds.length > 0 ? selectedAgentIds : undefined, files.length > 0 ? files : undefined);
+        const agentIds = selectedAgentIdsRef.current;
+        onSendRef.current(text.trim(), agentIds.length > 0 ? agentIds : undefined, files.length > 0 ? files : undefined);
     }
 
     return (
