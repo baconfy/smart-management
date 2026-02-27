@@ -7,14 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
-import { store } from '@/routes/register';
 
 export default function Register() {
     return (
         <AuthLayout>
             <Head title="Register" />
 
-            <Form {...store.form()} resetOnSuccess={['password', 'password_confirmation']} disableWhileProcessing className="p-6 md:p-8">
+            <Form action="/register" method="post" resetOnSuccess={['password', 'password_confirmation']} disableWhileProcessing className="p-6 md:p-8">
                 {({ processing, errors }) => (
                     <>
                         <FieldSet>
